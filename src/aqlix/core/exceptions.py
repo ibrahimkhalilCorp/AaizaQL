@@ -14,6 +14,7 @@ class AQLIXError(Exception):
 
 # ── Security ────────────────────────────────────────────────────────────────
 
+
 class SecurityException(AQLIXError):
     """Raised when SQL fails security validation before execution."""
 
@@ -28,6 +29,7 @@ class PromptInjectionDetected(SecurityException):
 
 
 # ── SQL Generation ───────────────────────────────────────────────────────────
+
 
 class SQLGenerationError(AQLIXError):
     """Raised when the LLM fails to produce valid SQL."""
@@ -64,6 +66,7 @@ class MaxRetriesExceeded(AQLIXError):
 
 # ── Database / Connectors ────────────────────────────────────────────────────
 
+
 class DatabaseError(AQLIXError):
     """Raised when query execution fails at the database level."""
 
@@ -97,12 +100,12 @@ class ConnectorNotFound(AQLIXError):
         from aqlix.connectors import REGISTRY  # lazy to avoid circular import
 
         super().__init__(
-            f"No connector registered for '{name}'. "
-            f"Available: {sorted(REGISTRY.keys())}"
+            f"No connector registered for '{name}'. " f"Available: {sorted(REGISTRY.keys())}"
         )
 
 
 # ── LLM Providers ────────────────────────────────────────────────────────────
+
 
 class LLMError(AQLIXError):
     """Raised when an LLM API call fails."""
@@ -117,12 +120,12 @@ class LLMProviderNotFound(AQLIXError):
 
     def __init__(self, name: str) -> None:
         super().__init__(
-            f"No LLM provider registered for '{name}'. "
-            "Available: 'claude', 'openai', 'ollama'"
+            f"No LLM provider registered for '{name}'. " "Available: 'claude', 'openai', 'ollama'"
         )
 
 
 # ── Vector Store / RAG ───────────────────────────────────────────────────────
+
 
 class VectorStoreError(AQLIXError):
     """Raised when a vector store operation fails."""
@@ -133,6 +136,7 @@ class SchemaIngestionError(AQLIXError):
 
 
 # ── Federation ───────────────────────────────────────────────────────────────
+
 
 class FederationError(AQLIXError):
     """Raised when a federated query fails."""

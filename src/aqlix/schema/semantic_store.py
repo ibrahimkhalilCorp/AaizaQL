@@ -27,11 +27,13 @@ logger = structlog.get_logger(__name__)
 
 # ── Data models ───────────────────────────────────────────────────────────────
 
+
 @dataclass
 class EnumMapping:
     """A numeric code → label mapping for one column."""
-    table:   str
-    column:  str
+
+    table: str
+    column: str
     mapping: dict[int | str, str]  # {1: "Active", 2: "On Leave", ...}
 
     def to_prompt_text(self) -> str:
@@ -47,10 +49,12 @@ class TrainingState:
     Enum mappings are always injected into prompts (never retrieved via RAG).
     Documentation is stored in the vector store for semantic retrieval.
     """
-    enums:  list[EnumMapping] = field(default_factory=list)
+
+    enums: list[EnumMapping] = field(default_factory=list)
 
 
 # ── SemanticStore ─────────────────────────────────────────────────────────────
+
 
 class SemanticStore:
     """
@@ -63,7 +67,7 @@ class SemanticStore:
     """
 
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
-        self._vs    = vector_store
+        self._vs = vector_store
         self._state = TrainingState()
 
     # ── 1. Documentation ──────────────────────────────────────────────────────
@@ -108,8 +112,8 @@ class SemanticStore:
 
     def define_enum(
         self,
-        table:   str,
-        column:  str,
+        table: str,
+        column: str,
         mapping: dict[int | str, str],
     ) -> None:
         """
@@ -133,17 +137,13 @@ class SemanticStore:
         """
         # Remove existing mapping for same table.column (idempotent)
         self._state.enums = [
-            e for e in self._state.enums
-            if not (e.table == table and e.column == column)
+            e for e in self._state.enums if not (e.table == table and e.column == column)
         ]
         enum = EnumMapping(table=table, column=column, mapping=mapping)
         self._state.enums.append(enum)
 
         # Also store in vector store for documentation-style retrieval
-        doc_text = (
-            f"Column {table}.{column} stores numeric codes: "
-            + enum.to_prompt_text()
-        )
+        doc_text = f"Column {table}.{column} stores numeric codes: " + enum.to_prompt_text()
         self._vs.upsert(
             id=_stable_id("enum", table, column),
             text=doc_text,
@@ -214,6 +214,5 @@ class SemanticStore:
     def list_enums(self) -> list[dict[str, Any]]:
         """Return all registered enums as a list of dicts (for inspection)."""
         return [
-            {"table": e.table, "column": e.column, "mapping": e.mapping}
-            for e in self._state.enums
+            {"table": e.table, "column": e.column, "mapping": e.mapping} for e in self._state.enums
         ]

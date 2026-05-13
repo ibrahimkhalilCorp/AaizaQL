@@ -27,9 +27,7 @@ class OpenAIProvider(LLMProvider):
                 "AQLIX_OPENAI_API_KEY is not set. "
                 "Export it or pass openai_api_key= to QueryEngine.",
             )
-        self._client = openai.OpenAI(
-            api_key=settings.openai_api_key.get_secret_value()
-        )
+        self._client = openai.OpenAI(api_key=settings.openai_api_key.get_secret_value())
         self._model = settings.openai_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
@@ -50,7 +48,9 @@ class OpenAIProvider(LLMProvider):
                 ],
             )
             text = response.choices[0].message.content or ""
-            logger.debug("llm.complete", provider=self.name, tokens=response.usage.completion_tokens)
+            logger.debug(
+                "llm.complete", provider=self.name, tokens=response.usage.completion_tokens
+            )
             return text
         except openai.OpenAIError as exc:
             raise LLMError("openai", str(exc)) from exc

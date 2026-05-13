@@ -18,7 +18,7 @@ class LLMProvider(str, Enum):
     CLAUDE = "claude"
     OPENAI = "openai"
     OLLAMA = "ollama"
-    GROQ   = "groq"
+    GROQ = "groq"
 
 
 class VectorStoreBackend(str, Enum):

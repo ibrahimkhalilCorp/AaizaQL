@@ -25,6 +25,7 @@ class PostgreSQLConnector(DatabaseConnector):
     def connect(self, dsn: str) -> None:
         try:
             import psycopg2  # type: ignore[import]
+
             self._conn = psycopg2.connect(dsn)
             self._conn.autocommit = True
             logger.info("postgres.connected")

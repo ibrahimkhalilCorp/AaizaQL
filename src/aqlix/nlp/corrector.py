@@ -26,7 +26,7 @@ class SelfCorrector:
     def __init__(self, llm: LLMProvider, settings: Settings) -> None:
         self._llm = llm
         self._max_retries = settings.max_self_correction_retries
-        self.last_sql: str = ""      # Updated to the final (possibly corrected) SQL
+        self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
 
     def execute_with_correction(
         self,
@@ -80,4 +80,6 @@ class SelfCorrector:
                 was_corrected = True
 
         # Should never reach here
-        raise MaxRetriesExceeded(sql=self.last_sql, last_error="unknown", attempts=self._max_retries)
+        raise MaxRetriesExceeded(
+            sql=self.last_sql, last_error="unknown", attempts=self._max_retries
+        )

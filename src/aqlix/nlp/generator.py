@@ -29,11 +29,31 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 _COT_KEYWORDS = {
-    "join", "joining", "combine", "merge",
-    "group by", "grouped", "per", "by month", "by year", "by week",
-    "compare", "difference", "trend", "average", "sum", "count",
-    "most", "least", "top", "bottom", "rank", "ranking",
-    "between", "range", "having",
+    "join",
+    "joining",
+    "combine",
+    "merge",
+    "group by",
+    "grouped",
+    "per",
+    "by month",
+    "by year",
+    "by week",
+    "compare",
+    "difference",
+    "trend",
+    "average",
+    "sum",
+    "count",
+    "most",
+    "least",
+    "top",
+    "bottom",
+    "rank",
+    "ranking",
+    "between",
+    "range",
+    "having",
 }
 
 
@@ -63,18 +83,18 @@ class SQLGenerator:
         settings: Settings,
         semantic_store: "SemanticStore | None" = None,
     ) -> None:
-        self._llm      = llm
-        self._vs       = vector_store
+        self._llm = llm
+        self._vs = vector_store
         self._settings = settings
         self._semantic = semantic_store
 
     def generate(self, question: str, history: list[dict]) -> str:
         schema_chunks, example_pairs = self._build_rag_context(question)
         enum_block = self._build_enum_block()
-        doc_block  = self._build_doc_block(question)
+        doc_block = self._build_doc_block(question)
 
         use_cot = _needs_cot(question)
-        prompt  = self._assemble_prompt(
+        prompt = self._assemble_prompt(
             question=question,
             schema_chunks=schema_chunks,
             example_pairs=example_pairs,
@@ -106,14 +126,16 @@ class SQLGenerator:
 
     def _build_rag_context(self, question: str) -> tuple[str, str]:
         schema_hits = self._vs.search(
-            query=question, filter_type="ddl",
+            query=question,
+            filter_type="ddl",
             top_k=self._settings.schema_top_k,
         )
         example_hits = self._vs.search(
-            query=question, filter_type="qa_pair",
+            query=question,
+            filter_type="qa_pair",
             top_k=self._settings.examples_top_k,
         )
-        schema_block   = "\n\n".join(h.text for h in schema_hits) or "(no schema ingested yet)"
+        schema_block = "\n\n".join(h.text for h in schema_hits) or "(no schema ingested yet)"
         examples_block = "\n\n".join(h.text for h in example_hits) or "(no examples yet)"
         return schema_block, examples_block
 
@@ -142,10 +164,13 @@ class SQLGenerator:
         history: list[dict],
         use_cot: bool,
     ) -> str:
-        history_text = "\n".join(
-            f"User: {turn['question']}\nSQL: {turn['sql']}"
-            for turn in history[-self._settings.session_history_limit:]
-        ) or "(no prior conversation)"
+        history_text = (
+            "\n".join(
+                f"User: {turn['question']}\nSQL: {turn['sql']}"
+                for turn in history[-self._settings.session_history_limit :]
+            )
+            or "(no prior conversation)"
+        )
 
         context = CONTEXT_TEMPLATE.format(
             dialect=str(self._settings.llm_provider),

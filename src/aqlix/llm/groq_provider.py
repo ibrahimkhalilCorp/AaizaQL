@@ -81,7 +81,7 @@ class GroqProvider(LLMProvider):
                 temperature=self._temperature,
                 messages=[
                     {"role": "system", "content": system or SYSTEM_PROMPT},
-                    {"role": "user",   "content": prompt},
+                    {"role": "user", "content": prompt},
                 ],
             )
             text = response.choices[0].message.content or ""

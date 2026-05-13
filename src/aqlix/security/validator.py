@@ -23,9 +23,21 @@ logger = structlog.get_logger(__name__)
 
 # Dangerous statement types — any of these in the SQL → hard reject
 _BLOCKED_STATEMENT_TYPES = {
-    "INSERT", "UPDATE", "DELETE", "DROP", "TRUNCATE",
-    "ALTER", "CREATE", "REPLACE", "EXEC", "EXECUTE",
-    "GRANT", "REVOKE", "CALL", "LOAD", "IMPORT",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "DROP",
+    "TRUNCATE",
+    "ALTER",
+    "CREATE",
+    "REPLACE",
+    "EXEC",
+    "EXECUTE",
+    "GRANT",
+    "REVOKE",
+    "CALL",
+    "LOAD",
+    "IMPORT",
 }
 
 # Prompt injection signatures commonly injected into user questions
@@ -37,9 +49,9 @@ _INJECTION_PATTERNS: list[re.Pattern] = [
     re.compile(r"(drop|delete|truncate)\s+table", re.IGNORECASE),
     re.compile(r";\s*(drop|delete|truncate|insert|update)", re.IGNORECASE),
     re.compile(r"--\s*bypass", re.IGNORECASE),
-    re.compile(r"\/\*.*?\*\/", re.DOTALL),           # block comments
-    re.compile(r"xp_cmdshell", re.IGNORECASE),        # MSSQL command execution
-    re.compile(r"INTO\s+OUTFILE", re.IGNORECASE),     # MySQL file export
+    re.compile(r"\/\*.*?\*\/", re.DOTALL),  # block comments
+    re.compile(r"xp_cmdshell", re.IGNORECASE),  # MSSQL command execution
+    re.compile(r"INTO\s+OUTFILE", re.IGNORECASE),  # MySQL file export
 ]
 
 
@@ -111,7 +123,7 @@ class SQLValidator:
                     if sql_upper.startswith(blocked):
                         raise SecurityException(
                             reason=f"Statement type '{blocked}' is not allowed. "
-                                   f"Only {sorted(self._allowed_ops)} are permitted.",
+                            f"Only {sorted(self._allowed_ops)} are permitted.",
                             sql=sql,
                         )
 

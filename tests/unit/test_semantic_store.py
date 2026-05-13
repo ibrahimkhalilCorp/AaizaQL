@@ -35,6 +35,7 @@ def store(mock_vs):
 
 # ── EnumMapping ───────────────────────────────────────────────────────────────
 
+
 class TestEnumMapping:
     def test_to_prompt_text(self):
         e = EnumMapping("employees", "status", {1: "Active", 2: "Resigned"})
@@ -51,6 +52,7 @@ class TestEnumMapping:
 
 # ── define_enum ───────────────────────────────────────────────────────────────
 
+
 class TestDefineEnum:
     def test_enum_registered(self, store):
         store.define_enum("employees", "status", {1: "Active", 2: "Resigned"})
@@ -58,9 +60,9 @@ class TestDefineEnum:
         assert store.enum_count() == 1
 
     def test_multiple_enums(self, store):
-        store.define_enum("employees", "status",    {1: "Active", 2: "Resigned"})
+        store.define_enum("employees", "status", {1: "Active", 2: "Resigned"})
         store.define_enum("employees", "job_grade", {1: "Junior", 4: "Manager"})
-        store.define_enum("orders",    "order_status", {3: "Delivered"})
+        store.define_enum("orders", "order_status", {3: "Delivered"})
         assert store.enum_count() == 3
 
     def test_enum_overwrite_same_column(self, store):
@@ -82,7 +84,7 @@ class TestDefineEnum:
         assert "2=On Leave" in block
 
     def test_get_enum_block_multiple(self, store):
-        store.define_enum("employees", "status",    {1: "Active"})
+        store.define_enum("employees", "status", {1: "Active"})
         store.define_enum("employees", "job_grade", {3: "Senior"})
         block = store.get_enum_block()
         assert "status" in block
@@ -92,7 +94,7 @@ class TestDefineEnum:
         store.define_enum("employees", "status", {1: "Active", 2: "Resigned"})
         enums = store.list_enums()
         assert len(enums) == 1
-        assert enums[0]["table"]  == "employees"
+        assert enums[0]["table"] == "employees"
         assert enums[0]["column"] == "status"
         assert enums[0]["mapping"][1] == "Active"
 
@@ -110,6 +112,7 @@ class TestDefineEnum:
 
 
 # ── train_documentation ───────────────────────────────────────────────────────
+
 
 class TestDocumentation:
     def test_empty_documentation_ignored(self, store, mock_vs):
@@ -131,9 +134,7 @@ class TestDocumentation:
         assert call_kwargs["metadata"]["type"] == "documentation"
 
     def test_search_documentation_called(self, store, mock_vs):
-        mock_vs.search.return_value = [
-            MagicMock(text="employees.status: 1=Active")
-        ]
+        mock_vs.search.return_value = [MagicMock(text="employees.status: 1=Active")]
         result = store.search_documentation("active employees")
         assert "Active" in result
         mock_vs.search.assert_called_once_with(
@@ -148,12 +149,10 @@ class TestDocumentation:
 
 # ── train_sql_pair ────────────────────────────────────────────────────────────
 
+
 class TestSQLPair:
     def test_pair_stored_in_vector_store(self, store, mock_vs):
-        store.train_sql_pair(
-            "Top 5 employees by sales",
-            "SELECT e.name FROM employees e LIMIT 5"
-        )
+        store.train_sql_pair("Top 5 employees by sales", "SELECT e.name FROM employees e LIMIT 5")
         mock_vs.upsert.assert_called_once()
         call_kwargs = mock_vs.upsert.call_args.kwargs
         assert call_kwargs["metadata"]["type"] == "qa_pair"
@@ -173,6 +172,7 @@ class TestSQLPair:
 
 
 # ── has_enums / enum_count ────────────────────────────────────────────────────
+
 
 class TestHelpers:
     def test_has_enums_false_initially(self, store):

@@ -21,9 +21,7 @@ class TestWhitelist:
         validator.validate("SELECT id, name FROM users")
 
     def test_select_with_join_passes(self, validator):
-        validator.validate(
-            "SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id"
-        )
+        validator.validate("SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id")
 
     def test_cte_passes(self, validator):
         validator.validate(

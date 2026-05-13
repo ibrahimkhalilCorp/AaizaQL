@@ -46,14 +46,15 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class QueryResult:
     """Everything returned from a single engine.query() call."""
-    question:           str
-    sql:                str
-    data:               pd.DataFrame
-    summary:            str  = ""
-    chart:              Any  = None
-    execution_time_ms:  int  = 0
-    session_id:         str  = ""
-    was_corrected:      bool = False
+
+    question: str
+    sql: str
+    data: pd.DataFrame
+    summary: str = ""
+    chart: Any = None
+    execution_time_ms: int = 0
+    session_id: str = ""
+    was_corrected: bool = False
     correction_attempts: int = 0
 
 
@@ -71,9 +72,9 @@ class QueryEngine:
 
     def __init__(
         self,
-        llm:      str = "groq",
+        llm: str = "groq",
         database: str = "sqlite",
-        dsn:      str = "",
+        dsn: str = "",
         settings: Settings | None = None,
         **kwargs: Any,
     ) -> None:
@@ -106,13 +107,13 @@ class QueryEngine:
         self._ingester = SchemaIngester(self._vector_store)
 
         # Pipeline components
-        self._context   = ContextManager(limit=self._settings.session_history_limit)
+        self._context = ContextManager(limit=self._settings.session_history_limit)
         self._generator = SQLGenerator(
             self._llm, self._vector_store, self._settings, self._semantic
         )
         self._validator = SQLValidator(self._settings)
         self._corrector = SelfCorrector(self._llm, self._settings)
-        self._renderer  = ResultRenderer()
+        self._renderer = ResultRenderer()
         self._summarizer = NLSummarizer(self._llm)
 
         logger.info("engine.ready", llm=llm, database=database)
@@ -175,8 +176,8 @@ class QueryEngine:
 
     def define_enum(
         self,
-        table:   str,
-        column:  str,
+        table: str,
+        column: str,
         mapping: dict,
     ) -> None:
         """
@@ -212,7 +213,7 @@ class QueryEngine:
     def training_info(self) -> dict:
         """Return a summary of all training data currently loaded."""
         return {
-            "enums":  self._semantic.list_enums(),
+            "enums": self._semantic.list_enums(),
             "enum_count": self._semantic.enum_count(),
         }
 
@@ -222,7 +223,7 @@ class QueryEngine:
 
     def query(
         self,
-        question:   str,
+        question: str,
         session_id: str | None = None,
     ) -> QueryResult:
         """
@@ -237,13 +238,13 @@ class QueryEngine:
         -------
         QueryResult  (.sql, .data, .chart, .summary)
         """
-        sid     = session_id or str(uuid.uuid4())
+        sid = session_id or str(uuid.uuid4())
         t_start = time.monotonic()
 
         logger.info("query.start", session_id=sid, question=question[:80])
 
         history = self._context.get_history(sid)
-        sql     = self._generator.generate(question, history)
+        sql = self._generator.generate(question, history)
 
         if sql.strip().upper() == "UNSUPPORTED":
             raise UnsupportedQueryError(question)
@@ -253,11 +254,13 @@ class QueryEngine:
         self._validator.validate(sql)
 
         data, was_corrected, attempts = self._corrector.execute_with_correction(
-            sql=sql, executor=self._connector, question=question,
+            sql=sql,
+            executor=self._connector,
+            question=question,
         )
         sql = self._corrector.last_sql
 
-        chart   = self._renderer.render(data, question)
+        chart = self._renderer.render(data, question)
         summary = self._summarizer.summarize(question, data)
 
         self._context.add_turn(sid, question=question, sql=sql, row_count=len(data))
@@ -265,15 +268,22 @@ class QueryEngine:
         execution_ms = int((time.monotonic() - t_start) * 1000)
         logger.info(
             "query.complete",
-            session_id=sid, rows=len(data),
-            execution_ms=execution_ms, was_corrected=was_corrected,
+            session_id=sid,
+            rows=len(data),
+            execution_ms=execution_ms,
+            was_corrected=was_corrected,
         )
 
         return QueryResult(
-            question=question, sql=sql, data=data,
-            summary=summary, chart=chart,
-            execution_time_ms=execution_ms, session_id=sid,
-            was_corrected=was_corrected, correction_attempts=attempts,
+            question=question,
+            sql=sql,
+            data=data,
+            summary=summary,
+            chart=chart,
+            execution_time_ms=execution_ms,
+            session_id=sid,
+            was_corrected=was_corrected,
+            correction_attempts=attempts,
         )
 
     # ─────────────────────────────────────────────────────────────────────────

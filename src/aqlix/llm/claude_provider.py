@@ -27,9 +27,7 @@ class ClaudeProvider(LLMProvider):
                 "AQLIX_ANTHROPIC_API_KEY is not set. "
                 "Export it or pass anthropic_api_key= to QueryEngine.",
             )
-        self._client = anthropic.Anthropic(
-            api_key=settings.anthropic_api_key.get_secret_value()
-        )
+        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key.get_secret_value())
         self._model = settings.claude_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature

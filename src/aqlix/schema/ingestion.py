@@ -30,12 +30,12 @@ def _get_embedder():
     if _embedder is None:
         try:
             from sentence_transformers import SentenceTransformer  # type: ignore
+
             _embedder = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("embedder.loaded", model="all-MiniLM-L6-v2")
         except ImportError as exc:
             raise SchemaIngestionError(
-                "sentence-transformers is not installed. "
-                "Run: pip install sentence-transformers"
+                "sentence-transformers is not installed. " "Run: pip install sentence-transformers"
             ) from exc
     return _embedder
 

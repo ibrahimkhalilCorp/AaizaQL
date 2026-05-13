@@ -14,6 +14,7 @@ import pandas as pd
 def _has_plotly() -> bool:
     try:
         import plotly  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -90,7 +91,8 @@ class ResultRenderer:
         has_datetime = self._first_datetime(df) is not None
         num_count = sum(1 for c in df.columns if pd.api.types.is_numeric_dtype(df[c]))
         cat_count = sum(
-            1 for c in df.columns
+            1
+            for c in df.columns
             if pd.api.types.is_object_dtype(df[c]) or pd.api.types.is_categorical_dtype(df[c])
         )
 

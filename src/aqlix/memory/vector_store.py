@@ -19,6 +19,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class SearchHit:
     """A single result from a vector store search."""
+
     id: str
     text: str
     score: float
@@ -48,22 +49,20 @@ class VectorStoreAdapter:
     def _init_chroma(self) -> None:
         try:
             import chromadb  # type: ignore[import]
-            self._client = chromadb.PersistentClient(
-                path=self._settings.chroma_persist_dir
-            )
+
+            self._client = chromadb.PersistentClient(path=self._settings.chroma_persist_dir)
             self._collection = self._client.get_or_create_collection(
                 name=f"aqlix_{self._namespace}",
                 metadata={"hnsw:space": "cosine"},
             )
             logger.info("vector_store.chroma.ready", namespace=self._namespace)
         except ImportError as exc:
-            raise VectorStoreError(
-                "chromadb is not installed. Run: pip install chromadb"
-            ) from exc
+            raise VectorStoreError("chromadb is not installed. Run: pip install chromadb") from exc
 
     def _init_qdrant(self) -> None:
         try:
             from qdrant_client import QdrantClient  # type: ignore[import]
+
             api_key = (
                 self._settings.qdrant_api_key.get_secret_value()
                 if self._settings.qdrant_api_key
@@ -99,9 +98,14 @@ class VectorStoreAdapter:
             )
         elif self._backend == VectorStoreBackend.QDRANT:
             from qdrant_client.models import PointStruct  # type: ignore[import]
+
             self._client.upsert(
                 collection_name=f"aqlix_{self._namespace}",
-                points=[PointStruct(id=abs(hash(id)) % (2**63), vector=embedding, payload={"text": text, **meta})],
+                points=[
+                    PointStruct(
+                        id=abs(hash(id)) % (2**63), vector=embedding, payload={"text": text, **meta}
+                    )
+                ],
             )
 
     def search(
@@ -123,7 +127,7 @@ class VectorStoreAdapter:
         """
         if self._backend == VectorStoreBackend.CHROMA:
             return self._search_chroma(query, filter_type, top_k)
-        return []   # Qdrant path — implement when Qdrant is configured
+        return []  # Qdrant path — implement when Qdrant is configured
 
     def _search_chroma(
         self,

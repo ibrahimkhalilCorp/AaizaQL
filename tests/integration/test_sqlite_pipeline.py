@@ -16,8 +16,8 @@ from aqlix.security.validator import SQLValidator
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import SecurityException
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def db_conn():
@@ -51,11 +51,12 @@ def db_conn():
 @pytest.fixture
 def connector(db_conn):
     c = SQLiteConnector()
-    c._conn = db_conn   # inject pre-built connection
+    c._conn = db_conn  # inject pre-built connection
     return c
 
 
 # ── Connector tests ────────────────────────────────────────────────────────
+
 
 class TestSQLiteConnector:
     def test_execute_returns_dataframe(self, connector):
@@ -75,6 +76,7 @@ class TestSQLiteConnector:
 
     def test_bad_sql_raises_database_error(self, connector):
         from aqlix.core.exceptions import DatabaseError
+
         with pytest.raises(DatabaseError):
             connector.execute("SELECT * FROM nonexistent_table_xyz")
 
@@ -95,6 +97,7 @@ class TestSQLiteConnector:
 
 
 # ── Validator pipeline tests ───────────────────────────────────────────────
+
 
 class TestValidatorWithRealSQL:
     @pytest.fixture
@@ -117,6 +120,7 @@ class TestValidatorWithRealSQL:
 
 
 # ── Context memory integration ─────────────────────────────────────────────
+
 
 class TestContextMemory:
     def test_multi_turn_history_accumulated(self):

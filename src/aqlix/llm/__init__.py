@@ -16,15 +16,19 @@ def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
     name = name.lower()
     if name == "claude":
         from aqlix.llm.claude_provider import ClaudeProvider
+
         return ClaudeProvider(settings)
     if name == "openai":
         from aqlix.llm.openai_provider import OpenAIProvider
+
         return OpenAIProvider(settings)
     if name == "ollama":
         from aqlix.llm.ollama_provider import OllamaProvider
+
         return OllamaProvider(settings)
     if name == "groq":
         from aqlix.llm.groq_provider import GroqProvider
+
         return GroqProvider(settings)
     raise LLMProviderNotFound(name)
 

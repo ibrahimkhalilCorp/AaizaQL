@@ -16,24 +16,27 @@ from aqlix.core.exceptions import ConnectorNotFound as _ConnectorNotFound
 REGISTRY: dict[str, type[DatabaseConnector]] = {
     "sqlite": SQLiteConnector,
     "postgresql": PostgreSQLConnector,
-    "postgres": PostgreSQLConnector,   # alias
+    "postgres": PostgreSQLConnector,  # alias
 }
 
 # Lazy-register heavier connectors only when available
 try:
     from aqlix.connectors.mysql import MySQLConnector
+
     REGISTRY["mysql"] = MySQLConnector
 except ImportError:
     pass
 
 try:
     from aqlix.connectors.snowflake import SnowflakeConnector
+
     REGISTRY["snowflake"] = SnowflakeConnector
 except ImportError:
     pass
 
 try:
     from aqlix.connectors.duckdb import DuckDBConnector
+
     REGISTRY["duckdb"] = DuckDBConnector
 except ImportError:
     pass

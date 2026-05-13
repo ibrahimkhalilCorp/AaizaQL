@@ -27,15 +27,11 @@ class ContextManager:
 
     def __init__(self, limit: int = 10) -> None:
         self._limit = limit
-        self._sessions: dict[str, deque[Turn]] = defaultdict(
-            lambda: deque(maxlen=self._limit)
-        )
+        self._sessions: dict[str, deque[Turn]] = defaultdict(lambda: deque(maxlen=self._limit))
 
     def add_turn(self, session_id: str, question: str, sql: str, row_count: int = 0) -> None:
         """Append a completed Q&A turn to the session history."""
-        self._sessions[session_id].append(
-            Turn(question=question, sql=sql, row_count=row_count)
-        )
+        self._sessions[session_id].append(Turn(question=question, sql=sql, row_count=row_count))
 
     def get_history(self, session_id: str) -> list[Turn]:
         """Return the current history for a session (oldest first)."""
