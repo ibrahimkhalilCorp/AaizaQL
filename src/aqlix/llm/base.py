@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from aqlix.core.exceptions import LLMProviderNotFound
+# from aqlix.core.exceptions import LLMProviderNotFound
 
 
 class LLMProvider(ABC):

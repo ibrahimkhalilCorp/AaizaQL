@@ -50,7 +50,7 @@ class GroqProvider(LLMProvider):
                 "groq",
                 "AQLIX_GROQ_API_KEY is not set.\n"
                 "Get a free key at https://console.groq.com\n"
-                "Then set it:  $env:AQLIX_GROQ_API_KEY='YOUR_GROQ_API_KEY'",
+                "Then set it:  $env:AQLIX_GROQ_API_KEY='gsk_api_key'",
             )
 
         try:

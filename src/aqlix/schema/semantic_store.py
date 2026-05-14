@@ -13,9 +13,10 @@ about the user's database beyond the raw DDL schema.
 
 from __future__ import annotations
 
-import json
-import hashlib
-from dataclasses import dataclass, field, asdict
+# import json
+# import hashlib
+# from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Any
 
 from aqlix.memory.vector_store import VectorStoreAdapter

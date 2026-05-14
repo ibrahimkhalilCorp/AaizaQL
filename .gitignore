@@ -84,3 +84,6 @@ audit_*.jsonl
 
 *.db
 .aqlix_chroma/
+
+aqlix.zip
+*.zip

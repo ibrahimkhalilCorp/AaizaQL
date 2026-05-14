@@ -4,7 +4,7 @@ tests/unit/test_exceptions.py
 Verify all custom exceptions carry the right attributes and messages.
 """
 
-import pytest
+# import pytest
 from aqlix.core.exceptions import (
     SecurityException,
     PromptInjectionDetected,
