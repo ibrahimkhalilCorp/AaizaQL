@@ -48,7 +48,7 @@ def _embed(text: str) -> list[float]:
 def _stable_id(*parts: str) -> str:
     """Generate a stable, collision-resistant ID from string parts."""
     combined = "|".join(parts)
-    return hashlib.sha1(combined.encode()).hexdigest()[:16]
+    return hashlib.sha1(combined.encode(), usedforsecurity=False).hexdigest()[:16]
 
 
 class SchemaIngester:
