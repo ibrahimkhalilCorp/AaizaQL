@@ -61,10 +61,10 @@ class Settings(BaseSettings):
         default=None,
         description="Groq API key (required when llm_provider=groq). Free at console.groq.com",
     )
+    # AFTER
     groq_model: str = Field(
         default="llama3-70b-8192",
-        description="Groq model string. Options: llama3-70b-8192,"
-                    "llama3-8b-8192, mixtral-8x7b-32768",
+        description="Groq model string. Options: llama3-70b-8192, llama3-8b-8192, mixtral-8x7b-32768",  # noqa: E501
     )
     ollama_base_url: str = Field(
         default="http://localhost:11434",
