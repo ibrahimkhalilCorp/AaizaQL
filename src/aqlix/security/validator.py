@@ -41,7 +41,7 @@ _BLOCKED_STATEMENT_TYPES = {
 }
 
 # Prompt injection signatures commonly injected into user questions
-_INJECTION_PATTERNS: list[re.Pattern] = [
+_INJECTION_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"ignore\s+(all\s+)?previous\s+instructions", re.IGNORECASE),
     re.compile(r"disregard\s+(your\s+)?(prior|previous|above)", re.IGNORECASE),
     re.compile(r"you\s+are\s+now\s+", re.IGNORECASE),

@@ -44,7 +44,7 @@ class ClaudeProvider(LLMProvider):
                 system=system or SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}],
             )
-            response = message.content[0].text
+            response = str(message.content[0].text)
             logger.debug("llm.complete", provider=self.name, tokens=message.usage.output_tokens)
             return response
         except anthropic.APIError as exc:

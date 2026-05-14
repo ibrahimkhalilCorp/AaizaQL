@@ -6,7 +6,7 @@ DSN format: postgresql://user:password@host:5432/dbname
 """
 
 from __future__ import annotations
-
+from typing import Any
 import pandas as pd
 
 from aqlix.connectors.base import DatabaseConnector
@@ -20,11 +20,11 @@ class PostgreSQLConnector(DatabaseConnector):
     name = "postgresql"
 
     def __init__(self) -> None:
-        self._conn = None
+        self._conn: Any = None
 
     def connect(self, dsn: str) -> None:
         try:
-            import psycopg2  # type: ignore[import]
+            import psycopg2
 
             self._conn = psycopg2.connect(dsn)
             self._conn.autocommit = True

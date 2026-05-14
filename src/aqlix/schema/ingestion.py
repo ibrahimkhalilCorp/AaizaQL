@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import re
 from typing import TYPE_CHECKING
-
+from typing import Any
 from aqlix.memory.vector_store import VectorStoreAdapter
 from aqlix.core.exceptions import SchemaIngestionError
 import structlog
@@ -25,7 +25,7 @@ logger = structlog.get_logger(__name__)
 _embedder = None
 
 
-def _get_embedder():
+def _get_embedder() -> Any:
     global _embedder
     if _embedder is None:
         try:

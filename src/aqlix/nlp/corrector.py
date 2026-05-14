@@ -7,7 +7,7 @@ SelfCorrector: executes SQL and retries with LLM correction on failure.
 from __future__ import annotations
 
 import pandas as pd
-
+from typing import Any
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import DatabaseError, MaxRetriesExceeded
 from aqlix.llm.base import LLMProvider
@@ -31,7 +31,7 @@ class SelfCorrector:
     def execute_with_correction(
         self,
         sql: str,
-        executor: any,  # DatabaseConnector — avoid circular import with Any
+        executor: Any,  # DatabaseConnector — avoid circular import with Any
         question: str,
     ) -> tuple[pd.DataFrame, bool, int]:
         """

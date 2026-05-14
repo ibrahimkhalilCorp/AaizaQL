@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
-
+from aqlix.memory.context import Turn
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import SQLGenerationError
 from aqlix.llm.base import LLMProvider
@@ -88,7 +88,7 @@ class SQLGenerator:
         self._settings = settings
         self._semantic = semantic_store
 
-    def generate(self, question: str, history: list[dict]) -> str:
+    def generate(self, question: str, history: list[Turn]) -> str:
         schema_chunks, example_pairs = self._build_rag_context(question)
         enum_block = self._build_enum_block()
         doc_block = self._build_doc_block(question)
@@ -161,7 +161,7 @@ class SQLGenerator:
         example_pairs: str,
         enum_block: str,
         doc_block: str,
-        history: list[dict],
+        history: list[Turn],
         use_cot: bool,
     ) -> str:
         history_text = (

@@ -54,7 +54,7 @@ class GroqProvider(LLMProvider):
             )
 
         try:
-            from groq import Groq  # type: ignore[import]
+            from groq import Groq  
         except ImportError as exc:
             raise LLMError(
                 "groq",

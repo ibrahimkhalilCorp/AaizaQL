@@ -43,7 +43,7 @@ class OllamaProvider(LLMProvider):
                 timeout=120,
             )
             response.raise_for_status()
-            text = response.json().get("response", "")
+            text = str(response.json().get("response", ""))
             logger.debug("llm.complete", provider=self.name)
             return text
         except requests.RequestException as exc:

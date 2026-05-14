@@ -109,19 +109,19 @@ class ResultRenderer:
     def _first_numeric(self, df: pd.DataFrame) -> str | None:
         for c in df.columns:
             if pd.api.types.is_numeric_dtype(df[c]):
-                return c
-        return df.columns[0] if len(df.columns) > 0 else None
+                return str(c)
+        return str(df.columns[0]) if len(df.columns) > 0 else None
 
     def _first_categorical(self, df: pd.DataFrame) -> str | None:
         for c in df.columns:
             if pd.api.types.is_object_dtype(df[c]) or pd.api.types.is_categorical_dtype(df[c]):
-                return c
-        return df.columns[0] if len(df.columns) > 0 else None
+                return str(c)
+        return str(df.columns[0]) if len(df.columns) > 0 else None
 
     def _first_datetime(self, df: pd.DataFrame) -> str | None:
         for c in df.columns:
             if pd.api.types.is_datetime64_any_dtype(df[c]):
-                return c
+                return str(c)
             if any(kw in c.lower() for kw in ("date", "time", "month", "year", "week", "day")):
-                return c
+                return str(c)
         return None

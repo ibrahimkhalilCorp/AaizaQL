@@ -48,7 +48,7 @@ class VectorStoreAdapter:
 
     def _init_chroma(self) -> None:
         try:
-            import chromadb  # type: ignore[import]
+            import chromadb 
 
             self._client = chromadb.PersistentClient(path=self._settings.chroma_persist_dir)
             self._collection = self._client.get_or_create_collection(
@@ -61,7 +61,7 @@ class VectorStoreAdapter:
 
     def _init_qdrant(self) -> None:
         try:
-            from qdrant_client import QdrantClient  # type: ignore[import]
+            from qdrant_client import QdrantClient 
 
             api_key = (
                 self._settings.qdrant_api_key.get_secret_value()
@@ -97,7 +97,7 @@ class VectorStoreAdapter:
                 metadatas=[meta],
             )
         elif self._backend == VectorStoreBackend.QDRANT:
-            from qdrant_client.models import PointStruct  # type: ignore[import]
+            from qdrant_client.models import PointStruct 
 
             self._client.upsert(
                 collection_name=f"aqlix_{self._namespace}",
@@ -160,5 +160,5 @@ class VectorStoreAdapter:
     def count(self) -> int:
         """Return the total number of documents in the store."""
         if self._backend == VectorStoreBackend.CHROMA:
-            return self._collection.count()
+            return int(self._collection.count())
         return 0

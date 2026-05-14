@@ -178,7 +178,7 @@ class QueryEngine:
         self,
         table: str,
         column: str,
-        mapping: dict,
+        mapping: dict[int | str, str],
     ) -> None:
         """
         Register a numeric code → label mapping for a column.
@@ -210,7 +210,7 @@ class QueryEngine:
         self._semantic.train_sql_pair(question, sql)
         logger.info("engine.taught", question=question[:60])
 
-    def training_info(self) -> dict:
+    def training_info(self) -> dict[str, object]:
         """Return a summary of all training data currently loaded."""
         return {
             "enums": self._semantic.list_enums(),
