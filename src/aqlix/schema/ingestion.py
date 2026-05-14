@@ -29,7 +29,7 @@ def _get_embedder() -> Any:
     global _embedder
     if _embedder is None:
         try:
-            from sentence_transformers import SentenceTransformer  # type: ignore
+            from sentence_transformers import SentenceTransformer
 
             _embedder = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("embedder.loaded", model="all-MiniLM-L6-v2")
@@ -42,7 +42,7 @@ def _get_embedder() -> Any:
 
 def _embed(text: str) -> list[float]:
     embedder = _get_embedder()
-    return embedder.encode(text, normalize_embeddings=True).tolist()
+    return list(embedder.encode(text, normalize_embeddings=True).tolist())
 
 
 def _stable_id(*parts: str) -> str:
