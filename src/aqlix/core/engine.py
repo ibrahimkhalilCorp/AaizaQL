@@ -24,11 +24,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import pandas as pd
-
 import structlog
 
 from aqlix.connectors import REGISTRY
-from aqlix.core.config import Settings, settings as _default_settings
+from aqlix.core.config import Settings
+from aqlix.core.config import settings as _default_settings
 from aqlix.core.exceptions import ConnectorNotFound, SQLGenerationError, UnsupportedQueryError
 from aqlix.llm import build_llm_provider
 from aqlix.memory.context import ContextManager
@@ -40,7 +40,6 @@ from aqlix.schema.semantic_store import SemanticStore
 from aqlix.security.validator import SQLValidator
 from aqlix.visualization.renderer import ResultRenderer
 from aqlix.visualization.summarizer import NLSummarizer
-
 
 logger = structlog.get_logger(__name__)
 

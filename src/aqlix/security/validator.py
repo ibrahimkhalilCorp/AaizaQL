@@ -14,13 +14,12 @@ Three checks (in order):
 from __future__ import annotations
 
 import re
-from typing import Sequence
 
 import sqlglot
 import structlog
+
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import PromptInjectionDetected, SecurityException
-
 
 logger = structlog.get_logger(__name__)
 
@@ -171,8 +170,7 @@ class SQLValidator:
         except Exception:
             # sqlglot could not parse it at all — treat as suspicious
             raise SecurityException(
-                "SQL could not be parsed — it may be malformed or use an "
-                "unsupported dialect.",
+                "SQL could not be parsed — it may be malformed or use an " "unsupported dialect.",
                 sql=sql,
             ) from None
 

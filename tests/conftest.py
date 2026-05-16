@@ -18,8 +18,8 @@ from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.core.config import Settings
 from aqlix.memory.vector_store import VectorStoreAdapter
 
-
 # ── Settings ─────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def settings(tmp_path: Path) -> Settings:
@@ -35,6 +35,7 @@ def settings(tmp_path: Path) -> Settings:
 
 
 # ── SQLite database ───────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def sqlite_db(tmp_path: Path) -> Generator[str, None, None]:
@@ -84,6 +85,7 @@ def sqlite_connector(sqlite_db: str) -> Generator[SQLiteConnector, None, None]:
 
 # ── Mock LLM ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def mock_llm() -> MagicMock:
     """
@@ -97,6 +99,7 @@ def mock_llm() -> MagicMock:
 
 
 # ── Vector store ──────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def vector_store(settings: Settings) -> VectorStoreAdapter:

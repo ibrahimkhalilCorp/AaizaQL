@@ -6,7 +6,9 @@ DSN format: postgresql://user:password@host:5432/dbname
 """
 
 from __future__ import annotations
+
 from typing import Any
+
 import pandas as pd
 import structlog
 

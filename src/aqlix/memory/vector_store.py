@@ -9,9 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import structlog
+
 from aqlix.core.config import Settings, VectorStoreBackend
 from aqlix.core.exceptions import VectorStoreError
-import structlog
 
 logger = structlog.get_logger(__name__)
 

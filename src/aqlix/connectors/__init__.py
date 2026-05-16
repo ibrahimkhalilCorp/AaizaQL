@@ -8,8 +8,8 @@ Add a new database by subclassing DatabaseConnector and registering it here.
 from __future__ import annotations
 
 from aqlix.connectors.base import DatabaseConnector
-from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.connectors.postgres import PostgreSQLConnector
+from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.core.exceptions import ConnectorNotFound as _ConnectorNotFound
 
 # Central registry — name → class (not instance)

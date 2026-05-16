@@ -35,6 +35,7 @@ def _require(pkg: str, install: str) -> None:
 
 def cmd_version(_args: object) -> None:
     from aqlix import __version__
+
     print(f"aqlix {__version__}")
 
 
@@ -99,7 +100,8 @@ def cmd_query(args: object) -> None:
 
 
 def _run_once(engine: object, question: str) -> None:
-    from aqlix import QueryEngine, AQLIXError
+    from aqlix import AQLIXError, QueryEngine
+
     assert isinstance(engine, QueryEngine)
     try:
         result = engine.query(question)
@@ -135,9 +137,7 @@ def main() -> None:
     p_query = sub.add_parser("query", help="Run natural language queries.")
     p_query.add_argument("--db", required=True, help="DSN, e.g. sqlite:///my.db")
     p_query.add_argument("--llm", default="groq", help="LLM provider (groq/claude/openai/ollama)")
-    p_query.add_argument(
-        "--database", default="sqlite", help="DB connector (sqlite/postgresql/…)"
-    )
+    p_query.add_argument("--database", default="sqlite", help="DB connector (sqlite/postgresql/…)")
     p_query.add_argument(
         "-q", "--question", default=None, help="Single question (omit for interactive REPL)"
     )

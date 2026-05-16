@@ -21,6 +21,7 @@ from aqlix.memory.vector_store import VectorStoreAdapter
 
 logger = structlog.get_logger(__name__)
 
+
 class EnumMapping:
     """
     A code → label mapping for a single table column.
@@ -165,6 +166,7 @@ class SemanticStore:
         # to keep SemanticStore free of heavy dependencies.
         try:
             from aqlix.schema.ingestion import _SentenceEmbedder
+
             if not hasattr(self, "_embedder"):
                 self._embedder = _SentenceEmbedder()  # type: ignore[attr-defined]
             return self._embedder.embed(text)  # type: ignore[attr-defined]

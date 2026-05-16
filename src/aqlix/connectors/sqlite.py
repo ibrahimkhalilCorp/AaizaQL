@@ -7,8 +7,8 @@ DSN format: sqlite:///path/to/file.db  or  sqlite:///:memory:
 
 from __future__ import annotations
 
-import sqlite3
 import re
+import sqlite3
 
 import pandas as pd
 import structlog

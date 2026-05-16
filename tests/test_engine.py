@@ -58,9 +58,7 @@ class TestQueryEngine:
         assert len(result.data) == 4
         assert result.sql == "SELECT * FROM employees"
 
-    def test_query_result_fields(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_query_result_fields(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         mock_llm.complete.return_value = "SELECT COUNT(*) as total FROM employees"
         engine = _make_engine(sqlite_db, mock_llm, tmp_path)
 
@@ -102,41 +100,31 @@ class TestQueryEngine:
         with pytest.raises(SecurityException):
             engine.query("Destroy the database")
 
-    def test_train_documentation(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_train_documentation(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         engine = _make_engine(sqlite_db, mock_llm, tmp_path)
         # Should not raise
         engine.train(documentation="employees.status: 1=Active, 2=Resigned")
 
-    def test_define_enum(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_define_enum(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         engine = _make_engine(sqlite_db, mock_llm, tmp_path)
         engine.define_enum("employees", "status", {1: "Active", 2: "Resigned"})
         info = engine.training_info()
         assert info["enum_count"] == 1
         assert "employees.status" in info["enums"]
 
-    def test_train_sql_pair(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_train_sql_pair(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         engine = _make_engine(sqlite_db, mock_llm, tmp_path)
         engine.train(
             question="How many employees?",
             sql="SELECT COUNT(*) FROM employees",
         )
 
-    def test_context_manager(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_context_manager(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         mock_llm.complete.return_value = "SELECT 1"
         with _make_engine(sqlite_db, mock_llm, tmp_path) as engine:
             assert engine is not None
 
-    def test_reset_session(
-        self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_reset_session(self, sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> None:
         mock_llm.complete.return_value = "SELECT * FROM employees"
         engine = _make_engine(sqlite_db, mock_llm, tmp_path)
         engine.query("Q1", session_id="s1")

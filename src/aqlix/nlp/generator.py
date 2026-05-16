@@ -8,22 +8,22 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
+
 import structlog
 
-from aqlix.memory.context import Turn
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import SQLGenerationError
 from aqlix.llm.base import LLMProvider
+from aqlix.memory.context import Turn
 from aqlix.memory.vector_store import VectorStoreAdapter
 from aqlix.nlp.prompts import (
     CONTEXT_TEMPLATE,
     COT_PROMPT_PREFIX,
     COT_PROMPT_SUFFIX,
-    ENUM_BLOCK_TEMPLATE,
     DOC_BLOCK_TEMPLATE,
+    ENUM_BLOCK_TEMPLATE,
     SYSTEM_PROMPT,
 )
-
 
 if TYPE_CHECKING:
     from aqlix.schema.semantic_store import SemanticStore
