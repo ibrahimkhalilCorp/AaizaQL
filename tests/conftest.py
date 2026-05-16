@@ -8,17 +8,15 @@ a mock LLM, or a vector store can import these via dependency injection.
 from __future__ import annotations
 
 import sqlite3
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from unittest.mock import MagicMock
 
-import pandas as pd
 import pytest
 
+from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.core.config import Settings
 from aqlix.memory.vector_store import VectorStoreAdapter
-from aqlix.connectors.sqlite import SQLiteConnector
 
 
 # ── Settings ─────────────────────────────────────────────────────────────────

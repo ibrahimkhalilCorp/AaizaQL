@@ -82,7 +82,7 @@ class VectorStoreAdapter:
 
     def upsert(
         self,
-        id: str,
+        doc_id: str,
         text: str,
         embedding: list[float],
         metadata: dict[str, Any] | None = None,
@@ -91,13 +91,13 @@ class VectorStoreAdapter:
         meta = metadata or {}
         if self._backend == VectorStoreBackend.CHROMA:
             self._collection.upsert(
-                ids=[id],
+                ids=[doc_id],
                 documents=[text],
                 embeddings=[embedding],
                 metadatas=[meta],
             )
         elif self._backend == VectorStoreBackend.QDRANT:
-            from qdrant_client.models import PointStruct
+            from qdrant_client.models import PointStruct  # noqa: PLC0415
 
             self._client.upsert(
                 collection_name=f"aqlix_{self._namespace}",
@@ -153,6 +153,7 @@ class VectorStoreAdapter:
             results["metadatas"][0],
             results["distances"][0],
             results["ids"][0],
+            strict=True,
         ):
             hits.append(SearchHit(id=id_, text=doc, score=1 - dist, metadata=meta))
         return hits

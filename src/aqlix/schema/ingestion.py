@@ -43,7 +43,7 @@ class SchemaIngester:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def ingest_from_database(self, connector: "DatabaseConnector") -> int:
+    def ingest_from_database(self, connector: DatabaseConnector) -> int:
         """
         Auto-read schema from the connected database and index it.
 
@@ -82,7 +82,7 @@ class SchemaIngester:
             doc_id = f"ddl_{self._fingerprint(chunk)}"
             embedding = self._embedder.embed(chunk)
             self._vs.upsert(
-                id=doc_id,
+                doc_id=doc_id,
                 text=chunk,
                 embedding=embedding,
                 metadata={"type": "ddl", "table": table_name},
@@ -101,7 +101,7 @@ class SchemaIngester:
         doc_id = f"pair_{self._fingerprint(question)}"
         embedding = self._embedder.embed(question)
         self._vs.upsert(
-            id=doc_id,
+            doc_id=doc_id,
             text=text,
             embedding=embedding,
             metadata={"type": "qa_pair"},

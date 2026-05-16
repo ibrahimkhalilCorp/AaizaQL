@@ -4,14 +4,13 @@ tests/test_connectors.py
 Integration tests for database connectors.
 Uses the real SQLite connector against an in-process temp database — no mocks.
 """
-
 from __future__ import annotations
 
-import pytest
 import pandas as pd
+import pytest
 
 from aqlix.connectors.sqlite import SQLiteConnector
-from aqlix.core.exceptions import DatabaseError, ConnectionError as AqlixConnectionError
+from aqlix.core.exceptions import DatabaseError
 
 
 class TestSQLiteConnector:

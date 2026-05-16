@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import pandas as pd
 from typing import Any
+import structlog
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import DatabaseError, MaxRetriesExceeded
 from aqlix.llm.base import LLMProvider
 from aqlix.nlp.prompts import SELF_CORRECTION_TEMPLATE
-import structlog
+
 
 logger = structlog.get_logger(__name__)
 

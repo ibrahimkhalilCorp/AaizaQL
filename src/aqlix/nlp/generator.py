@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
+import structlog
+
 from aqlix.memory.context import Turn
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import SQLGenerationError
@@ -21,7 +23,7 @@ from aqlix.nlp.prompts import (
     DOC_BLOCK_TEMPLATE,
     SYSTEM_PROMPT,
 )
-import structlog
+
 
 if TYPE_CHECKING:
     from aqlix.schema.semantic_store import SemanticStore
@@ -81,7 +83,7 @@ class SQLGenerator:
         llm: LLMProvider,
         vector_store: VectorStoreAdapter,
         settings: Settings,
-        semantic_store: "SemanticStore | None" = None,
+        semantic_store: SemanticStore | None = None,
     ) -> None:
         self._llm = llm
         self._vs = vector_store

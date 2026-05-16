@@ -7,21 +7,21 @@ Values are read from environment variables or a .env file.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class LLMProvider(str, Enum):
+class LLMProvider(str, StrEnum):
     CLAUDE = "claude"
     OPENAI = "openai"
     OLLAMA = "ollama"
     GROQ = "groq"
 
 
-class VectorStoreBackend(str, Enum):
+class VectorStoreBackend(str, StrEnum):
     CHROMA = "chroma"
     QDRANT = "qdrant"
 

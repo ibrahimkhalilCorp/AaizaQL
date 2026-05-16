@@ -55,7 +55,6 @@ class DatabaseConnector(ABC):
 
     def close(self) -> None:
         """Close the database connection. Override if cleanup is needed."""
-        pass
 
     def test_connection(self) -> bool:
         """

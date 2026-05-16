@@ -17,10 +17,10 @@ import re
 from typing import Sequence
 
 import sqlglot
-
+import structlog
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import PromptInjectionDetected, SecurityException
-import structlog
+
 
 logger = structlog.get_logger(__name__)
 
@@ -174,7 +174,7 @@ class SQLValidator:
                 "SQL could not be parsed — it may be malformed or use an "
                 "unsupported dialect.",
                 sql=sql,
-            )
+            ) from None
 
         if not statements:
             raise SecurityException("SQL parsed to zero statements.", sql=sql)

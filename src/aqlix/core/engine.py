@@ -25,20 +25,22 @@ from typing import Any
 
 import pandas as pd
 
-from aqlix.core.config import Settings, settings as _default_settings
-from aqlix.core.exceptions import SQLGenerationError, UnsupportedQueryError, ConnectorNotFound
-from aqlix.memory.context import ContextManager
-from aqlix.nlp.generator import SQLGenerator
-from aqlix.nlp.corrector import SelfCorrector
-from aqlix.security.validator import SQLValidator
+import structlog
+
 from aqlix.connectors import REGISTRY
+from aqlix.core.config import Settings, settings as _default_settings
+from aqlix.core.exceptions import ConnectorNotFound, SQLGenerationError, UnsupportedQueryError
 from aqlix.llm import build_llm_provider
-from aqlix.visualization.renderer import ResultRenderer
-from aqlix.visualization.summarizer import NLSummarizer
+from aqlix.memory.context import ContextManager
+from aqlix.memory.vector_store import VectorStoreAdapter
+from aqlix.nlp.corrector import SelfCorrector
+from aqlix.nlp.generator import SQLGenerator
 from aqlix.schema.ingestion import SchemaIngester
 from aqlix.schema.semantic_store import SemanticStore
-from aqlix.memory.vector_store import VectorStoreAdapter
-import structlog
+from aqlix.security.validator import SQLValidator
+from aqlix.visualization.renderer import ResultRenderer
+from aqlix.visualization.summarizer import NLSummarizer
+
 
 logger = structlog.get_logger(__name__)
 
@@ -298,7 +300,7 @@ class QueryEngine:
         self._connector.close()
         logger.info("engine.closed")
 
-    def __enter__(self) -> "QueryEngine":
+    def __enter__(self) -> QueryEngine:
         return self
 
     def __exit__(self, *_: Any) -> None:

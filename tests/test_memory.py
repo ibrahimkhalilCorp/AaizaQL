@@ -5,9 +5,6 @@ Unit tests for ContextManager (short-term session memory).
 """
 
 from __future__ import annotations
-
-import pytest
-
 from aqlix.memory.context import ContextManager
 
 

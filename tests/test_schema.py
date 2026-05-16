@@ -7,7 +7,7 @@ Uses a mock vector store to avoid requiring ChromaDB in basic CI.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 

@@ -11,10 +11,10 @@ import sqlite3
 import re
 
 import pandas as pd
+import structlog
 
 from aqlix.connectors.base import DatabaseConnector
 from aqlix.core.exceptions import ConnectionError, DatabaseError
-import structlog
 
 logger = structlog.get_logger(__name__)
 
