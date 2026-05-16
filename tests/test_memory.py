@@ -5,6 +5,7 @@ Unit tests for ContextManager (short-term session memory).
 """
 
 from __future__ import annotations
+
 from aqlix.memory.context import ContextManager
 
 
@@ -15,7 +16,9 @@ class TestContextManager:
 
     def test_add_and_retrieve_turn(self) -> None:
         ctx = ContextManager()
-        ctx.add_turn("s1", question="How many users?", sql="SELECT COUNT(*) FROM users", row_count=1)
+        ctx.add_turn(
+            "s1", question="How many users?", sql="SELECT COUNT(*) FROM users", row_count=1
+        )
         history = ctx.get_history("s1")
         assert len(history) == 1
         assert history[0]["question"] == "How many users?"

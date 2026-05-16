@@ -7,14 +7,15 @@ Mark: not requires_api_key
 """
 
 import sqlite3
-import pytest
+
 import pandas as pd
+import pytest
 
 from aqlix.connectors.sqlite import SQLiteConnector
-from aqlix.memory.context import ContextManager
-from aqlix.security.validator import SQLValidator
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import SecurityException
+from aqlix.memory.context import ContextManager
+from aqlix.security.validator import SQLValidator
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 

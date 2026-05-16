@@ -5,9 +5,11 @@ Unit tests for SemanticStore — documentation, enums, Q→SQL pairs.
 No LLM, DB, or sentence-transformers needed (all mocked).
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
-from aqlix.schema.semantic_store import SemanticStore, EnumMapping
+
+import pytest
+
+from aqlix.schema.semantic_store import EnumMapping, SemanticStore
 
 # Patch _embed globally for all tests in this module
 pytestmark = pytest.mark.usefixtures("mock_embed")

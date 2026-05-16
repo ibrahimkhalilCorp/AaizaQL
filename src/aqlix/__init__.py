@@ -17,13 +17,13 @@ from __future__ import annotations
 from aqlix.core.engine import QueryEngine, QueryResult
 from aqlix.core.exceptions import (
     AQLIXError,
+    ConnectorNotFound,
+    DatabaseError,
+    LLMError,
+    MaxRetriesExceeded,
     SecurityException,
     SQLGenerationError,
     UnsupportedQueryError,
-    MaxRetriesExceeded,
-    DatabaseError,
-    ConnectorNotFound,
-    LLMError,
 )
 
 __version__ = "0.1.0"

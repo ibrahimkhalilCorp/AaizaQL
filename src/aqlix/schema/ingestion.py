@@ -19,9 +19,10 @@ import hashlib
 import re
 from typing import TYPE_CHECKING
 
+import structlog
+
 from aqlix.core.exceptions import SchemaIngestionError
 from aqlix.memory.vector_store import VectorStoreAdapter
-import structlog
 
 if TYPE_CHECKING:
     from aqlix.connectors.base import DatabaseConnector
@@ -54,9 +55,7 @@ class SchemaIngester:
         try:
             ddl = connector.get_schema()
         except Exception as exc:
-            raise SchemaIngestionError(
-                f"Failed to read schema from database: {exc}"
-            ) from exc
+            raise SchemaIngestionError(f"Failed to read schema from database: {exc}") from exc
 
         if not ddl.strip():
             logger.warning("schema.empty", detail="Database returned no DDL.")
@@ -144,6 +143,7 @@ class SchemaIngester:
 
 # ── Embedding helper ──────────────────────────────────────────────────────────
 
+
 class _SentenceEmbedder:
     """
     Thin wrapper around sentence-transformers.
@@ -175,14 +175,15 @@ class _SentenceEmbedder:
     def _load(self) -> None:
         try:
             from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
+
             self._model = SentenceTransformer(self._MODEL_NAME)
             logger.info("embedder.loaded", model=self._MODEL_NAME)
         except ImportError:
             logger.warning(
                 "embedder.missing",
                 detail="sentence-transformers not installed. "
-                       "Falling back to hash-based embeddings (lower accuracy). "
-                       "Install with: pip install sentence-transformers",
+                "Falling back to hash-based embeddings (lower accuracy). "
+                "Install with: pip install sentence-transformers",
             )
 
     @classmethod
@@ -193,7 +194,9 @@ class _SentenceEmbedder:
         One float per 4-char slice of the sha256 hex digest, normalised.
         """
         digest = hashlib.sha256(text.encode()).hexdigest()
-        values = [int(digest[i:i+2], 16) / 255.0 for i in range(0, min(len(digest), cls._DIM * 2), 2)]
+        values = [
+            int(digest[i : i + 2], 16) / 255.0 for i in range(0, min(len(digest), cls._DIM * 2), 2)
+        ]
         # Pad or truncate to DIM
-        values = (values + [0.0] * cls._DIM)[:cls._DIM]
+        values = (values + [0.0] * cls._DIM)[: cls._DIM]
         return values

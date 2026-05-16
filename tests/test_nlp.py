@@ -29,9 +29,7 @@ def mock_llm() -> MagicMock:
 
 
 class TestSelfCorrector:
-    def test_success_on_first_attempt(
-        self, mock_llm: MagicMock, settings: Settings
-    ) -> None:
+    def test_success_on_first_attempt(self, mock_llm: MagicMock, settings: Settings) -> None:
         corrector = SelfCorrector(mock_llm, settings)
         mock_executor = MagicMock()
         mock_executor.execute.return_value = pd.DataFrame({"x": [1, 2]})
@@ -45,9 +43,7 @@ class TestSelfCorrector:
         assert was_corrected is False
         assert attempts == 0
 
-    def test_correction_on_first_failure(
-        self, mock_llm: MagicMock, settings: Settings
-    ) -> None:
+    def test_correction_on_first_failure(self, mock_llm: MagicMock, settings: Settings) -> None:
         corrector = SelfCorrector(mock_llm, settings)
         mock_executor = MagicMock()
         good_df = pd.DataFrame({"x": [42]})
@@ -68,9 +64,7 @@ class TestSelfCorrector:
         assert was_corrected is True
         assert attempts == 1
 
-    def test_raises_after_max_retries(
-        self, mock_llm: MagicMock, settings: Settings
-    ) -> None:
+    def test_raises_after_max_retries(self, mock_llm: MagicMock, settings: Settings) -> None:
         corrector = SelfCorrector(mock_llm, settings)
         mock_executor = MagicMock()
         mock_executor.execute.side_effect = DatabaseError("always fails")

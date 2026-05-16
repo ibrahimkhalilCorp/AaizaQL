@@ -17,8 +17,8 @@ from aqlix.nlp.prompts import SUMMARY_TEMPLATE
 
 logger = structlog.get_logger(__name__)
 
-_SAMPLE_ROWS = 5   # max rows sent to LLM for summarisation
-_SAMPLE_COLS = 6   # max columns included in sample
+_SAMPLE_ROWS = 5  # max rows sent to LLM for summarisation
+_SAMPLE_COLS = 6  # max columns included in sample
 
 
 class NLSummarizer:

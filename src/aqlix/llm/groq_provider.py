@@ -14,12 +14,13 @@ Get your free API key at: https://console.groq.com
 """
 
 from __future__ import annotations
+
 import structlog
+
 from aqlix.core.config import Settings
 from aqlix.core.exceptions import LLMError
 from aqlix.llm.base import LLMProvider
 from aqlix.nlp.prompts import SYSTEM_PROMPT
-
 
 logger = structlog.get_logger(__name__)
 

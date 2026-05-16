@@ -6,9 +6,10 @@ These tests run without any DB or LLM connection.
 """
 
 import pytest
-from aqlix.security.validator import SQLValidator
+
 from aqlix.core.config import Settings
-from aqlix.core.exceptions import SecurityException, PromptInjectionDetected
+from aqlix.core.exceptions import PromptInjectionDetected, SecurityException
+from aqlix.security.validator import SQLValidator
 
 
 @pytest.fixture

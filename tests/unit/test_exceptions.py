@@ -6,15 +6,15 @@ Verify all custom exceptions carry the right attributes and messages.
 
 # import pytest
 from aqlix.core.exceptions import (
-    SecurityException,
+    ConnectionError,
+    DatabaseError,
+    FederationError,
+    LLMError,
+    MaxRetriesExceeded,
     PromptInjectionDetected,
+    SecurityException,
     SQLGenerationError,
     UnsupportedQueryError,
-    MaxRetriesExceeded,
-    DatabaseError,
-    ConnectionError,
-    LLMError,
-    FederationError,
 )
 
 

@@ -97,9 +97,7 @@ class ResultRenderer:
 
     # ── Detection logic ───────────────────────────────────────────────────────
 
-    def _detect_chart(
-        self, data: pd.DataFrame
-    ) -> tuple[str, str | None, str | None]:
+    def _detect_chart(self, data: pd.DataFrame) -> tuple[str, str | None, str | None]:
         """
         Returns (chart_type, x_column, y_column).
         chart_type is one of: 'line', 'bar', 'scatter', 'pie', or 'none'.

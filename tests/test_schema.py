@@ -14,14 +14,15 @@ import pytest
 from aqlix.schema.ingestion import SchemaIngester
 from aqlix.schema.semantic_store import SemanticStore
 
-
 # ── SchemaIngester ────────────────────────────────────────────────────────────
+
 
 class TestSchemaIngester:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Prevent sentence-transformers from downloading models during tests."""
         from aqlix.schema import ingestion as ing_mod
+
         monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
         monkeypatch.setattr(
             ing_mod._SentenceEmbedder,
@@ -38,9 +39,7 @@ class TestSchemaIngester:
     def ingester(self, mock_vs: MagicMock) -> SchemaIngester:
         return SchemaIngester(mock_vs)
 
-    def test_ingest_ddl_two_tables(
-        self, ingester: SchemaIngester, mock_vs: MagicMock
-    ) -> None:
+    def test_ingest_ddl_two_tables(self, ingester: SchemaIngester, mock_vs: MagicMock) -> None:
         ddl = """
 CREATE TABLE employees (
     id INTEGER PRIMARY KEY,
@@ -81,9 +80,7 @@ CREATE TABLE departments (
         count = ingester.ingest_from_database(sqlite_connector)  # type: ignore[arg-type]
         assert count >= 2  # employees + departments
 
-    def test_ingest_sql_pair(
-        self, ingester: SchemaIngester, mock_vs: MagicMock
-    ) -> None:
+    def test_ingest_sql_pair(self, ingester: SchemaIngester, mock_vs: MagicMock) -> None:
         ingester.ingest_sql_pair(
             question="How many employees are there?",
             sql="SELECT COUNT(*) FROM employees",
@@ -100,16 +97,20 @@ CREATE TABLE departments (
 
     def test_extract_table_name_variants(self, ingester: SchemaIngester) -> None:
         assert ingester._extract_table_name("CREATE TABLE employees (id INT)") == "employees"
-        assert ingester._extract_table_name("CREATE TABLE IF NOT EXISTS orders (id INT)") == "orders"
+        assert (
+            ingester._extract_table_name("CREATE TABLE IF NOT EXISTS orders (id INT)") == "orders"
+        )
         assert ingester._extract_table_name('CREATE TABLE "my_table" (x TEXT)') == "my_table"
 
 
 # ── SemanticStore ─────────────────────────────────────────────────────────────
 
+
 class TestSemanticStore:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from aqlix.schema import ingestion as ing_mod
+
         monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
         monkeypatch.setattr(
             ing_mod._SentenceEmbedder,
@@ -160,9 +161,7 @@ class TestSemanticStore:
         # Two paragraphs → two upsert calls
         assert mock_vs.upsert.call_count == 2
 
-    def test_train_sql_pair_calls_upsert(
-        self, store: SemanticStore, mock_vs: MagicMock
-    ) -> None:
+    def test_train_sql_pair_calls_upsert(self, store: SemanticStore, mock_vs: MagicMock) -> None:
         store.train_sql_pair(
             question="Total employees",
             sql="SELECT COUNT(*) FROM employees",
