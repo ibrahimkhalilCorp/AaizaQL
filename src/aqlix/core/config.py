@@ -14,14 +14,14 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class LLMProvider(str, StrEnum):
+class LLMProvider(StrEnum):
     CLAUDE = "claude"
     OPENAI = "openai"
     OLLAMA = "ollama"
     GROQ = "groq"
 
 
-class VectorStoreBackend(str, StrEnum):
+class VectorStoreBackend(StrEnum):
     CHROMA = "chroma"
     QDRANT = "qdrant"
 
