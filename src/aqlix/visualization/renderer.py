@@ -1,7 +1,17 @@
 """
 aqlix.visualization.renderer
-──────────────────────────────
-ResultRenderer: auto-detects the best chart type and renders a Plotly figure.
+─────────────────────────────
+ResultRenderer: inspects a DataFrame and auto-selects the best Plotly chart.
+
+Detection heuristic (in priority order):
+1. Time-series  → line chart   (date/datetime column detected)
+2. Categorical + single numeric → bar chart
+3. Two numeric columns         → scatter plot
+4. Single numeric, few rows    → pie chart  (≤ 8 distinct values)
+5. Fallback                    → data table (no chart)
+
+Plotly is an optional dependency.  If it is not installed the renderer
+returns None gracefully so the rest of the pipeline still works.
 """
 
 from __future__ import annotations
@@ -9,119 +19,110 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+# Threshold for pie chart (too many slices = unreadable)
+_PIE_MAX_ROWS = 8
 
 
-def _has_plotly() -> bool:
-    try:
-        import plotly  # noqa: F401
-
+def _is_datetime_col(series: pd.Series) -> bool:
+    """True if the column looks like a date/time column."""
+    if pd.api.types.is_datetime64_any_dtype(series):
         return True
-    except ImportError:
-        return False
+    if pd.api.types.is_object_dtype(series):
+        try:
+            pd.to_datetime(series.dropna().head(5), infer_datetime_format=True)
+            return True
+        except Exception:
+            return False
+    return False
 
 
 class ResultRenderer:
     """
-    Analyses a result DataFrame and produces the most appropriate Plotly chart.
+    Auto-detect the best chart for a DataFrame and render it with Plotly.
 
-    Chart selection heuristic:
-    - 1 numeric column  →  histogram / single bar
-    - 1 categorical + 1 numeric  →  bar chart
-    - 1 date/time + 1 numeric  →  line chart
-    - 2 numeric columns  →  scatter
-    - Many columns / wide table  →  table only (no chart)
+    result.chart is either a plotly.graph_objects.Figure or None.
     """
 
-    def render(self, data: pd.DataFrame, question: str = "") -> Any | None:
+    def render(self, data: pd.DataFrame, question: str = "") -> Any:
         """
+        Return a Plotly Figure for data, or None if a chart is not appropriate.
+
         Parameters
         ----------
-        data     : pd.DataFrame  Query result.
-        question : str           The original question (used for title).
-
-        Returns
-        -------
-        plotly.graph_objects.Figure | None
+        data     : pd.DataFrame   Query result.
+        question : str            Original NL question (used for chart title).
         """
-        if data.empty or not _has_plotly():
+        if data.empty or len(data.columns) < 1:
+            logger.debug("renderer.skip", reason="empty_dataframe")
             return None
 
-        import plotly.express as px
+        try:
+            import plotly.express as px  # type: ignore[import-untyped]
+        except ImportError:
+            logger.debug("renderer.skip", reason="plotly_not_installed")
+            return None
 
-        chart_type = self._detect_chart_type(data)
+        chart_type, x_col, y_col = self._detect_chart(data)
+        title = question[:80] if question else "Query Result"
 
         try:
-            if chart_type == "bar":
-                return self._bar(data, question, px)
-            elif chart_type == "line":
-                return self._line(data, question, px)
-            elif chart_type == "scatter":
-                return self._scatter(data, question, px)
-            elif chart_type == "pie":
-                return self._pie(data, question, px)
-        except Exception:
-            pass  # Chart rendering is best-effort; don't break the query
+            if chart_type == "line" and x_col and y_col:
+                fig = px.line(data, x=x_col, y=y_col, title=title)
+            elif chart_type == "bar" and x_col and y_col:
+                fig = px.bar(data, x=x_col, y=y_col, title=title)
+            elif chart_type == "scatter" and x_col and y_col:
+                fig = px.scatter(data, x=x_col, y=y_col, title=title)
+            elif chart_type == "pie" and x_col and y_col:
+                fig = px.pie(data, names=x_col, values=y_col, title=title)
+            else:
+                logger.debug("renderer.skip", reason="no_suitable_chart")
+                return None
 
-        return None
+            fig.update_layout(margin={"l": 40, "r": 20, "t": 50, "b": 40})
+            logger.info(
+                "renderer.chart_ready",
+                chart_type=chart_type,
+                x=x_col,
+                y=y_col,
+            )
+            return fig
 
-    # ── Chart builders ────────────────────────────────────────────────────────
+        except Exception as exc:
+            logger.warning("renderer.failed", detail=str(exc)[:80])
+            return None
 
-    def _bar(self, df: pd.DataFrame, title: str, px: Any) -> Any:
-        cat_col = self._first_categorical(df)
-        num_col = self._first_numeric(df)
-        return px.bar(df, x=cat_col, y=num_col, title=title)
+    # ── Detection logic ───────────────────────────────────────────────────────
 
-    def _line(self, df: pd.DataFrame, title: str, px: Any) -> Any:
-        date_col = self._first_datetime(df) or df.columns[0]
-        num_col = self._first_numeric(df)
-        return px.line(df, x=date_col, y=num_col, title=title, markers=True)
+    def _detect_chart(
+        self, data: pd.DataFrame
+    ) -> tuple[str, str | None, str | None]:
+        """
+        Returns (chart_type, x_column, y_column).
+        chart_type is one of: 'line', 'bar', 'scatter', 'pie', or 'none'.
+        """
+        cols = list(data.columns)
+        numeric_cols = [c for c in cols if pd.api.types.is_numeric_dtype(data[c])]
+        date_cols = [c for c in cols if _is_datetime_col(data[c])]
+        cat_cols = [c for c in cols if c not in numeric_cols and c not in date_cols]
 
-    def _scatter(self, df: pd.DataFrame, title: str, px: Any) -> Any:
-        num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-        return px.scatter(df, x=num_cols[0], y=num_cols[1], title=title)
+        # 1. Time series → line
+        if date_cols and numeric_cols:
+            return "line", date_cols[0], numeric_cols[0]
 
-    def _pie(self, df: pd.DataFrame, title: str, px: Any) -> Any:
-        cat_col = self._first_categorical(df)
-        num_col = self._first_numeric(df)
-        return px.pie(df, names=cat_col, values=num_col, title=title)
+        # 2. Categorical + numeric → bar
+        if cat_cols and numeric_cols:
+            return "bar", cat_cols[0], numeric_cols[0]
 
-    # ── Heuristics ────────────────────────────────────────────────────────────
+        # 3. Two numeric → scatter
+        if len(numeric_cols) >= 2:
+            return "scatter", numeric_cols[0], numeric_cols[1]
 
-    def _detect_chart_type(self, df: pd.DataFrame) -> str:
-        has_datetime = self._first_datetime(df) is not None
-        num_count = sum(1 for c in df.columns if pd.api.types.is_numeric_dtype(df[c]))
-        cat_count = sum(
-            1
-            for c in df.columns
-            if pd.api.types.is_object_dtype(df[c]) or pd.api.types.is_categorical_dtype(df[c])
-        )
+        # 4. Single numeric, few rows → pie
+        if cat_cols and numeric_cols and len(data) <= _PIE_MAX_ROWS:
+            return "pie", cat_cols[0], numeric_cols[0]
 
-        if has_datetime and num_count >= 1:
-            return "line"
-        if cat_count == 1 and num_count == 1 and len(df) <= 5:
-            return "pie"
-        if cat_count >= 1 and num_count >= 1:
-            return "bar"
-        if num_count >= 2:
-            return "scatter"
-        return "bar"
-
-    def _first_numeric(self, df: pd.DataFrame) -> str | None:
-        for c in df.columns:
-            if pd.api.types.is_numeric_dtype(df[c]):
-                return str(c)
-        return str(df.columns[0]) if len(df.columns) > 0 else None
-
-    def _first_categorical(self, df: pd.DataFrame) -> str | None:
-        for c in df.columns:
-            if pd.api.types.is_object_dtype(df[c]) or pd.api.types.is_categorical_dtype(df[c]):
-                return str(c)
-        return str(df.columns[0]) if len(df.columns) > 0 else None
-
-    def _first_datetime(self, df: pd.DataFrame) -> str | None:
-        for c in df.columns:
-            if pd.api.types.is_datetime64_any_dtype(df[c]):
-                return str(c)
-            if any(kw in c.lower() for kw in ("date", "time", "month", "year", "week", "day")):
-                return str(c)
-        return None
+        return "none", None, None

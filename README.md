@@ -1,38 +1,35 @@
-# aqlix 🔍
+# aqlix — Natural Language to SQL
 
-**Query any database in plain English — federated, secure, context-aware.**
-
-[![CI](https://github.com/your-org/aqlix/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/aqlix/actions)
-[![PyPI](https://img.shields.io/pypi/v/aqlix)](https://pypi.org/project/aqlix/)
-[![Python](https://img.shields.io/pypi/pyversions/aqlix)](https://pypi.org/project/aqlix/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**Query any database in plain English.**
+aqlix is an open-source Python library that converts natural language questions into SQL, executes them, and returns results with charts and insights. It fixes the key limitations of Vanna AI: better security, context memory, self-correction, and a plugin architecture.
 
 ```python
 from aqlix import QueryEngine
 
-engine = QueryEngine(llm="claude", database="sqlite", dsn="sqlite:///sales.db")
+engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///sales.db")
 engine.ingest_schema()
 
-result = engine.query("What were the top 5 products by revenue last month?")
-print(result.sql)  # Generated SQL
-print(result.data)  # pandas DataFrame
-result.chart.show()  # Interactive Plotly chart
-print(result.summary)  # "The top product was Widget A with $42,300 in revenue..."
+result = engine.query("Show top 5 customers by revenue last quarter")
+print(result.sql)      # Generated SQL
+print(result.data)     # pandas DataFrame
+result.chart.show()    # Interactive Plotly chart
+print(result.summary)  # "The top customer was Acme Corp with $1.2M revenue..."
 ```
 
 ---
 
-## Why aqlix?
+## Why aqlix over Vanna AI?
 
-| Feature | aqlix | Vanna AI | Text2SQL.ai |
-|---|---|---|---|
-| Open-source (MIT) | ✅ | ✅ | ❌ |
-| Self-correction loop | ✅ | Partial | ❌ |
-| Multi-turn context memory | ✅ | Limited | ❌ |
-| Per-user credential delegation | ✅ | ❌ (CVE-2024-5565) | ❌ |
-| Federated cross-DB queries | ✅ | ❌ | ❌ |
-| Semantic layer | ✅ | ❌ | ❌ |
-| Local LLM (Ollama) | ✅ | ✅ | ❌ |
+| Feature | aqlix | Vanna AI |
+|---|---|---|
+| SQL security layer (whitelist + injection detection) | ✅ | ⚠️ Partial |
+| Self-correction loop (auto-fix broken SQL) | ✅ | ⚠️ Partial |
+| Context memory (multi-turn conversations) | ✅ | ⚠️ Limited |
+| Enum/code mapping (always injected, no miss) | ✅ | ❌ |
+| Per-user credential delegation | ✅ | ❌ (CVE-2024-5565) |
+| Plugin architecture (zero core changes) | ✅ | ❌ |
+| Groq support (free, fast LLM) | ✅ | ❌ |
+| Local LLM via Ollama | ✅ | ✅ |
 
 ---
 
@@ -42,192 +39,187 @@ print(result.summary)  # "The top product was Widget A with $42,300 in revenue..
 pip install aqlix
 ```
 
-For local LLM support (no API key required):
+Install with your LLM provider and database driver:
+
 ```bash
-pip install aqlix
-ollama pull llama3   # https://ollama.ai
+# Groq (free, fast — recommended for getting started)
+pip install "aqlix[groq]"
+
+# Anthropic Claude
+pip install "aqlix[claude]"
+
+# OpenAI
+pip install "aqlix[openai]"
+
+# PostgreSQL
+pip install "aqlix[postgres]"
+
+# Everything
+pip install "aqlix[all]"
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Connect to SQLite (zero config)
+### 1. Get a free Groq API key
+Sign up at [console.groq.com](https://console.groq.com) — it is free.
+
+```bash
+export AQLIX_GROQ_API_KEY="gsk_your_key_here"
+```
+
+### 2. Query your database
 
 ```python
 from aqlix import QueryEngine
 
 engine = QueryEngine(
-    llm="ollama",  # free, local — no API key
+    llm="groq",
     database="sqlite",
-    dsn="sqlite:///my.db",
+    dsn="sqlite:///mydata.db",
 )
-engine.ingest_schema()  # auto-reads your tables
+engine.ingest_schema()
 
 result = engine.query("How many orders were placed last month?")
 print(result.sql)
 print(result.data)
 ```
 
-### 2. Connect to PostgreSQL with Claude
+### 3. CLI usage
 
-```python
-import os
-from aqlix import QueryEngine
+```bash
+# Interactive REPL
+aqlix query --db sqlite:///mydata.db --llm groq
 
-engine = QueryEngine(
-    llm="claude",
-    database="postgresql",
-    dsn="postgresql://user:pass@localhost:5432/mydb",
-    anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
-)
-engine.ingest_schema()
-result = engine.query("Show me monthly revenue for Q2 2025")
-result.chart.show()
+# Single question
+aqlix query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
 ```
 
-### 3. Multi-turn conversations
+---
 
+## Core Features
+
+### Multi-turn memory
 ```python
 engine.query("Show me the top 10 customers by revenue")
-engine.query("Now filter those to only US customers")      # remembers context
-engine.query("What was their average order value?")        # still remembers
+engine.query("Now filter those to only US customers")   # remembers context
+engine.query("Which of those signed up in 2024?")       # still remembers
 ```
 
-### 4. Teach the engine (improve accuracy)
-
+### Train with business knowledge
 ```python
-# After confirming a query was correct:
-engine.teach(
-    question="Total sales by region for 2024",
-    sql="SELECT region, SUM(amount) FROM sales WHERE year=2024 GROUP BY region",
+# Free-text business context (retrieved via RAG)
+engine.train(documentation="""
+    employees.status: 1=Active, 2=On Leave, 3=Resigned, 4=Terminated
+    Use strftime('%Y-%m', created_at) for SQLite month grouping.
+    business_unit_id: 4=ACCL, 8=APFIL, 12=IBOS
+""")
+
+# Enum mappings — ALWAYS injected, never missed by RAG
+engine.define_enum("employees", "status", {
+    1: "Active", 2: "On Leave", 3: "Resigned", 4: "Terminated"
+})
+
+# Sample Q→SQL pairs for few-shot learning
+engine.train(
+    question="Top 5 employees by total sales",
+    sql="SELECT e.name, SUM(s.total) FROM employees e JOIN sales s ON e.id = s.emp_id GROUP BY e.name ORDER BY 2 DESC LIMIT 5",
 )
-# This Q→SQL pair is now stored and retrieved as a few-shot example
 ```
 
----
-
-## Architecture
+### Self-correction loop
+When the generated SQL fails, aqlix automatically sends the error back to the LLM and retries (up to 3 times by default):
 
 ```
-User Question
-     │
-     ▼
-ContextManager (prepend conversation history)
-     │
-     ▼
-SQLGenerator ──► VectorStore (RAG: schema + examples)
-     │                         └─► LLMProvider (Claude / OpenAI / Ollama)
-     │
-     ▼
-SQLValidator (whitelist + injection detection + sqlglot parse)
-     │
-     ▼
-SelfCorrector ──► DatabaseConnector.execute()
-     │                   ↑ retry on error (up to 3x)
-     ▼
-ResultRenderer (Plotly chart auto-detection)
-     │
-NLSummarizer (plain-English insight)
-     │
-     ▼
-QueryResult { .sql, .data, .chart, .summary }
+attempt 1: SELECT * FROM employes   → DatabaseError: no such table
+attempt 2: SELECT * FROM employees  → ✅ success
 ```
 
-Every query passes through every layer — no shortcuts. Security is non-negotiable.
+### SQL security layer
+Every SQL passes through a security gate before execution:
+- **Whitelist enforcement** — only `SELECT` and `WITH` are allowed
+- **Prompt injection detection** — scans user questions for manipulation attempts
+- **Structural parsing** — uses `sqlglot` to catch disguised dangerous statements
+- **Multi-statement blocking** — `SELECT 1; DROP TABLE x` is rejected
 
----
+### Add a new database connector
+```python
+from aqlix.connectors.base import DatabaseConnector
+from aqlix.connectors import REGISTRY
 
-## Supported Databases
+class BigQueryConnector(DatabaseConnector):
+    name = "bigquery"
 
-| Database | Status |
-|---|---|
-| SQLite | ✅ |
-| PostgreSQL | ✅ |
-| MySQL | ✅ |
-| Snowflake | ✅ |
-| DuckDB | ✅ |
-| BigQuery | 🔜 Phase 2 |
-| Databricks | 🔜 Phase 3 |
+    def connect(self, dsn): ...
+    def execute(self, sql): ...
+    def get_schema(self): ...
 
----
-
-## Supported LLM Providers
-
-| Provider | Model | Requires API Key |
-|---|---|---|
-| Anthropic Claude | claude-sonnet-4-20250514 | Yes |
-| OpenAI | gpt-4o | Yes |
-| Ollama (local) | llama3, mistral, etc. | No |
+REGISTRY["bigquery"] = BigQueryConnector
+```
 
 ---
 
 ## Configuration
 
-All settings can be passed to `QueryEngine(...)` or set as environment variables:
+All settings can be set via environment variables (prefixed `AQLIX_`) or passed directly to `QueryEngine`:
 
-```bash
-export aqlix_LLM_PROVIDER=claude
-export aqlix_ANTHROPIC_API_KEY=sk-ant-...
-export aqlix_MAX_SELF_CORRECTION_RETRIES=3
-export aqlix_VECTOR_STORE=chroma
-export aqlix_LOG_LEVEL=INFO
-```
-
-Or via `.env` file (auto-loaded).
-
----
-
-## Security
-
-aqlix is built with security as a first principle:
-
-- **SQL whitelist**: only `SELECT` and `WITH` are ever executed
-- **Prompt injection detection**: regex patterns catch common injection attacks
-- **Dialect-aware parsing**: `sqlglot` validates SQL structure before execution
-- **Self-correction never retries unsafe SQL**: validation runs on each correction attempt
-- **Per-user credential delegation**: coming in Phase 3 (SaaS)
+| Setting | Env var | Default | Description |
+|---|---|---|---|
+| LLM provider | `AQLIX_LLM_PROVIDER` | `groq` | `groq`, `claude`, `openai`, `ollama` |
+| Groq API key | `AQLIX_GROQ_API_KEY` | — | Get free key at console.groq.com |
+| Groq model | `AQLIX_GROQ_MODEL` | `llama3-70b-8192` | Any Groq-supported model |
+| Anthropic key | `AQLIX_ANTHROPIC_API_KEY` | — | For `llm="claude"` |
+| OpenAI key | `AQLIX_OPENAI_API_KEY` | — | For `llm="openai"` |
+| Ollama URL | `AQLIX_OLLAMA_BASE_URL` | `http://localhost:11434` | For local models |
+| Vector store | `AQLIX_VECTOR_STORE` | `chroma` | `chroma` or `qdrant` |
+| Max retries | `AQLIX_MAX_SELF_CORRECTION_RETRIES` | `3` | Self-correction attempts |
+| Session history | `AQLIX_SESSION_HISTORY_LIMIT` | `10` | Turns kept in context |
 
 ---
 
-## Development
+## Supported Databases
 
-```bash
-git clone https://github.com/your-org/aqlix
-cd aqlix
-pip install -e ".[dev]"
-pre-commit install
+| Database | Connector name | Install |
+|---|---|---|
+| SQLite | `sqlite` | Built-in |
+| PostgreSQL | `postgresql` / `postgres` | `pip install "aqlix[postgres]"` |
+| MySQL | `mysql` | `pip install pymysql` |
+| Snowflake | `snowflake` | `pip install "aqlix[snowflake]"` |
+| DuckDB | `duckdb` | `pip install "aqlix[duckdb]"` |
 
-# Run tests
-pytest tests/unit/
-pytest tests/integration/
+---
 
-# Lint
-black src/ tests/
-flake8 src/ tests/
-mypy src/aqlix
-```
+## Supported LLM Providers
+
+| Provider | Key | Notes |
+|---|---|---|
+| Groq | `groq` | Free tier available. Fastest inference. Recommended. |
+| Anthropic Claude | `claude` | Best accuracy on complex schemas. |
+| OpenAI | `openai` | GPT-4o and others. |
+| Ollama | `ollama` | Local, private, no API key. |
 
 ---
 
 ## Roadmap
 
-| Phase | Timeline | Focus |
-|---|---|---|
-| **Phase 1** | Month 1–4 | ✅ Core library (you are here) |
-| **Phase 2** | Month 4–7 | Web UI + Hosted SaaS |
-| **Phase 3** | Month 7–10 | Federation + Credential Delegation |
-| **Phase 4** | Month 10–12 | Enterprise Launch |
+- [x] Phase 1: Core library (RAG, self-correction, security, memory, connectors)
+- [ ] Phase 2: SaaS web UI (FastAPI + Next.js)
+- [ ] Phase 3: Federated cross-database queries (DuckDB workspace)
+- [ ] Phase 4: Enterprise (SSO, RBAC, audit log, SOC2)
 
 ---
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- Bug fixes: open a PR
-- New database connectors: subclass `DatabaseConnector` and register in `connectors/__init__.py`
-- New LLM providers: subclass `LLMProvider` and add to `llm/__init__.py`
+```bash
+git clone https://github.com/your-org/aqlix
+cd aqlix
+pip install -e ".[dev]"
+pytest tests/
+```
 
 ---
 

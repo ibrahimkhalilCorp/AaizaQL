@@ -1,201 +1,69 @@
 """
 aqlix.schema.semantic_store
 ────────────────────────────
-SemanticStore: manages three types of training data.
+SemanticStore: holds three kinds of "training" data that improve SQL accuracy:
 
-  1. Documentation  — free-text business context (Vanna-style)
-  2. Enum mappings  — numeric code → label (always injected, never missed)
-  3. Q→SQL pairs    — sample questions with correct SQL
+1. Documentation  — free-text business context (retrieved via RAG).
+2. Enums          — integer-code → label mappings (ALWAYS injected, no miss).
+3. Q→SQL pairs    — sample (question, correct SQL) pairs (retrieved via RAG).
 
-This is the single source of truth for everything the engine "knows"
-about the user's database beyond the raw DDL schema.
+This module is the single source of truth for all user-supplied knowledge.
 """
 
 from __future__ import annotations
 
-# import json
-# import hashlib
-# from dataclasses import dataclass, field, asdict
-from dataclasses import dataclass, field
+import hashlib
 from typing import Any
 
-from aqlix.memory.vector_store import VectorStoreAdapter
-from aqlix.schema.ingestion import _embed, _stable_id
 import structlog
+
+from aqlix.memory.vector_store import VectorStoreAdapter
 
 logger = structlog.get_logger(__name__)
 
 
-# ── Data models ───────────────────────────────────────────────────────────────
-
-
-@dataclass
-class EnumMapping:
-    """A numeric code → label mapping for one column."""
-
-    table: str
-    column: str
-    mapping: dict[int | str, str]  # {1: "Active", 2: "On Leave", ...}
-
-    def to_prompt_text(self) -> str:
-        """Format for injection into every LLM prompt."""
-        pairs = ", ".join(f"{k}={v}" for k, v in self.mapping.items())
-        return f"{self.table}.{self.column}: {pairs}"
-
-
-@dataclass
-class TrainingState:
-    """
-    In-memory registry of all enum mappings and documentation chunks.
-    Enum mappings are always injected into prompts (never retrieved via RAG).
-    Documentation is stored in the vector store for semantic retrieval.
-    """
-
-    enums: list[EnumMapping] = field(default_factory=list)
-
-
-# ── SemanticStore ─────────────────────────────────────────────────────────────
-
-
 class SemanticStore:
     """
-    Manages all three training data types for Aqlix.
+    Manages all user-supplied knowledge for a QueryEngine instance.
 
-    Usage (mirrors Vanna API where possible):
-        store.train(documentation="status 1=Active, 2=OnLeave...")
-        store.train(question="Top 5 employees", sql="SELECT...")
-        store.define_enum("employees", "status", {1:"Active", 2:"On Leave"})
+    The store is per-engine (not shared across engines) but persists across
+    queries within the same process via the underlying vector store.
     """
 
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
         self._vs = vector_store
-        self._state = TrainingState()
+        # Enum registry — stored in RAM, always injected into every prompt.
+        # Structure: { "table.column": { code: label, ... }, ... }
+        self._enums: dict[str, dict[Any, str]] = {}
 
-    # ── 1. Documentation ──────────────────────────────────────────────────────
+    # ── Documentation ─────────────────────────────────────────────────────────
 
     def train_documentation(self, documentation: str) -> None:
         """
         Store free-text business documentation for RAG retrieval.
 
-        Use for:
-          - Table/column descriptions in plain English
-          - Business rules and calculations
-          - Date format conventions for this database
-          - Domain-specific terminology
-
-        Example:
-            engine.train(documentation='''
-                employees.status: 1=Active, 2=On Leave, 3=Resigned, 4=Terminated
-                sales_orders.order_status: 1=Pending, 2=Processing, 3=Delivered
-                Use strftime() for SQLite date filtering.
-            ''')
+        Long texts are split into paragraphs so each chunk is retrievable
+        independently. Duplicate content is deduplicated by fingerprint.
         """
-        if not documentation.strip():
-            logger.warning("semantic.empty_documentation")
-            return
+        paragraphs = [p.strip() for p in documentation.split("\n\n") if p.strip()]
+        if not paragraphs:
+            paragraphs = [documentation.strip()]
 
-        # Split into paragraphs so each chunk is focused
-        chunks = [c.strip() for c in documentation.split("\n\n") if c.strip()]
-        if not chunks:
-            chunks = [documentation.strip()]
-
-        for chunk in chunks:
+        for para in paragraphs:
+            doc_id = f"doc_{self._fingerprint(para)}"
+            embedding = self._embed(para)
             self._vs.upsert(
-                id=_stable_id("doc", chunk),
-                text=chunk,
-                embedding=_embed(chunk),
+                id=doc_id,
+                text=para,
+                embedding=embedding,
                 metadata={"type": "documentation"},
             )
-
-        logger.info("semantic.documentation_stored", chunks=len(chunks))
-
-    # ── 2. Enum Mappings ──────────────────────────────────────────────────────
-
-    def define_enum(
-        self,
-        table: str,
-        column: str,
-        mapping: dict[int | str, str],
-    ) -> None:
-        """
-        Register a numeric code → label mapping for a column.
-
-        Unlike documentation, enum mappings are ALWAYS injected into every
-        prompt — they are never subject to RAG retrieval misses.
-
-        Use for any column that stores numeric codes instead of text:
-          - status columns (1=Active, 2=Inactive)
-          - type/category enums (1=Manager, 2=Staff)
-          - foreign-key lookups that are stored as integers
-
-        Example:
-            engine.define_enum("employees", "status", {
-                1: "Active",
-                2: "On Leave",
-                3: "Resigned",
-                4: "Terminated",
-            })
-        """
-        # Remove existing mapping for same table.column (idempotent)
-        self._state.enums = [
-            e for e in self._state.enums if not (e.table == table and e.column == column)
-        ]
-        enum = EnumMapping(table=table, column=column, mapping=mapping)
-        self._state.enums.append(enum)
-
-        # Also store in vector store for documentation-style retrieval
-        doc_text = f"Column {table}.{column} stores numeric codes: " + enum.to_prompt_text()
-        self._vs.upsert(
-            id=_stable_id("enum", table, column),
-            text=doc_text,
-            embedding=_embed(doc_text),
-            metadata={"type": "enum", "table": table, "column": column},
-        )
-
-        logger.info(
-            "semantic.enum_defined",
-            table=table,
-            column=column,
-            values=len(mapping),
-        )
-
-    # ── 3. Q→SQL Pairs ───────────────────────────────────────────────────────
-
-    def train_sql_pair(self, question: str, sql: str) -> None:
-        """
-        Store a verified (question → SQL) pair for few-shot retrieval.
-
-        Example:
-            engine.train(
-                question="Top 5 employees by sales",
-                sql="SELECT e.name, SUM(s.total_amount) FROM ..."
-            )
-        """
-        text = f"Question: {question}\nSQL: {sql}"
-        self._vs.upsert(
-            id=_stable_id("qa", question),
-            text=text,
-            embedding=_embed(question),
-            metadata={"type": "qa_pair"},
-        )
-        logger.info("semantic.sql_pair_stored", question=question[:60])
-
-    # ── Prompt injection ──────────────────────────────────────────────────────
-
-    def get_enum_block(self) -> str:
-        """
-        Return all enum mappings formatted for prompt injection.
-        Returns empty string if no enums defined.
-        """
-        if not self._state.enums:
-            return ""
-        lines = [e.to_prompt_text() for e in self._state.enums]
-        return "\n".join(lines)
+        logger.info("semantic.documentation_trained", paragraphs=len(paragraphs))
 
     def search_documentation(self, question: str, top_k: int = 3) -> str:
         """
-        Retrieve relevant documentation chunks for a question.
-        Returns formatted string for prompt injection.
+        Retrieve the most relevant documentation chunks for a question.
+        Returns a joined string ready for prompt injection.
         """
         hits = self._vs.search(
             query=question,
@@ -206,14 +74,75 @@ class SemanticStore:
             return ""
         return "\n\n".join(h.text for h in hits)
 
+    # ── Q→SQL Pairs ───────────────────────────────────────────────────────────
+
+    def train_sql_pair(self, question: str, sql: str) -> None:
+        """Store a verified (question, SQL) pair for few-shot retrieval."""
+        text = f"Question: {question}\nSQL: {sql}"
+        doc_id = f"pair_{self._fingerprint(question)}"
+        embedding = self._embed(question)
+        self._vs.upsert(
+            id=doc_id,
+            text=text,
+            embedding=embedding,
+            metadata={"type": "qa_pair"},
+        )
+        logger.debug("semantic.pair_trained", question=question[:60])
+
+    # ── Enum mappings ─────────────────────────────────────────────────────────
+
+    def define_enum(
+        self,
+        table: str,
+        column: str,
+        mapping: dict[Any, str],
+    ) -> None:
+        """
+        Register a code → label mapping for a table column.
+        These are always injected into every prompt — no RAG retrieval required.
+        """
+        key = f"{table}.{column}"
+        self._enums[key] = {str(k): str(v) for k, v in mapping.items()}
+        logger.info("semantic.enum_defined", key=key, values=len(mapping))
+
     def has_enums(self) -> bool:
-        return len(self._state.enums) > 0
+        return bool(self._enums)
 
     def enum_count(self) -> int:
-        return len(self._state.enums)
+        return len(self._enums)
 
-    def list_enums(self) -> list[dict[str, Any]]:
-        """Return all registered enums as a list of dicts (for inspection)."""
-        return [
-            {"table": e.table, "column": e.column, "mapping": e.mapping} for e in self._state.enums
-        ]
+    def list_enums(self) -> dict[str, dict[str, str]]:
+        return dict(self._enums)
+
+    def get_enum_block(self) -> str:
+        """
+        Format all registered enums as a prompt-ready block.
+
+        Example output::
+
+            employees.status: 1=Active, 2=On Leave, 3=Resigned, 4=Terminated
+            employees.job_grade: 1=Junior, 2=Mid, 3=Senior
+        """
+        lines: list[str] = []
+        for key, mapping in self._enums.items():
+            pairs = ", ".join(f"{k}={v}" for k, v in mapping.items())
+            lines.append(f"{key}: {pairs}")
+        return "\n".join(lines)
+
+    # ── Private ───────────────────────────────────────────────────────────────
+
+    def _embed(self, text: str) -> list[float]:
+        """Delegate embedding to the vector store's internal embedder."""
+        # We reuse the schema ingester's embedder approach via a local import
+        # to keep SemanticStore free of heavy dependencies.
+        try:
+            from aqlix.schema.ingestion import _SentenceEmbedder
+            if not hasattr(self, "_embedder"):
+                self._embedder = _SentenceEmbedder()  # type: ignore[attr-defined]
+            return self._embedder.embed(text)  # type: ignore[attr-defined]
+        except Exception:
+            return [0.0] * 384  # safe fallback
+
+    @staticmethod
+    def _fingerprint(text: str) -> str:
+        return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()[:12]

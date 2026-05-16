@@ -47,6 +47,10 @@ class SQLiteConnector(DatabaseConnector):
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="sqlite")
         try:
             return pd.read_sql_query(sql, self._conn)
+        except TypeError:
+            # DDL / DML statements (CREATE, INSERT…) return no cursor.description.
+            # pd.read_sql_query raises TypeError in this case — return empty DataFrame.
+            return pd.DataFrame()
         except Exception as exc:
             raise DatabaseError(str(exc), sql=sql, connector="sqlite") from exc
 
