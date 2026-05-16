@@ -16,9 +16,11 @@ pytestmark = pytest.mark.usefixtures("mock_embed")
 @pytest.fixture(autouse=True)
 def mock_embed():
     """Patch _embed so sentence-transformers is never loaded."""
-    with patch("aqlix.schema.semantic_store._embed", return_value=[0.1] * 384):
-        with patch("aqlix.schema.ingestion._embed", return_value=[0.1] * 384):
-            yield
+    with (
+        patch("aqlix.schema.semantic_store._embed", return_value=[0.1] * 384),
+        patch("aqlix.schema.ingestion._embed", return_value=[0.1] * 384),
+    ):
+        yield
 
 
 @pytest.fixture

@@ -21,6 +21,34 @@ from aqlix.memory.vector_store import VectorStoreAdapter
 
 logger = structlog.get_logger(__name__)
 
+class EnumMapping:
+    """
+    A code → label mapping for a single table column.
+
+    Used to tell the LLM what integer codes mean in business terms.
+    Always injected into every prompt — no RAG retrieval miss possible.
+
+    Example::
+
+        EnumMapping("employees", "status", {1: "Active", 2: "Resigned"})
+        # → "employees.status: 1=Active, 2=Resigned"
+    """
+
+    def __init__(
+        self,
+        table: str,
+        column: str,
+        mapping: dict[Any, str],
+    ) -> None:
+        self.table = table
+        self.column = column
+        self.mapping = {str(k): str(v) for k, v in mapping.items()}
+
+    def to_prompt_text(self) -> str:
+        """Format as a single line ready for prompt injection."""
+        pairs = ", ".join(f"{k}={v}" for k, v in self.mapping.items())
+        return f"{self.table}.{self.column}: {pairs}"
+
 
 class SemanticStore:
     """

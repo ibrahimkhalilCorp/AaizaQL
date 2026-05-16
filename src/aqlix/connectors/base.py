@@ -53,7 +53,7 @@ class DatabaseConnector(ABC):
         """
         ...
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: B027
         """Close the database connection. Override if cleanup is needed."""
 
     def test_connection(self) -> bool:
