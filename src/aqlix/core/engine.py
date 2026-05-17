@@ -213,8 +213,10 @@ class QueryEngine:
 
     def training_info(self) -> dict[str, object]:
         """Return a summary of all training data currently loaded."""
+        enums_list = self._semantic.list_enums()
+        enums_dict = {f"{e['table']}.{e['column']}": e["mapping"] for e in enums_list}
         return {
-            "enums": self._semantic.list_enums(),
+            "enums": enums_dict,
             "enum_count": self._semantic.enum_count(),
         }
 
