@@ -171,5 +171,7 @@ class TestSemanticStore:
     def test_list_enums(self, store: SemanticStore) -> None:
         store.define_enum("t", "col", {0: "No", 1: "Yes"})
         enums = store.list_enums()
-        assert "t.col" in enums
-        assert enums["t.col"]["0"] == "No"
+        assert len(enums) == 1
+        assert enums[0]["table"] == "t"
+        assert enums[0]["column"] == "col"
+        assert enums[0]["mapping"][0] == "No"

@@ -76,7 +76,7 @@ class SemanticStore:
         """
         paragraphs = [p.strip() for p in documentation.split("\n\n") if p.strip()]
         if not paragraphs:
-            paragraphs = [documentation.strip()]
+            return
 
         for para in paragraphs:
             doc_id = f"doc_{self._fingerprint(para)}"
@@ -129,9 +129,21 @@ class SemanticStore:
         """
         Register a code → label mapping for a table column.
         These are always injected into every prompt — no RAG retrieval required.
+        Also upserted to the vector store for reference.
         """
         key = f"{table}.{column}"
-        self._enums[key] = {str(k): str(v) for k, v in mapping.items()}
+        str_mapping = {str(k): str(v) for k, v in mapping.items()}
+        self._enums[key] = str_mapping
+        # Upsert to vector store so it is searchable/persistable
+        text = f"{key}: " + ", ".join(f"{k}={v}" for k, v in str_mapping.items())
+        doc_id = f"enum_{key}"
+        embedding = self._embed(text)
+        self._vs.upsert(
+            id=doc_id,
+            text=text,
+            embedding=embedding,
+            metadata={"type": "enum", "table": table, "column": column},
+        )
         logger.info("semantic.enum_defined", key=key, values=len(mapping))
 
     def has_enums(self) -> bool:
@@ -140,8 +152,20 @@ class SemanticStore:
     def enum_count(self) -> int:
         return len(self._enums)
 
-    def list_enums(self) -> dict[str, dict[str, str]]:
-        return dict(self._enums)
+    def list_enums(self) -> list[dict]:
+        """Return enums as a list of dicts with table, column, and mapping keys."""
+        result = []
+        for key, mapping in self._enums.items():
+            table, column = key.split(".", 1)
+            # Try to restore int keys for usability
+            restored: dict = {}
+            for k, v in mapping.items():
+                try:
+                    restored[int(k)] = v
+                except (ValueError, TypeError):
+                    restored[k] = v
+            result.append({"table": table, "column": column, "mapping": restored})
+        return result
 
     def get_enum_block(self) -> str:
         """
