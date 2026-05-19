@@ -13,7 +13,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
+import os
 from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.core.config import Settings
 from aqlix.memory.vector_store import VectorStoreAdapter
@@ -108,3 +108,12 @@ def vector_store(settings: Settings) -> VectorStoreAdapter:
         return VectorStoreAdapter(settings)
     except Exception:
         pytest.skip("ChromaDB not available in this environment")
+
+
+def pytest_collection_modifyitems(config, items):
+    if os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY"):
+        return  # keys present — run everything
+    skip = pytest.mark.skip(reason="No API key set — skipping LLM tests")
+    for item in items:
+        if item.get_closest_marker("requires_api_key"):
+            item.add_marker(skip)
