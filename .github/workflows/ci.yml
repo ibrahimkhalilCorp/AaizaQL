@@ -61,7 +61,7 @@ jobs:
 
       - name: Install package + dev dependencies
         run: |
-          pip install -e ".[duckdb,mysql]"
+          pip install -e ".[duckdb,mysql,snowflake]"
           pip install pytest pytest-cov pytest-asyncio
 
       - name: Run tests
