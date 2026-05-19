@@ -10,13 +10,12 @@ Append the contents of this file into tests/test_connectors.py.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 
 from aqlix.core.exceptions import ConnectionError, DatabaseError
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MySQL
@@ -115,12 +114,14 @@ class TestMySQLConnector:
         from aqlix.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
-        schema_df = pd.DataFrame({
-            "ddl": [
-                "CREATE TABLE `users` (`id` int NOT NULL, `name` varchar(255));",
-                "CREATE TABLE `orders` (`id` int NOT NULL, `user_id` int);",
-            ]
-        })
+        schema_df = pd.DataFrame(
+            {
+                "ddl": [
+                    "CREATE TABLE `users` (`id` int NOT NULL, `name` varchar(255));",
+                    "CREATE TABLE `orders` (`id` int NOT NULL, `user_id` int);",
+                ]
+            }
+        )
         with patch("pandas.read_sql_query", return_value=schema_df):
             connector = MySQLConnector()
             connector._conn = mock_conn
@@ -299,8 +300,7 @@ class TestSnowflakeConnector:
         from aqlix.connectors.snowflake import SnowflakeConnector
 
         result = SnowflakeConnector._parse_dsn(
-            "snowflake://alice:secret@myaccount/mydb/myschema"
-            "?warehouse=COMPUTE_WH&role=ANALYST"
+            "snowflake://alice:secret@myaccount/mydb/myschema" "?warehouse=COMPUTE_WH&role=ANALYST"
         )
         assert result["user"] == "alice"
         assert result["password"] == "secret"
@@ -416,18 +416,23 @@ class TestSnowflakeConnector:
     def test_get_schema_returns_ddl(self) -> None:
         from aqlix.connectors.snowflake import SnowflakeConnector
 
-        cols_df = pd.DataFrame({
-            "TABLE_NAME": ["USERS", "USERS", "ORDERS"],
-            "COLUMN_NAME": ["ID", "NAME", "ID"],
-            "DATA_TYPE": ["NUMBER", "VARCHAR", "NUMBER"],
-            "CHARACTER_MAXIMUM_LENGTH": [None, 255.0, None],
-            "IS_NULLABLE": ["NO", "YES", "NO"],
-        })
+        cols_df = pd.DataFrame(
+            {
+                "TABLE_NAME": ["USERS", "USERS", "ORDERS"],
+                "COLUMN_NAME": ["ID", "NAME", "ID"],
+                "DATA_TYPE": ["NUMBER", "VARCHAR", "NUMBER"],
+                "CHARACTER_MAXIMUM_LENGTH": [None, 255.0, None],
+                "IS_NULLABLE": ["NO", "YES", "NO"],
+            }
+        )
 
         mock_cursor = MagicMock()
         mock_cursor.description = [
-            ("TABLE_NAME",), ("COLUMN_NAME",), ("DATA_TYPE",),
-            ("CHARACTER_MAXIMUM_LENGTH",), ("IS_NULLABLE",),
+            ("TABLE_NAME",),
+            ("COLUMN_NAME",),
+            ("DATA_TYPE",),
+            ("CHARACTER_MAXIMUM_LENGTH",),
+            ("IS_NULLABLE",),
         ]
         mock_cursor.fetchall.return_value = [tuple(row) for row in cols_df.values]
 
