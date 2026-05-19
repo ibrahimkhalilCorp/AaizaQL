@@ -94,9 +94,9 @@ aqlix = "aqlix.cli:main"
 
 # ── Project URLs ─────────────────────────────────────────────────────────────
 [project.urls]
-Homepage      = "https://github.com/your-org/aqlix"
+Homepage      = "https://github.com/ibrahimkhalil/aqlix"
 Documentation = "https://aqlix.readthedocs.io"
-"Bug Tracker" = "https://github.com/your-org/aqlix/issues"
+"Bug Tracker" = "https://github.com/ibrahimkhalil/aqlix/issues"
 
 # ── Hatch build settings ────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
@@ -129,9 +129,6 @@ warn_return_any = false
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
-markers = [
-  "requires_api_key: marks tests that need a real LLM API key (skipped in CI)",
-]
 
 [tool.coverage.run]
 source = ["src/aqlix"]
