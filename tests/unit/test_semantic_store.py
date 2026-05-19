@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from AAIZAQL.schema.semantic_store import EnumMapping, SemanticStore
+from aaizaql.schema.semantic_store import EnumMapping, SemanticStore
 
 # Patch _embed globally for all tests in this module
 pytestmark = pytest.mark.usefixtures("mock_embed")
@@ -20,7 +20,7 @@ def mock_embed():
     """Patch _embed so sentence-transformers is never loaded."""
     with (
         patch.object(SemanticStore, "_embed", return_value=[0.1] * 384),
-        patch("AAIZAQL.schema.ingestion._SentenceEmbedder.embed", return_value=[0.1] * 384),
+        patch("aaizaql.schema.ingestion._SentenceEmbedder.embed", return_value=[0.1] * 384),
     ):
         yield
 

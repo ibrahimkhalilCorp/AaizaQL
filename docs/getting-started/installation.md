@@ -8,12 +8,12 @@
 ## Basic install
 
 ```bash
-pip install AAIZAQL
+pip install aaizaql
 ```
 
 ## Install with your LLM provider
 
-AAIZAQL supports multiple LLM providers. Install the one you want to use:
+aaizaql supports multiple LLM providers. Install the one you want to use:
 
 ```bash
 # Groq — free tier, fastest inference, recommended for getting started

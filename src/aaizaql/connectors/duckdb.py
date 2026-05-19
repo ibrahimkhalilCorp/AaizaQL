@@ -1,5 +1,5 @@
 """
-AAIZAQL.connectors.duckdb
+aaizaql.connectors.duckdb
 ────────────────────────
 DuckDB connector — supports both file-based and in-memory databases.
 Also serves as the ephemeral workspace engine for Phase 3 federation.
@@ -17,8 +17,8 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from AAIZAQL.connectors.base import DatabaseConnector
-from AAIZAQL.core.exceptions import ConnectionError, DatabaseError
+from aaizaql.connectors.base import DatabaseConnector
+from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 

@@ -32,7 +32,7 @@ AAIZAQL_VECTOR_STORE=chroma
 ## Passing settings directly
 
 ```python
-from AAIZAQL import QueryEngine
+from aaizaql import QueryEngine
 
 engine = QueryEngine(
     llm="claude",

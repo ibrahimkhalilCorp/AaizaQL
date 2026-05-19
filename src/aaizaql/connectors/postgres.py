@@ -1,5 +1,5 @@
 """
-AAIZAQL.connectors.postgres
+aaizaql.connectors.postgres
 ──────────────────────────
 PostgreSQL connector using psycopg2.
 DSN format: postgresql://user:password@host:5432/dbname
@@ -12,8 +12,8 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from AAIZAQL.connectors.base import DatabaseConnector
-from AAIZAQL.core.exceptions import ConnectionError, DatabaseError
+from aaizaql.connectors.base import DatabaseConnector
+from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 

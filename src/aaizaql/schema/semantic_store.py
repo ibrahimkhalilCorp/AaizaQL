@@ -1,5 +1,5 @@
 """
-AAIZAQL.schema.semantic_store
+aaizaql.schema.semantic_store
 ────────────────────────────
 SemanticStore: holds three kinds of "training" data that improve SQL accuracy:
 
@@ -17,7 +17,7 @@ from typing import Any
 
 import structlog
 
-from AAIZAQL.memory.vector_store import VectorStoreAdapter
+from aaizaql.memory.vector_store import VectorStoreAdapter
 
 logger = structlog.get_logger(__name__)
 
@@ -189,7 +189,7 @@ class SemanticStore:
         # We reuse the schema ingester's embedder approach via a local import
         # to keep SemanticStore free of heavy dependencies.
         try:
-            from AAIZAQL.schema.ingestion import _SentenceEmbedder
+            from aaizaql.schema.ingestion import _SentenceEmbedder
 
             if not hasattr(self, "_embedder"):
                 self._embedder = _SentenceEmbedder()  # type: ignore[attr-defined]

@@ -1,5 +1,5 @@
 """
-AAIZAQL.connectors.sqlite
+aaizaql.connectors.sqlite
 ────────────────────────
 SQLite connector — great for local development and testing.
 DSN format: sqlite:///path/to/file.db  or  sqlite:///:memory:
@@ -13,8 +13,8 @@ import sqlite3
 import pandas as pd
 import structlog
 
-from AAIZAQL.connectors.base import DatabaseConnector
-from AAIZAQL.core.exceptions import ConnectionError, DatabaseError
+from aaizaql.connectors.base import DatabaseConnector
+from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 

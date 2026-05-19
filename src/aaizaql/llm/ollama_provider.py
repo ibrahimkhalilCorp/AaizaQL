@@ -1,5 +1,5 @@
 """
-AAIZAQL.llm.ollama_provider
+aaizaql.llm.ollama_provider
 ──────────────────────────
 Ollama local model adapter — free, private, no API key needed.
 """
@@ -9,10 +9,10 @@ from __future__ import annotations
 import requests
 import structlog
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import LLMError
-from AAIZAQL.llm.base import LLMProvider
-from AAIZAQL.nlp.prompts import SYSTEM_PROMPT
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import LLMError
+from aaizaql.llm.base import LLMProvider
+from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 

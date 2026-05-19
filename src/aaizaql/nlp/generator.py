@@ -1,5 +1,5 @@
 """
-AAIZAQL.nlp.generator
+aaizaql.nlp.generator
 ────────────────────
 SQLGenerator: builds context from RAG + SemanticStore, assembles prompt, calls LLM.
 """
@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import SQLGenerationError
-from AAIZAQL.llm.base import LLMProvider
-from AAIZAQL.memory.context import Turn
-from AAIZAQL.memory.vector_store import VectorStoreAdapter
-from AAIZAQL.nlp.prompts import (
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import SQLGenerationError
+from aaizaql.llm.base import LLMProvider
+from aaizaql.memory.context import Turn
+from aaizaql.memory.vector_store import VectorStoreAdapter
+from aaizaql.nlp.prompts import (
     CONTEXT_TEMPLATE,
     COT_PROMPT_PREFIX,
     COT_PROMPT_SUFFIX,
@@ -26,7 +26,7 @@ from AAIZAQL.nlp.prompts import (
 )
 
 if TYPE_CHECKING:
-    from AAIZAQL.schema.semantic_store import SemanticStore
+    from aaizaql.schema.semantic_store import SemanticStore
 
 logger = structlog.get_logger(__name__)
 

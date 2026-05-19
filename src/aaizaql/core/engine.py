@@ -1,5 +1,5 @@
 """
-AAIZAQL.core.engine
+aaizaql.core.engine
 ─────────────────
 QueryEngine — the single public entry point for the entire library.
 
@@ -26,20 +26,20 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from AAIZAQL.connectors import REGISTRY
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.config import settings as _default_settings
-from AAIZAQL.core.exceptions import ConnectorNotFound, SQLGenerationError, UnsupportedQueryError
-from AAIZAQL.llm import build_llm_provider
-from AAIZAQL.memory.context import ContextManager
-from AAIZAQL.memory.vector_store import VectorStoreAdapter
-from AAIZAQL.nlp.corrector import SelfCorrector
-from AAIZAQL.nlp.generator import SQLGenerator
-from AAIZAQL.schema.ingestion import SchemaIngester
-from AAIZAQL.schema.semantic_store import SemanticStore
-from AAIZAQL.security.validator import SQLValidator
-from AAIZAQL.visualization.renderer import ResultRenderer
-from AAIZAQL.visualization.summarizer import NLSummarizer
+from aaizaql.connectors import REGISTRY
+from aaizaql.core.config import Settings
+from aaizaql.core.config import settings as _default_settings
+from aaizaql.core.exceptions import ConnectorNotFound, SQLGenerationError, UnsupportedQueryError
+from aaizaql.llm import build_llm_provider
+from aaizaql.memory.context import ContextManager
+from aaizaql.memory.vector_store import VectorStoreAdapter
+from aaizaql.nlp.corrector import SelfCorrector
+from aaizaql.nlp.generator import SQLGenerator
+from aaizaql.schema.ingestion import SchemaIngester
+from aaizaql.schema.semantic_store import SemanticStore
+from aaizaql.security.validator import SQLValidator
+from aaizaql.visualization.renderer import ResultRenderer
+from aaizaql.visualization.summarizer import NLSummarizer
 
 logger = structlog.get_logger(__name__)
 

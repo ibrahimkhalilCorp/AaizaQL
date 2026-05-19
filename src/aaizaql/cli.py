@@ -1,21 +1,21 @@
 """
-AAIZAQL.cli
+aaizaql.cli
 ──────────
-Command-line interface for AAIZAQL.
+Command-line interface for aaizaql.
 
 Usage examples::
 
     # Interactive REPL against a local SQLite file
-    AAIZAQL query --db sqlite:///mydata.db --llm groq
+    aaizaql query --db sqlite:///mydata.db --llm groq
 
     # Single question (non-interactive)
-    AAIZAQL query --db sqlite:///mydata.db --llm groq -q "How many users signed up last month?"
+    aaizaql query --db sqlite:///mydata.db --llm groq -q "How many users signed up last month?"
 
     # Ingest schema only (useful for CI / pre-caching)
-    AAIZAQL ingest --db sqlite:///mydata.db
+    aaizaql ingest --db sqlite:///mydata.db
 
     # Print version
-    AAIZAQL version
+    aaizaql version
 """
 
 from __future__ import annotations
@@ -28,39 +28,39 @@ def _require(pkg: str, install: str) -> None:
     try:
         __import__(pkg)
     except ImportError:
-        print(f"[AAIZAQL] Missing dependency: {pkg}")
+        print(f"[aaizaql] Missing dependency: {pkg}")
         print(f"        Install with:  pip install {install}")
         sys.exit(1)
 
 
 def cmd_version(_args: object) -> None:
-    from AAIZAQL import __version__
+    from aaizaql import __version__
 
-    print(f"AAIZAQL {__version__}")
+    print(f"aaizaql {__version__}")
 
 
 def cmd_ingest(args: object) -> None:
     """Ingest the schema of the connected database into the vector store."""
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 
-    print(f"[AAIZAQL] Connecting to {args.db} …")  # type: ignore[attr-defined]
+    print(f"[aaizaql] Connecting to {args.db} …")  # type: ignore[attr-defined]
     engine = QueryEngine(
         llm=args.llm,  # type: ignore[attr-defined]
         database=args.database,  # type: ignore[attr-defined]
         dsn=args.db,  # type: ignore[attr-defined]
     )
     count = engine.ingest_schema()
-    print(f"[AAIZAQL] Schema ingested: {count} table chunk(s) stored.")
+    print(f"[aaizaql] Schema ingested: {count} table chunk(s) stored.")
     engine.close()
 
 
 def cmd_query(args: object) -> None:
     """Run a natural language query (interactive REPL or single question)."""
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 
     _require("chromadb", "chromadb")
 
-    print(f"[AAIZAQL] Connecting with LLM={args.llm} DB={args.db} …")  # type: ignore[attr-defined]
+    print(f"[aaizaql] Connecting with LLM={args.llm} DB={args.db} …")  # type: ignore[attr-defined]
     try:
         engine = QueryEngine(
             llm=args.llm,  # type: ignore[attr-defined]
@@ -68,11 +68,11 @@ def cmd_query(args: object) -> None:
             dsn=args.db,  # type: ignore[attr-defined]
         )
     except Exception as exc:
-        print(f"[AAIZAQL] Connection failed: {exc}")
+        print(f"[aaizaql] Connection failed: {exc}")
         sys.exit(1)
 
     engine.ingest_schema()
-    print("[AAIZAQL] Schema ready.\n")
+    print("[aaizaql] Schema ready.\n")
 
     question: str | None = getattr(args, "question", None)
 
@@ -84,14 +84,14 @@ def cmd_query(args: object) -> None:
         print("Type your question and press Enter.  Type 'exit' or Ctrl-C to quit.\n")
         while True:
             try:
-                q = input("AAIZAQL> ").strip()
+                q = input("aaizaql> ").strip()
             except (KeyboardInterrupt, EOFError):
-                print("\n[AAIZAQL] Bye!")
+                print("\n[aaizaql] Bye!")
                 break
             if not q:
                 continue
             if q.lower() in {"exit", "quit", "q"}:
-                print("[AAIZAQL] Bye!")
+                print("[aaizaql] Bye!")
                 break
             _run_once(engine, q)
             print()
@@ -100,7 +100,7 @@ def cmd_query(args: object) -> None:
 
 
 def _run_once(engine: object, question: str) -> None:
-    from AAIZAQL import AAIZAQLError, QueryEngine
+    from aaizaql import AAIZAQLError, QueryEngine
 
     assert isinstance(engine, QueryEngine)
     try:
@@ -119,8 +119,8 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        prog="AAIZAQL",
-        description="AAIZAQL — Natural Language to SQL",
+        prog="aaizaql",
+        description="aaizaql — Natural Language to SQL",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

@@ -1,5 +1,5 @@
 """
-AAIZAQL.connectors
+aaizaql.connectors
 ─────────────────
 Connector registry — maps name strings to connector classes.
 Add a new database by subclassing DatabaseConnector and registering it here.
@@ -7,10 +7,10 @@ Add a new database by subclassing DatabaseConnector and registering it here.
 
 from __future__ import annotations
 
-from AAIZAQL.connectors.base import DatabaseConnector
-from AAIZAQL.connectors.postgres import PostgreSQLConnector
-from AAIZAQL.connectors.sqlite import SQLiteConnector
-from AAIZAQL.core.exceptions import ConnectorNotFound as _ConnectorNotFound
+from aaizaql.connectors.base import DatabaseConnector
+from aaizaql.connectors.postgres import PostgreSQLConnector
+from aaizaql.connectors.sqlite import SQLiteConnector
+from aaizaql.core.exceptions import ConnectorNotFound as _ConnectorNotFound
 
 # Central registry — name → class (not instance)
 REGISTRY: dict[str, type[DatabaseConnector]] = {
@@ -21,21 +21,21 @@ REGISTRY: dict[str, type[DatabaseConnector]] = {
 
 # Lazy-register heavier connectors only when available
 try:
-    from AAIZAQL.connectors.mysql import MySQLConnector
+    from aaizaql.connectors.mysql import MySQLConnector
 
     REGISTRY["mysql"] = MySQLConnector
 except ImportError:
     pass
 
 try:
-    from AAIZAQL.connectors.snowflake import SnowflakeConnector
+    from aaizaql.connectors.snowflake import SnowflakeConnector
 
     REGISTRY["snowflake"] = SnowflakeConnector
 except ImportError:
     pass
 
 try:
-    from AAIZAQL.connectors.duckdb import DuckDBConnector
+    from aaizaql.connectors.duckdb import DuckDBConnector
 
     REGISTRY["duckdb"] = DuckDBConnector
 except ImportError:

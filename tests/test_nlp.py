@@ -11,9 +11,9 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import DatabaseError, MaxRetriesExceeded
-from AAIZAQL.nlp.corrector import SelfCorrector
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import DatabaseError, MaxRetriesExceeded
+from aaizaql.nlp.corrector import SelfCorrector
 
 
 @pytest.fixture()

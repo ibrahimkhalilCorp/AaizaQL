@@ -1,5 +1,5 @@
 """
-AAIZAQL.nlp.corrector
+aaizaql.nlp.corrector
 ────────────────────
 SelfCorrector: executes SQL and retries with LLM correction on failure.
 """
@@ -11,10 +11,10 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import DatabaseError, MaxRetriesExceeded
-from AAIZAQL.llm.base import LLMProvider
-from AAIZAQL.nlp.prompts import SELF_CORRECTION_TEMPLATE
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import DatabaseError, MaxRetriesExceeded
+from aaizaql.llm.base import LLMProvider
+from aaizaql.nlp.prompts import SELF_CORRECTION_TEMPLATE
 
 logger = structlog.get_logger(__name__)
 

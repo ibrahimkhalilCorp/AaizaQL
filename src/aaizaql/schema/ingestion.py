@@ -1,5 +1,5 @@
 """
-AAIZAQL.schema.ingestion
+aaizaql.schema.ingestion
 ───────────────────────
 SchemaIngester: reads a live database schema and loads it into the vector
 store so the LLM always has accurate table/column context.
@@ -21,11 +21,11 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from AAIZAQL.core.exceptions import SchemaIngestionError
-from AAIZAQL.memory.vector_store import VectorStoreAdapter
+from aaizaql.core.exceptions import SchemaIngestionError
+from aaizaql.memory.vector_store import VectorStoreAdapter
 
 if TYPE_CHECKING:
-    from AAIZAQL.connectors.base import DatabaseConnector
+    from aaizaql.connectors.base import DatabaseConnector
 
 logger = structlog.get_logger(__name__)
 

@@ -1,5 +1,5 @@
 """
-AAIZAQL.memory.vector_store
+aaizaql.memory.vector_store
 ──────────────────────────
 VectorStoreAdapter: thin abstraction over ChromaDB (dev) and Qdrant (prod).
 """
@@ -11,8 +11,8 @@ from typing import Any
 
 import structlog
 
-from AAIZAQL.core.config import Settings, VectorStoreBackend
-from AAIZAQL.core.exceptions import VectorStoreError
+from aaizaql.core.config import Settings, VectorStoreBackend
+from aaizaql.core.exceptions import VectorStoreError
 
 logger = structlog.get_logger(__name__)
 

@@ -3,7 +3,7 @@ AAIZAQL — Natural Language to SQL library.
 
 Quick start::
 
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 
     engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///my.db")
     engine.ingest_schema()
@@ -14,8 +14,8 @@ Quick start::
 
 from __future__ import annotations
 
-from AAIZAQL.core.engine import QueryEngine, QueryResult
-from AAIZAQL.core.exceptions import (
+from aaizaql.core.engine import QueryEngine, QueryResult
+from aaizaql.core.exceptions import (
     AAIZAQLError,
     ConnectorNotFound,
     DatabaseError,

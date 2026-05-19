@@ -5,7 +5,7 @@ Verify all custom exceptions carry the right attributes and messages.
 """
 
 # import pytest
-from AAIZAQL.core.exceptions import (
+from aaizaql.core.exceptions import (
     ConnectionError,
     DatabaseError,
     FederationError,

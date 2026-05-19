@@ -1,17 +1,17 @@
 """
 examples/01_quickstart_sqlite.py
 ──────────────────────────────────
-Getting started with AAIZAQL using a local SQLite database.
+Getting started with aaizaql using a local SQLite database.
 No API key needed — uses Ollama with llama3 (free, local).
 
 Prerequisites:
-  pip install AAIZAQL
+  pip install aaizaql
   ollama pull llama3    # https://ollama.ai
 """
 
 import sqlite3
 import os
-from AAIZAQL import QueryEngine
+from aaizaql import QueryEngine
 
 # ── Step 1: Create a sample SQLite database ──────────────────────────────────
 
@@ -75,7 +75,7 @@ print("✅ Database created: sample_store.db")
 # ── Step 2: Create the QueryEngine ───────────────────────────────────────────
 
 # Using Ollama (local, free) — switch to "claude" or "openai" with an API key
-LLM = os.environ.get("AAIZAQL_LLM", "ollama")
+LLM = os.environ.get("aaizaql_LLM", "ollama")
 
 engine = QueryEngine(
     llm=LLM,

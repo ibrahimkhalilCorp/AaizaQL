@@ -1,11 +1,11 @@
 """
 examples/03_train_and_query.py
 ────────────────────────────────
-AAIZAQL — train() + define_enum() demo
-Mirrors the vanna_demo.py but uses AAIZAQL's cleaner API.
+aaizaql — train() + define_enum() demo
+Mirrors the vanna_demo.py but uses aaizaql's cleaner API.
 
 Setup:
-    $env:AAIZAQL_GROQ_API_KEY = "gsk_your_key_here"
+    $env:aaizaql_GROQ_API_KEY = "gsk_your_key_here"
 
 Run:
     python examples/03_train_and_query.py
@@ -17,15 +17,15 @@ import sqlite3
 import time
 
 # ── API key check ─────────────────────────────────────────────────────────────
-if not os.environ.get("AAIZAQL_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
+if not os.environ.get("aaizaql_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
     print("❌  Set your key first:")
-    print('    $env:AAIZAQL_GROQ_API_KEY = "gsk_your_key_here"')
+    print('    $env:aaizaql_GROQ_API_KEY = "gsk_your_key_here"')
     sys.exit(1)
 
-from AAIZAQL import QueryEngine
+from aaizaql import QueryEngine
 
 print("=" * 60)
-print("  AAIZAQL — train() + define_enum() demo")
+print("  aaizaql — train() + define_enum() demo")
 print("=" * 60)
 
 # ─────────────────────────────────────────────────────────────────

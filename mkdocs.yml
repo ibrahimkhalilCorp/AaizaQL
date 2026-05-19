@@ -1,8 +1,8 @@
 site_name: AAIZAQL
 site_description: Natural Language to SQL — open-source Python library with RAG, self-correction, and federation
-site_url: https://AAIZAQL.readthedocs.io
-repo_url: https://github.com/ibrahimkhalil/AAIZAQL
-repo_name: ibrahimkhalil/AAIZAQL
+site_url: https://aaizaql.readthedocs.io
+repo_url: https://github.com/ibrahimkhalil/aaizaql
+repo_name: ibrahimkhalil/aaizaql
 edit_uri: edit/main/docs/
 
 theme:

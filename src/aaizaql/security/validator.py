@@ -1,5 +1,5 @@
 """
-AAIZAQL.security.validator
+aaizaql.security.validator
 ─────────────────────────
 SQLValidator: the security gate that every SQL statement must pass before
 execution.  No SQL ever runs without passing through here.
@@ -18,8 +18,8 @@ import re
 import sqlglot
 import structlog
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import PromptInjectionDetected, SecurityException
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import PromptInjectionDetected, SecurityException
 
 logger = structlog.get_logger(__name__)
 

@@ -1,7 +1,7 @@
 """
 examples/02_groq_end_to_end.py
 ────────────────────────────────
-AAIZAQL — End-to-End Test with Groq + SQLite
+aaizaql — End-to-End Test with Groq + SQLite
 ==========================================
 
 এই script টি:
@@ -14,7 +14,7 @@ Prerequisites:
     pip install groq chromadb sentence-transformers
 
 Setup (PowerShell):
-    $env:AAIZAQL_GROQ_API_KEY = "gsk_your_key_here"
+    $env:aaizaql_GROQ_API_KEY = "gsk_your_key_here"
 
 Then run:
     python examples/02_groq_end_to_end.py
@@ -26,29 +26,29 @@ import sqlite3
 import time
 
 # ── Check API key early ───────────────────────────────────────────────────────
-api_key = os.environ.get("AAIZAQL_GROQ_API_KEY") or os.environ.get("AAIZAQL_GROQ_API_KEY", "YOUR_GROQ_API_KEY")
+api_key = os.environ.get("aaizaql_GROQ_API_KEY") or os.environ.get("aaizaql_GROQ_API_KEY", "YOUR_GROQ_API_KEY")
 if not api_key:
     print("❌ Groq API key not found!")
     print()
     print("Please set it first in PowerShell:")
-    print('   $env:AAIZAQL_GROQ_API_KEY = "YOUR_GROQ_API_KEY"')
+    print('   $env:aaizaql_GROQ_API_KEY = "YOUR_GROQ_API_KEY"')
     print()
     print("Get a FREE key at: https://console.groq.com")
     sys.exit(1)
 
 # Set the env var with the prefix the library expects
-os.environ["AAIZAQL_GROQ_API_KEY"] = api_key
+os.environ["aaizaql_GROQ_API_KEY"] = api_key
 
-# ── Import AAIZAQL ──────────────────────────────────────────────────────────────
+# ── Import aaizaql ──────────────────────────────────────────────────────────────
 try:
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 except ImportError:
     # fallback if running from project root without install
     sys.path.insert(0, "src")
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 
 print("=" * 60)
-print("  AAIZAQL — End-to-End Test  |  Groq + SQLite")
+print("  aaizaql — End-to-End Test  |  Groq + SQLite")
 print("=" * 60)
 
 # ─────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ print("=" * 60)
 # ─────────────────────────────────────────────────────────────────
 print("\n📦 Step 1: Creating sample e-commerce database...")
 
-DB_PATH = "AAIZAQL_test.db"
+DB_PATH = "aaizaql_test.db"
 
 conn = sqlite3.connect(DB_PATH)
 conn.executescript("""
@@ -160,7 +160,7 @@ print("   Tables: customers, products, orders, order_items")
 # ─────────────────────────────────────────────────────────────────
 # STEP 2: Initialize QueryEngine with Groq
 # ─────────────────────────────────────────────────────────────────
-print("\n🔧 Step 2: Initializing AAIZAQL with Groq...")
+print("\n🔧 Step 2: Initializing aaizaql with Groq...")
 
 try:
     engine = QueryEngine(
@@ -196,7 +196,7 @@ print("\n" + "=" * 60)
 print("  STEP 4: Running Natural Language Queries")
 print("=" * 60)
 
-SESSION = "AAIZAQL-e2e-test"
+SESSION = "aaizaql-e2e-test"
 
 test_queries = [
     {
@@ -270,7 +270,7 @@ print("\n" + "=" * 60)
 print("  STEP 5: Multi-Turn Conversation Memory Demo")
 print("=" * 60)
 
-multi_session = "AAIZAQL-multiturn"
+multi_session = "aaizaql-multiturn"
 conversation = [
     "Show me all customers from Bangladesh",
     "What did they order?",           # must remember Bangladesh context
@@ -303,6 +303,6 @@ print("=" * 60)
 engine.close()
 
 if failed == 0:
-    print("\n🎉 All tests passed! AAIZAQL is working end-to-end with Groq.")
+    print("\n🎉 All tests passed! aaizaql is working end-to-end with Groq.")
 else:
     print(f"\n⚠️  {failed} test(s) failed. Check errors above.")

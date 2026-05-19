@@ -1,5 +1,5 @@
 """
-AAIZAQL.connectors.mysql
+aaizaql.connectors.mysql
 ───────────────────────
 MySQL connector using pymysql.
 DSN format: mysql://user:password@host:3306/dbname
@@ -12,8 +12,8 @@ from typing import Any
 import pandas as pd
 import structlog
 
-from AAIZAQL.connectors.base import DatabaseConnector
-from AAIZAQL.core.exceptions import ConnectionError, DatabaseError
+from aaizaql.connectors.base import DatabaseConnector
+from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 

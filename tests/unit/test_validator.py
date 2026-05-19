@@ -7,9 +7,9 @@ These tests run without any DB or LLM connection.
 
 import pytest
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import PromptInjectionDetected, SecurityException
-from AAIZAQL.security.validator import SQLValidator
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import PromptInjectionDetected, SecurityException
+from aaizaql.security.validator import SQLValidator
 
 
 @pytest.fixture

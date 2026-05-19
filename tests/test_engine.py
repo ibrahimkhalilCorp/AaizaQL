@@ -14,16 +14,16 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from AAIZAQL import QueryEngine, QueryResult
-from AAIZAQL.core.exceptions import SecurityException, UnsupportedQueryError
+from aaizaql import QueryEngine, QueryResult
+from aaizaql.core.exceptions import SecurityException, UnsupportedQueryError
 
 
 def _make_engine(sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> QueryEngine:
     """Helper: build a QueryEngine with a mock LLM and temp vector store."""
     with (
-        patch("AAIZAQL.core.engine.build_llm_provider", return_value=mock_llm),
+        patch("aaizaql.core.engine.build_llm_provider", return_value=mock_llm),
         patch(
-            "AAIZAQL.core.engine.VectorStoreAdapter",
+            "aaizaql.core.engine.VectorStoreAdapter",
             side_effect=lambda s: _make_mock_vs(),
         ),
     ):

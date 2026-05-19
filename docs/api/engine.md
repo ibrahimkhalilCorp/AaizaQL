@@ -6,7 +6,7 @@ All other modules (NLP, security, connectors, memory) are internal implementatio
 ## Import
 
 ```python
-from AAIZAQL import QueryEngine
+from aaizaql import QueryEngine
 ```
 
 ## Constructor

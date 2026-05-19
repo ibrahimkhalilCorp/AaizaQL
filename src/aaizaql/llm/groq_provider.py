@@ -1,5 +1,5 @@
 """
-AAIZAQL.llm.groq_provider
+aaizaql.llm.groq_provider
 ────────────────────────
 Groq adapter — ultra-fast inference via Groq Cloud.
 Groq uses an OpenAI-compatible API, so the implementation is straightforward.
@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import structlog
 
-from AAIZAQL.core.config import Settings
-from AAIZAQL.core.exceptions import LLMError
-from AAIZAQL.llm.base import LLMProvider
-from AAIZAQL.nlp.prompts import SYSTEM_PROMPT
+from aaizaql.core.config import Settings
+from aaizaql.core.exceptions import LLMError
+from aaizaql.llm.base import LLMProvider
+from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
