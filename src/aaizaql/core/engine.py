@@ -3,7 +3,7 @@ aaizaql.core.engine
 ─────────────────
 QueryEngine — the single public entry point for the entire library.
 
-    from AAIZAQL import QueryEngine
+    from aaizaql import QueryEngine
 
     engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///my.db")
     engine.ingest_schema()
@@ -245,6 +245,9 @@ class QueryEngine:
         t_start = time.monotonic()
 
         logger.info("query.start", session_id=sid, question=question[:80])
+
+        # Security: scan for prompt injection BEFORE any LLM call
+        self._validator.check_question(question)
 
         history = self._context.get_history(sid)
         sql = self._generator.generate(question, history)

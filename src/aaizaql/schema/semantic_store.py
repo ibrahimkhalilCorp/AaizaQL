@@ -82,7 +82,7 @@ class SemanticStore:
             doc_id = f"doc_{self._fingerprint(para)}"
             embedding = self._embed(para)
             self._vs.upsert(
-                id=doc_id,
+                doc_id=doc_id,
                 text=para,
                 embedding=embedding,
                 metadata={"type": "documentation"},

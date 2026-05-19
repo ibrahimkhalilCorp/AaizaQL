@@ -26,7 +26,7 @@ from aaizaql.core.exceptions import (
     UnsupportedQueryError,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "QueryEngine",

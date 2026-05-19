@@ -97,7 +97,7 @@ class ConnectorNotFound(AAIZAQLError):
     """Raised when an unknown connector name is requested."""
 
     def __init__(self, name: str) -> None:
-        from AAIZAQL.connectors import REGISTRY  # lazy to avoid circular import
+        from aaizaql.connectors import REGISTRY  # lazy to avoid circular import
 
         super().__init__(
             f"No connector registered for '{name}'. " f"Available: {sorted(REGISTRY.keys())}"

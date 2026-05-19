@@ -128,7 +128,11 @@ class VectorStoreAdapter:
         """
         if self._backend == VectorStoreBackend.CHROMA:
             return self._search_chroma(query, filter_type, top_k)
-        return []  # Qdrant path — implement when Qdrant is configured
+        raise NotImplementedError(
+            "Qdrant vector search is not yet implemented. "
+            "Use the default ChromaDB backend (AAIZAQL_VECTOR_STORE=chroma) "
+            "or follow https://github.com/ibrahimkhalilCorp/AaizaQL for Qdrant support."
+        )
 
     def _search_chroma(
         self,
@@ -163,4 +167,6 @@ class VectorStoreAdapter:
         """Return the total number of documents in the store."""
         if self._backend == VectorStoreBackend.CHROMA:
             return int(self._collection.count())
-        return 0
+        raise NotImplementedError(
+            "Qdrant count() is not yet implemented. Use ChromaDB backend."
+        )

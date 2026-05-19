@@ -1,10 +1,10 @@
-# AaizaQl — Natural Language to SQL
+# AAIZAQL — Natural Language to SQL
 
 **Query any database in plain English.**
-AaizaQl is an open-source Python library that converts natural language questions into SQL, executes them, and returns results with charts and insights. It fixes the key limitations of Vanna AI: better security, context memory, self-correction, and a plugin architecture.
+AAIZAQL is an open-source Python library that converts natural language questions into SQL, executes them, and returns results with charts and insights. It fixes the key limitations of Vanna AI: better security, context memory, self-correction, and a plugin architecture.
 
 ```python
-from aaizaql import QueryEngine
+from AAIZAQL import QueryEngine
 
 engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///sales.db")
 engine.ingest_schema()
@@ -18,9 +18,9 @@ print(result.summary)  # "The top customer was Acme Corp with $1.2M revenue..."
 
 ---
 
-## Why AaizaQl over Vanna AI?
+## Why AAIZAQL over Vanna AI?
 
-| Feature | AaizaQl | Vanna AI |
+| Feature | AAIZAQL | Vanna AI |
 |---|---|---|
 | SQL security layer (whitelist + injection detection) | ✅ | ⚠️ Partial |
 | Self-correction loop (auto-fix broken SQL) | ✅ | ⚠️ Partial |
@@ -36,26 +36,26 @@ print(result.summary)  # "The top customer was Acme Corp with $1.2M revenue..."
 ## Installation
 
 ```bash
-pip install aaizaql
+pip install AAIZAQL
 ```
 
 Install with your LLM provider and database driver:
 
 ```bash
 # Groq (free, fast — recommended for getting started)
-pip install "aaizaql[groq]"
+pip install "AAIZAQL[groq]"
 
 # Anthropic Claude
-pip install "aaizaql[claude]"
+pip install "AAIZAQL[claude]"
 
 # OpenAI
-pip install "aaizaql[openai]"
+pip install "AAIZAQL[openai]"
 
 # PostgreSQL
-pip install "aaizaql[postgres]"
+pip install "AAIZAQL[postgres]"
 
 # Everything
-pip install "aaizaql[all]"
+pip install "AAIZAQL[all]"
 ```
 
 ---
@@ -66,13 +66,13 @@ pip install "aaizaql[all]"
 Sign up at [console.groq.com](https://console.groq.com) — it is free.
 
 ```bash
-export aaizaql._GROQ_API_KEY="gsk_your_key_here"
+export AAIZAQL_GROQ_API_KEY="gsk_your_key_here"
 ```
 
 ### 2. Query your database
 
 ```python
-from aaizaql import QueryEngine
+from AAIZAQL import QueryEngine
 
 engine = QueryEngine(
     llm="groq",
@@ -90,10 +90,10 @@ print(result.data)
 
 ```bash
 # Interactive REPL
-aaizaql query --db sqlite:///mydata.db --llm groq
+AAIZAQL query --db sqlite:///mydata.db --llm groq
 
 # Single question
-aaizaql query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
+AAIZAQL query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
 ```
 
 ---
@@ -129,7 +129,7 @@ engine.train(
 ```
 
 ### Self-correction loop
-When the generated SQL fails, AaizaQl automatically sends the error back to the LLM and retries (up to 3 times by default):
+When the generated SQL fails, AAIZAQL automatically sends the error back to the LLM and retries (up to 3 times by default):
 
 ```
 attempt 1: SELECT * FROM employes   → DatabaseError: no such table
@@ -145,8 +145,8 @@ Every SQL passes through a security gate before execution:
 
 ### Add a new database connector
 ```python
-from aaizaql.connectors.base import DatabaseConnector
-from aaizaql.connectors import REGISTRY
+from AAIZAQL.connectors.base import DatabaseConnector
+from AAIZAQL.connectors import REGISTRY
 
 class BigQueryConnector(DatabaseConnector):
     name = "bigquery"
@@ -183,10 +183,10 @@ All settings can be set via environment variables (prefixed `AAIZAQL_`) or passe
 | Database | Connector name | Install |
 |---|---|---|
 | SQLite | `sqlite` | Built-in |
-| PostgreSQL | `postgresql` / `postgres` | `pip install "aaizaql[postgres]"` |
+| PostgreSQL | `postgresql` / `postgres` | `pip install "AAIZAQL[postgres]"` |
 | MySQL | `mysql` | `pip install pymysql` |
-| Snowflake | `snowflake` | `pip install "aaizaql[snowflake]"` |
-| DuckDB | `duckdb` | `pip install "aaizaql[duckdb]"` |
+| Snowflake | `snowflake` | `pip install "AAIZAQL[snowflake]"` |
+| DuckDB | `duckdb` | `pip install "AAIZAQL[duckdb]"` |
 
 ---
 
@@ -215,8 +215,8 @@ All settings can be set via environment variables (prefixed `AAIZAQL_`) or passe
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-git clone https://github.com/ibrahimkhalilCorp/aaizaql
-cd aaizaql
+git clone https://github.com/ibrahimkhalilCorp/AAIZAQL
+cd AAIZAQL
 pip install -e ".[dev]"
 pytest tests/
 ```

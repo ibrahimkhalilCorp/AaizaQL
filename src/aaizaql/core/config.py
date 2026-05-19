@@ -63,8 +63,8 @@ class Settings(BaseSettings):
     )
     # AFTER
     groq_model: str = Field(
-        default="llama3-70b-8192",
-        description="Groq model string. Options: llama3-70b-8192, llama3-8b-8192, mixtral-8x7b-32768",  # noqa: E501
+        default="llama-3.3-70b-versatile",
+        description="Groq model string. Options: llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768, gemma2-9b-it",  # noqa: E501
     )
     ollama_base_url: str = Field(
         default="http://localhost:11434",
@@ -91,7 +91,7 @@ class Settings(BaseSettings):
         description="Vector store backend for RAG.",
     )
     chroma_persist_dir: str = Field(
-        default=".AAIZAQL_chroma",
+        default=".aaizaql_chroma",
         description="Local directory for ChromaDB persistence.",
     )
     qdrant_url: str = Field(

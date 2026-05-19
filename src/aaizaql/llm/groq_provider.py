@@ -5,10 +5,10 @@ Groq adapter — ultra-fast inference via Groq Cloud.
 Groq uses an OpenAI-compatible API, so the implementation is straightforward.
 
 Supported models (as of 2025):
-  - llama3-70b-8192       ← best accuracy, recommended
-  - llama3-8b-8192        ← faster, lighter
-  - mixtral-8x7b-32768    ← large context window
-  - gemma2-9b-it          ← Google Gemma via Groq
+  - llama-3.3-70b-versatile  ← best accuracy, recommended
+  - llama-3.1-8b-instant     ← faster, lighter
+  - mixtral-8x7b-32768       ← large context window
+  - gemma2-9b-it             ← Google Gemma via Groq
 
 Get your free API key at: https://console.groq.com
 """
@@ -25,7 +25,7 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 logger = structlog.get_logger(__name__)
 
 # Default model — best balance of speed + accuracy for SQL generation
-DEFAULT_GROQ_MODEL = "llama3-70b-8192"
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
 class GroqProvider(LLMProvider):
@@ -41,7 +41,7 @@ class GroqProvider(LLMProvider):
             database="sqlite",
             dsn="sqlite:///my.db",
             groq_api_key="gsk_...",
-            groq_model="llama3-70b-8192",   # optional
+            groq_model="llama-3.3-70b-versatile",   # optional
         )
     """
 
