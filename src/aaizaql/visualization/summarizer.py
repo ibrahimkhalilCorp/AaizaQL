@@ -1,5 +1,5 @@
 """
-AAIZAQL.visualization.summarizer
+aaizaql.visualization.summarizer
 ────────────────────────────────
 NLSummarizer: sends a data sample to the LLM and returns a 1-2 sentence
 plain-English insight describing what the result means.
@@ -13,7 +13,7 @@ from __future__ import annotations
 import pandas as pd
 import structlog
 
-from AAIZAQL.nlp.prompts import SUMMARY_TEMPLATE
+from aaizaql.nlp.prompts import SUMMARY_TEMPLATE
 
 logger = structlog.get_logger(__name__)
 
