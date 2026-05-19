@@ -49,9 +49,7 @@ class DuckDBConnector(DatabaseConnector):
 
     def execute(self, sql: str) -> pd.DataFrame:
         if self._conn is None:
-            raise DatabaseError(
-                "Not connected. Call connect() first.", sql=sql, connector="duckdb"
-            )
+            raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="duckdb")
         try:
             return self._conn.execute(sql).df()
         except Exception as exc:

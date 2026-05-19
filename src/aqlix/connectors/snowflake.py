@@ -125,7 +125,7 @@ class SnowflakeConnector(DatabaseConnector):
                         row["CHARACTER_MAXIMUM_LENGTH"]
                     ):
                         dtype = f"{dtype}({int(row['CHARACTER_MAXIMUM_LENGTH'])})"
-                    nullable = "" if row["IS_NULLABLE"] == "NO" else ""
+                    "" if row["IS_NULLABLE"] == "NO" else ""
                     not_null = " NOT NULL" if row["IS_NULLABLE"] == "NO" else ""
                     col_defs.append(f"  {row['COLUMN_NAME']} {dtype}{not_null}")
 

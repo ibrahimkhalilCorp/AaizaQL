@@ -7,13 +7,14 @@ a mock LLM, or a vector store can import these via dependency injection.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import os
+
 from aqlix.connectors.sqlite import SQLiteConnector
 from aqlix.core.config import Settings
 from aqlix.memory.vector_store import VectorStoreAdapter
