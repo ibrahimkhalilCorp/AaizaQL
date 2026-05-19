@@ -87,3 +87,7 @@ audit_*.jsonl
 
 aqlix.zip
 *.zip
+
+.pypirc
+*.pem
+*.key

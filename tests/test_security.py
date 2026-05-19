@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from aqlix.core.config import Settings
-from aqlix.core.exceptions import PromptInjectionDetected, SecurityException
-from aqlix.security.validator import SQLValidator
+from AAIZAQL.core.config import Settings
+from AAIZAQL.core.exceptions import PromptInjectionDetected, SecurityException
+from AAIZAQL.security.validator import SQLValidator
 
 
 @pytest.fixture()

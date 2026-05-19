@@ -8,13 +8,13 @@ The easiest way to start is with [Groq](https://console.groq.com) — it is free
 the fastest inference available.
 
 ```bash
-export AQLIX_GROQ_API_KEY="gsk_your_key_here"
+export AAIZAQL_GROQ_API_KEY="gsk_your_key_here"
 ```
 
 ## 2. Query a SQLite database
 
 ```python
-from aqlix import QueryEngine
+from AAIZAQL import QueryEngine
 
 engine = QueryEngine(
     llm="groq",
@@ -35,7 +35,7 @@ print(result.summary)  # "There were 1,243 orders placed in June 2025."
 
 ## 3. Multi-turn memory
 
-aqlix remembers previous questions in the same session:
+AAIZAQL remembers previous questions in the same session:
 
 ```python
 engine.query("Show me the top 10 customers by revenue")
@@ -45,7 +45,7 @@ engine.query("Which of those signed up in 2024?")       # still remembers
 
 ## 4. Train with business knowledge
 
-Teach aqlix domain-specific terms so it generates better SQL:
+Teach AAIZAQL domain-specific terms so it generates better SQL:
 
 ```python
 # Free-text documentation (retrieved via RAG)
@@ -67,13 +67,13 @@ engine.train(
 
 ```bash
 # Interactive REPL
-aqlix query --db sqlite:///mydata.db --llm groq
+AAIZAQL query --db sqlite:///mydata.db --llm groq
 
 # Single question
-aqlix query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
+AAIZAQL query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
 
 # Ingest schema only
-aqlix ingest --db sqlite:///mydata.db --llm groq
+AAIZAQL ingest --db sqlite:///mydata.db --llm groq
 ```
 
 ## Next steps

@@ -5,10 +5,10 @@
 | Database | Connector name | Install |
 |---|---|---|
 | SQLite | `sqlite` | Built-in — no extra install |
-| PostgreSQL | `postgresql` / `postgres` | `pip install "aqlix[postgres]"` |
-| MySQL | `mysql` | `pip install "aqlix[mysql]"` |
-| Snowflake | `snowflake` | `pip install "aqlix[snowflake]"` |
-| DuckDB | `duckdb` | `pip install "aqlix[duckdb]"` |
+| PostgreSQL | `postgresql` / `postgres` | `pip install "AAIZAQL[postgres]"` |
+| MySQL | `mysql` | `pip install "AAIZAQL[mysql]"` |
+| Snowflake | `snowflake` | `pip install "AAIZAQL[snowflake]"` |
+| DuckDB | `duckdb` | `pip install "AAIZAQL[duckdb]"` |
 
 ---
 
@@ -28,7 +28,7 @@ engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///:memory:")
 ## PostgreSQL
 
 ```bash
-pip install "aqlix[postgres]"
+pip install "AAIZAQL[postgres]"
 ```
 
 ```python
@@ -46,7 +46,7 @@ Both `postgresql` and `postgres` are accepted as the connector name.
 ## MySQL
 
 ```bash
-pip install "aqlix[mysql]"
+pip install "AAIZAQL[mysql]"
 ```
 
 ```python
@@ -62,7 +62,7 @@ engine = QueryEngine(
 ## Snowflake
 
 ```bash
-pip install "aqlix[snowflake]"
+pip install "AAIZAQL[snowflake]"
 ```
 
 ```python
@@ -90,7 +90,7 @@ DSN parameters:
 ## DuckDB
 
 ```bash
-pip install "aqlix[duckdb]"
+pip install "AAIZAQL[duckdb]"
 ```
 
 ```python
@@ -108,11 +108,11 @@ DuckDB is also used internally as the ephemeral workspace for federated queries
 
 ## Adding a custom connector
 
-Any database can be added without modifying aqlix core:
+Any database can be added without modifying AAIZAQL core:
 
 ```python
-from aqlix.connectors.base import DatabaseConnector
-from aqlix.connectors import REGISTRY
+from AAIZAQL.connectors.base import DatabaseConnector
+from AAIZAQL.connectors import REGISTRY
 import pandas as pd
 
 class BigQueryConnector(DatabaseConnector):

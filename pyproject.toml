@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "aqlix"
+name = "AAIZAQL"
 version = "0.1.0"
 description = "Natural Language to SQL — open-source library with RAG, self-correction, and federation"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-authors = [{ name = "aqlix contributors" }]
+authors = [{ name = "AAIZAQL contributors" }]
 keywords = ["sql", "nlp", "text-to-sql", "llm", "rag", "database", "natural-language"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 # ── Core dependencies ──────────────────────────────────────────────────────
-# Every dep listed here is required for `pip install aqlix` to work.
+# Every dep listed here is required for `pip install AAIZAQL` to work.
 dependencies = [
   "pandas>=2.0",
   "pydantic>=2.0",
@@ -90,17 +90,17 @@ dev = [
 
 # ── Entry points ────────────────────────────────────────────────────────────
 [project.scripts]
-aqlix = "aqlix.cli:main"
+aaizaql = "aaizaql.cli:main"
 
 # ── Project URLs ─────────────────────────────────────────────────────────────
 [project.urls]
-Homepage      = "https://github.com/ibrahimkhalil/aqlix"
-Documentation = "https://aqlix.readthedocs.io"
-"Bug Tracker" = "https://github.com/ibrahimkhalil/aqlix/issues"
+Homepage      = "https://github.com/ibrahimkhalil/AAIZAQL"
+Documentation = "https://AAIZAQL.readthedocs.io"
+"Bug Tracker" = "https://github.com/ibrahimkhalil/AAIZAQL/issues"
 
 # ── Hatch build settings ────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
-packages = ["src/aqlix"]
+packages = ["src/AAIZAQL"]
 
 # ── Ruff linter ─────────────────────────────────────────────────────────────
 [tool.ruff]
@@ -131,7 +131,7 @@ asyncio_mode = "auto"
 addopts = "-v --tb=short"
 
 [tool.coverage.run]
-source = ["src/aqlix"]
+source = ["src/AAIZAQL"]
 omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]

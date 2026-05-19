@@ -1,10 +1,10 @@
-# aqlix — Natural Language to SQL
+# AAIZAQL — Natural Language to SQL
 
 **Query any database in plain English.**
-aqlix is an open-source Python library that converts natural language questions into SQL, executes them, and returns results with charts and insights. It fixes the key limitations of Vanna AI: better security, context memory, self-correction, and a plugin architecture.
+AAIZAQL is an open-source Python library that converts natural language questions into SQL, executes them, and returns results with charts and insights. It fixes the key limitations of Vanna AI: better security, context memory, self-correction, and a plugin architecture.
 
 ```python
-from aqlix import QueryEngine
+from AAIZAQL import QueryEngine
 
 engine = QueryEngine(llm="groq", database="sqlite", dsn="sqlite:///sales.db")
 engine.ingest_schema()
@@ -18,9 +18,9 @@ print(result.summary)  # "The top customer was Acme Corp with $1.2M revenue..."
 
 ---
 
-## Why aqlix over Vanna AI?
+## Why AAIZAQL over Vanna AI?
 
-| Feature | aqlix | Vanna AI |
+| Feature | AAIZAQL | Vanna AI |
 |---|---|---|
 | SQL security layer (whitelist + injection detection) | ✅ | ⚠️ Partial |
 | Self-correction loop (auto-fix broken SQL) | ✅ | ⚠️ Partial |
@@ -36,26 +36,26 @@ print(result.summary)  # "The top customer was Acme Corp with $1.2M revenue..."
 ## Installation
 
 ```bash
-pip install aqlix
+pip install AAIZAQL
 ```
 
 Install with your LLM provider and database driver:
 
 ```bash
 # Groq (free, fast — recommended for getting started)
-pip install "aqlix[groq]"
+pip install "AAIZAQL[groq]"
 
 # Anthropic Claude
-pip install "aqlix[claude]"
+pip install "AAIZAQL[claude]"
 
 # OpenAI
-pip install "aqlix[openai]"
+pip install "AAIZAQL[openai]"
 
 # PostgreSQL
-pip install "aqlix[postgres]"
+pip install "AAIZAQL[postgres]"
 
 # Everything
-pip install "aqlix[all]"
+pip install "AAIZAQL[all]"
 ```
 
 ---
@@ -66,13 +66,13 @@ pip install "aqlix[all]"
 Sign up at [console.groq.com](https://console.groq.com) — it is free.
 
 ```bash
-export AQLIX_GROQ_API_KEY="gsk_your_key_here"
+export AAIZAQL_GROQ_API_KEY="gsk_your_key_here"
 ```
 
 ### 2. Query your database
 
 ```python
-from aqlix import QueryEngine
+from AAIZAQL import QueryEngine
 
 engine = QueryEngine(
     llm="groq",
@@ -90,10 +90,10 @@ print(result.data)
 
 ```bash
 # Interactive REPL
-aqlix query --db sqlite:///mydata.db --llm groq
+AAIZAQL query --db sqlite:///mydata.db --llm groq
 
 # Single question
-aqlix query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
+AAIZAQL query --db sqlite:///mydata.db --llm groq -q "Total revenue by region"
 ```
 
 ---
@@ -129,7 +129,7 @@ engine.train(
 ```
 
 ### Self-correction loop
-When the generated SQL fails, aqlix automatically sends the error back to the LLM and retries (up to 3 times by default):
+When the generated SQL fails, AAIZAQL automatically sends the error back to the LLM and retries (up to 3 times by default):
 
 ```
 attempt 1: SELECT * FROM employes   → DatabaseError: no such table
@@ -145,8 +145,8 @@ Every SQL passes through a security gate before execution:
 
 ### Add a new database connector
 ```python
-from aqlix.connectors.base import DatabaseConnector
-from aqlix.connectors import REGISTRY
+from AAIZAQL.connectors.base import DatabaseConnector
+from AAIZAQL.connectors import REGISTRY
 
 class BigQueryConnector(DatabaseConnector):
     name = "bigquery"
@@ -162,19 +162,19 @@ REGISTRY["bigquery"] = BigQueryConnector
 
 ## Configuration
 
-All settings can be set via environment variables (prefixed `AQLIX_`) or passed directly to `QueryEngine`:
+All settings can be set via environment variables (prefixed `AAIZAQL_`) or passed directly to `QueryEngine`:
 
 | Setting | Env var | Default | Description |
 |---|---|---|---|
-| LLM provider | `AQLIX_LLM_PROVIDER` | `groq` | `groq`, `claude`, `openai`, `ollama` |
-| Groq API key | `AQLIX_GROQ_API_KEY` | — | Get free key at console.groq.com |
-| Groq model | `AQLIX_GROQ_MODEL` | `llama3-70b-8192` | Any Groq-supported model |
-| Anthropic key | `AQLIX_ANTHROPIC_API_KEY` | — | For `llm="claude"` |
-| OpenAI key | `AQLIX_OPENAI_API_KEY` | — | For `llm="openai"` |
-| Ollama URL | `AQLIX_OLLAMA_BASE_URL` | `http://localhost:11434` | For local models |
-| Vector store | `AQLIX_VECTOR_STORE` | `chroma` | `chroma` or `qdrant` |
-| Max retries | `AQLIX_MAX_SELF_CORRECTION_RETRIES` | `3` | Self-correction attempts |
-| Session history | `AQLIX_SESSION_HISTORY_LIMIT` | `10` | Turns kept in context |
+| LLM provider | `AAIZAQL_LLM_PROVIDER` | `groq` | `groq`, `claude`, `openai`, `ollama` |
+| Groq API key | `AAIZAQL_GROQ_API_KEY` | — | Get free key at console.groq.com |
+| Groq model | `AAIZAQL_GROQ_MODEL` | `llama3-70b-8192` | Any Groq-supported model |
+| Anthropic key | `AAIZAQL_ANTHROPIC_API_KEY` | — | For `llm="claude"` |
+| OpenAI key | `AAIZAQL_OPENAI_API_KEY` | — | For `llm="openai"` |
+| Ollama URL | `AAIZAQL_OLLAMA_BASE_URL` | `http://localhost:11434` | For local models |
+| Vector store | `AAIZAQL_VECTOR_STORE` | `chroma` | `chroma` or `qdrant` |
+| Max retries | `AAIZAQL_MAX_SELF_CORRECTION_RETRIES` | `3` | Self-correction attempts |
+| Session history | `AAIZAQL_SESSION_HISTORY_LIMIT` | `10` | Turns kept in context |
 
 ---
 
@@ -183,10 +183,10 @@ All settings can be set via environment variables (prefixed `AQLIX_`) or passed 
 | Database | Connector name | Install |
 |---|---|---|
 | SQLite | `sqlite` | Built-in |
-| PostgreSQL | `postgresql` / `postgres` | `pip install "aqlix[postgres]"` |
+| PostgreSQL | `postgresql` / `postgres` | `pip install "AAIZAQL[postgres]"` |
 | MySQL | `mysql` | `pip install pymysql` |
-| Snowflake | `snowflake` | `pip install "aqlix[snowflake]"` |
-| DuckDB | `duckdb` | `pip install "aqlix[duckdb]"` |
+| Snowflake | `snowflake` | `pip install "AAIZAQL[snowflake]"` |
+| DuckDB | `duckdb` | `pip install "AAIZAQL[duckdb]"` |
 
 ---
 
@@ -215,8 +215,8 @@ All settings can be set via environment variables (prefixed `AQLIX_`) or passed 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-git clone https://github.com/ibrahimkhalilCorp/aqlix
-cd aqlix
+git clone https://github.com/ibrahimkhalilCorp/AAIZAQL
+cd AAIZAQL
 pip install -e ".[dev]"
 pytest tests/
 ```

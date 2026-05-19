@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from aqlix.visualization.renderer import ResultRenderer
-from aqlix.visualization.summarizer import NLSummarizer
+from AAIZAQL.visualization.renderer import ResultRenderer
+from AAIZAQL.visualization.summarizer import NLSummarizer
 
 
 class TestResultRenderer:

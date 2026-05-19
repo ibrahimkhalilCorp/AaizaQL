@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from aqlix.core.exceptions import ConnectionError, DatabaseError
+from AAIZAQL.core.exceptions import ConnectionError, DatabaseError
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MySQL
@@ -30,7 +30,7 @@ class TestMySQLConnector:
     # ── DSN parser ────────────────────────────────────────────────────────────
 
     def test_parse_dsn_full(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         result = MySQLConnector._parse_dsn("mysql://alice:secret@db.example.com:3307/sales")
         assert result["host"] == "db.example.com"
@@ -40,19 +40,19 @@ class TestMySQLConnector:
         assert result["database"] == "sales"
 
     def test_parse_dsn_default_port(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         result = MySQLConnector._parse_dsn("mysql://user:pass@localhost/mydb")
         assert result["port"] == 3306
 
     def test_parse_dsn_no_password(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         result = MySQLConnector._parse_dsn("mysql://user@localhost/mydb")
         assert result["password"] == ""
 
     def test_parse_dsn_invalid_raises(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         with pytest.raises(ValueError, match="Cannot parse MySQL DSN"):
             MySQLConnector._parse_dsn("not-a-valid-dsn")
@@ -60,7 +60,7 @@ class TestMySQLConnector:
     # ── connect ───────────────────────────────────────────────────────────────
 
     def test_connect_success(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
         with patch("pymysql.connect", return_value=mock_conn):
@@ -69,7 +69,7 @@ class TestMySQLConnector:
             assert connector._conn is mock_conn
 
     def test_connect_failure_raises_connection_error(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         with patch("pymysql.connect", side_effect=Exception("refused")):
             connector = MySQLConnector()
@@ -79,7 +79,7 @@ class TestMySQLConnector:
     # ── execute ───────────────────────────────────────────────────────────────
 
     def test_execute_returns_dataframe(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
         expected_df = pd.DataFrame({"id": [1, 2], "name": ["Alice", "Bob"]})
@@ -92,14 +92,14 @@ class TestMySQLConnector:
             assert len(result) == 2
 
     def test_execute_not_connected_raises(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         connector = MySQLConnector()
         with pytest.raises(DatabaseError, match="Not connected"):
             connector.execute("SELECT 1")
 
     def test_execute_db_error_raises_database_error(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
         with patch("pandas.read_sql_query", side_effect=Exception("table not found")):
@@ -111,7 +111,7 @@ class TestMySQLConnector:
     # ── get_schema ────────────────────────────────────────────────────────────
 
     def test_get_schema_returns_ddl_string(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
         schema_df = pd.DataFrame(
@@ -131,7 +131,7 @@ class TestMySQLConnector:
             assert "CREATE TABLE" in schema
 
     def test_get_schema_not_connected_returns_empty(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         connector = MySQLConnector()
         assert connector.get_schema() == ""
@@ -139,7 +139,7 @@ class TestMySQLConnector:
     # ── close ─────────────────────────────────────────────────────────────────
 
     def test_close_calls_connection_close(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         mock_conn = MagicMock()
         connector = MySQLConnector()
@@ -149,7 +149,7 @@ class TestMySQLConnector:
         assert connector._conn is None
 
     def test_close_is_idempotent(self) -> None:
-        from aqlix.connectors.mysql import MySQLConnector
+        from AAIZAQL.connectors.mysql import MySQLConnector
 
         connector = MySQLConnector()
         connector.close()  # no connection — should not raise
@@ -169,7 +169,7 @@ class TestDuckDBConnector:
 
     @pytest.fixture()
     def connector(self):
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         c.connect("duckdb:///:memory:")
@@ -187,7 +187,7 @@ class TestDuckDBConnector:
     # ── connect ───────────────────────────────────────────────────────────────
 
     def test_connect_memory(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         c.connect("duckdb:///:memory:")
@@ -195,7 +195,7 @@ class TestDuckDBConnector:
         c.close()
 
     def test_connect_invalid_raises_connection_error(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         with patch("duckdb.connect", side_effect=Exception("bad path")):
             c = DuckDBConnector()
@@ -221,7 +221,7 @@ class TestDuckDBConnector:
         assert df["name"].iloc[0] == "Gadget"
 
     def test_execute_not_connected_raises(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         with pytest.raises(DatabaseError, match="Not connected"):
@@ -243,13 +243,13 @@ class TestDuckDBConnector:
         assert "price" in schema.lower()
 
     def test_get_schema_not_connected_returns_empty(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         assert c.get_schema() == ""
 
     def test_get_schema_empty_db_returns_empty(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         c.connect("duckdb:///:memory:")
@@ -266,7 +266,7 @@ class TestDuckDBConnector:
         assert result["region"].iloc[0] == "US"
 
     def test_register_dataframe_not_connected_raises(self) -> None:
-        from aqlix.connectors.duckdb import DuckDBConnector
+        from AAIZAQL.connectors.duckdb import DuckDBConnector
 
         c = DuckDBConnector()
         df = pd.DataFrame({"x": [1]})
@@ -297,7 +297,7 @@ class TestSnowflakeConnector:
     # ── DSN parser ────────────────────────────────────────────────────────────
 
     def test_parse_dsn_full(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         result = SnowflakeConnector._parse_dsn(
             "snowflake://alice:secret@myaccount/mydb/myschema" "?warehouse=COMPUTE_WH&role=ANALYST"
@@ -311,7 +311,7 @@ class TestSnowflakeConnector:
         assert result["role"] == "ANALYST"
 
     def test_parse_dsn_minimal(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         result = SnowflakeConnector._parse_dsn("snowflake://user:pass@account/db")
         assert result["database"] == "db"
@@ -320,13 +320,13 @@ class TestSnowflakeConnector:
         assert result["role"] is None
 
     def test_parse_dsn_no_database(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         result = SnowflakeConnector._parse_dsn("snowflake://user:pass@account/")
         assert result["database"] == ""
 
     def test_parse_dsn_wrong_scheme_raises(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         with pytest.raises(ValueError, match="Invalid scheme"):
             SnowflakeConnector._parse_dsn("mysql://user:pass@host/db")
@@ -334,7 +334,7 @@ class TestSnowflakeConnector:
     # ── connect ───────────────────────────────────────────────────────────────
 
     def test_connect_success(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_conn = MagicMock()
         with patch("snowflake.connector.connect", return_value=mock_conn):
@@ -345,7 +345,7 @@ class TestSnowflakeConnector:
             assert c._database == "db"
 
     def test_connect_failure_raises_connection_error(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         with patch("snowflake.connector.connect", side_effect=Exception("auth failed")):
             c = SnowflakeConnector()
@@ -355,7 +355,7 @@ class TestSnowflakeConnector:
     # ── execute ───────────────────────────────────────────────────────────────
 
     def test_execute_returns_dataframe(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_cursor = MagicMock()
         mock_cursor.description = [("ID",), ("NAME",)]
@@ -373,7 +373,7 @@ class TestSnowflakeConnector:
         assert len(df) == 2
 
     def test_execute_no_description_returns_empty(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_cursor = MagicMock()
         mock_cursor.description = None
@@ -388,14 +388,14 @@ class TestSnowflakeConnector:
         assert len(df) == 0
 
     def test_execute_not_connected_raises(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         c = SnowflakeConnector()
         with pytest.raises(DatabaseError, match="Not connected"):
             c.execute("SELECT 1")
 
     def test_execute_error_raises_database_error(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_conn = MagicMock()
         mock_conn.cursor.side_effect = Exception("query failed")
@@ -408,13 +408,13 @@ class TestSnowflakeConnector:
     # ── get_schema ────────────────────────────────────────────────────────────
 
     def test_get_schema_not_connected_returns_empty(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         c = SnowflakeConnector()
         assert c.get_schema() == ""
 
     def test_get_schema_returns_ddl(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         cols_df = pd.DataFrame(
             {
@@ -452,7 +452,7 @@ class TestSnowflakeConnector:
     # ── close ─────────────────────────────────────────────────────────────────
 
     def test_close_calls_connection_close(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_conn = MagicMock()
         c = SnowflakeConnector()
@@ -462,7 +462,7 @@ class TestSnowflakeConnector:
         assert c._conn is None
 
     def test_close_is_idempotent(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         c = SnowflakeConnector()
         c.close()
@@ -471,7 +471,7 @@ class TestSnowflakeConnector:
     # ── test_connection ───────────────────────────────────────────────────────
 
     def test_test_connection_success(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_cursor = MagicMock()
         mock_conn = MagicMock()
@@ -482,7 +482,7 @@ class TestSnowflakeConnector:
         assert c.test_connection() is True
 
     def test_test_connection_failure_returns_false(self) -> None:
-        from aqlix.connectors.snowflake import SnowflakeConnector
+        from AAIZAQL.connectors.snowflake import SnowflakeConnector
 
         mock_conn = MagicMock()
         mock_conn.cursor.side_effect = Exception("network error")

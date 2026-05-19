@@ -8,41 +8,41 @@
 ## Basic install
 
 ```bash
-pip install aqlix
+pip install AAIZAQL
 ```
 
 ## Install with your LLM provider
 
-aqlix supports multiple LLM providers. Install the one you want to use:
+AAIZAQL supports multiple LLM providers. Install the one you want to use:
 
 ```bash
 # Groq — free tier, fastest inference, recommended for getting started
-pip install "aqlix[groq]"
+pip install "AAIZAQL[groq]"
 
 # Anthropic Claude — best accuracy on complex schemas
-pip install "aqlix[claude]"
+pip install "AAIZAQL[claude]"
 
 # OpenAI — GPT-4o and others
-pip install "aqlix[openai]"
+pip install "AAIZAQL[openai]"
 
 # Ollama — local models, fully private, no API key needed
-pip install aqlix   # ollama provider uses requests, already included
+pip install AAIZAQL   # ollama provider uses requests, already included
 ```
 
 ## Install with your database driver
 
 ```bash
 # PostgreSQL
-pip install "aqlix[postgres]"
+pip install "AAIZAQL[postgres]"
 
 # MySQL
-pip install "aqlix[mysql]"
+pip install "AAIZAQL[mysql]"
 
 # Snowflake
-pip install "aqlix[snowflake]"
+pip install "AAIZAQL[snowflake]"
 
 # DuckDB
-pip install "aqlix[duckdb]"
+pip install "AAIZAQL[duckdb]"
 
 # SQLite is built into Python — no extra install needed
 ```
@@ -50,14 +50,14 @@ pip install "aqlix[duckdb]"
 ## Install everything
 
 ```bash
-pip install "aqlix[all]"
+pip install "AAIZAQL[all]"
 ```
 
 ## Development install
 
 ```bash
-git clone https://github.com/ibrahimkhalil/aqlix
-cd aqlix
+git clone https://github.com/ibrahimkhalil/AAIZAQL
+cd AAIZAQL
 pip install -e ".[dev]"
 pre-commit install
 ```
@@ -65,7 +65,7 @@ pre-commit install
 ## Verify the install
 
 ```bash
-aqlix version
+AAIZAQL version
 ```
 
-You should see `aqlix 0.1.0`.
+You should see `AAIZAQL 0.1.0`.

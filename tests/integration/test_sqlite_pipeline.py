@@ -11,11 +11,11 @@ import sqlite3
 import pandas as pd
 import pytest
 
-from aqlix.connectors.sqlite import SQLiteConnector
-from aqlix.core.config import Settings
-from aqlix.core.exceptions import SecurityException
-from aqlix.memory.context import ContextManager
-from aqlix.security.validator import SQLValidator
+from AAIZAQL.connectors.sqlite import SQLiteConnector
+from AAIZAQL.core.config import Settings
+from AAIZAQL.core.exceptions import SecurityException
+from AAIZAQL.memory.context import ContextManager
+from AAIZAQL.security.validator import SQLValidator
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ class TestSQLiteConnector:
         assert connector.test_connection() is True
 
     def test_bad_sql_raises_database_error(self, connector):
-        from aqlix.core.exceptions import DatabaseError
+        from AAIZAQL.core.exceptions import DatabaseError
 
         with pytest.raises(DatabaseError):
             connector.execute("SELECT * FROM nonexistent_table_xyz")

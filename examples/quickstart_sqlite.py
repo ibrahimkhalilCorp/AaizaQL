@@ -1,12 +1,12 @@
 """
 examples/quickstart_sqlite.py
 ──────────────────────────────
-Getting started with aqlix — querying a local SQLite database.
+Getting started with AAIZAQL — querying a local SQLite database.
 
-Run this script after installing aqlix and setting your Groq API key:
+Run this script after installing AAIZAQL and setting your Groq API key:
 
-    pip install "aqlix[groq]"
-    export AQLIX_GROQ_API_KEY="gsk_your_key_here"
+    pip install "AAIZAQL[groq]"
+    export AAIZAQL_GROQ_API_KEY="gsk_your_key_here"
     python examples/quickstart_sqlite.py
 
 No database setup required — this script creates a sample SQLite database.
@@ -61,7 +61,7 @@ def main() -> None:
     print(f"Sample database created at: {db_path}\n")
 
     # ── Engine ───────────────────────────────────────────────────────────────
-    from aqlix import QueryEngine
+    from AAIZAQL import QueryEngine
 
     engine = QueryEngine(
         llm="groq",          # free API key from console.groq.com

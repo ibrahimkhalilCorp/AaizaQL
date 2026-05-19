@@ -6,7 +6,7 @@ Unit tests for the session context manager.
 
 import pytest
 
-from aqlix.memory.context import ContextManager
+from AAIZAQL.memory.context import ContextManager
 
 
 @pytest.fixture

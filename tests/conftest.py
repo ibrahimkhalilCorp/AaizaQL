@@ -15,9 +15,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aqlix.connectors.sqlite import SQLiteConnector
-from aqlix.core.config import Settings
-from aqlix.memory.vector_store import VectorStoreAdapter
+from AAIZAQL.connectors.sqlite import SQLiteConnector
+from AAIZAQL.core.config import Settings
+from AAIZAQL.memory.vector_store import VectorStoreAdapter
 
 # ── Settings ─────────────────────────────────────────────────────────────────
 

@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aqlix.schema.ingestion import SchemaIngester
-from aqlix.schema.semantic_store import SemanticStore
+from AAIZAQL.schema.ingestion import SchemaIngester
+from AAIZAQL.schema.semantic_store import SemanticStore
 
 # ── SchemaIngester ────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ class TestSchemaIngester:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Prevent sentence-transformers from downloading models during tests."""
-        from aqlix.schema import ingestion as ing_mod
+        from AAIZAQL.schema import ingestion as ing_mod
 
         monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
         monkeypatch.setattr(
@@ -109,7 +109,7 @@ CREATE TABLE departments (
 class TestSemanticStore:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from aqlix.schema import ingestion as ing_mod
+        from AAIZAQL.schema import ingestion as ing_mod
 
         monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
         monkeypatch.setattr(

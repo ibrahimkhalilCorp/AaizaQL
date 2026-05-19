@@ -1,11 +1,11 @@
 """
 examples/03_train_and_query.py
 ────────────────────────────────
-Aqlix — train() + define_enum() demo
-Mirrors the vanna_demo.py but uses Aqlix's cleaner API.
+AAIZAQL — train() + define_enum() demo
+Mirrors the vanna_demo.py but uses AAIZAQL's cleaner API.
 
 Setup:
-    $env:AQLIX_GROQ_API_KEY = "gsk_your_key_here"
+    $env:AAIZAQL_GROQ_API_KEY = "gsk_your_key_here"
 
 Run:
     python examples/03_train_and_query.py
@@ -17,15 +17,15 @@ import sqlite3
 import time
 
 # ── API key check ─────────────────────────────────────────────────────────────
-if not os.environ.get("AQLIX_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
+if not os.environ.get("AAIZAQL_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
     print("❌  Set your key first:")
-    print('    $env:AQLIX_GROQ_API_KEY = "gsk_your_key_here"')
+    print('    $env:AAIZAQL_GROQ_API_KEY = "gsk_your_key_here"')
     sys.exit(1)
 
-from aqlix import QueryEngine
+from AAIZAQL import QueryEngine
 
 print("=" * 60)
-print("  Aqlix — train() + define_enum() demo")
+print("  AAIZAQL — train() + define_enum() demo")
 print("=" * 60)
 
 # ─────────────────────────────────────────────────────────────────

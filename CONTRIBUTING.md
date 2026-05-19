@@ -1,4 +1,4 @@
-# Contributing to aqlix
+# Contributing to AAIZAQL
 
 Contributions are welcome — bug fixes, new connectors, LLM providers, docs, and tests all help.
 This guide covers everything you need to go from zero to a merged pull request.
@@ -23,8 +23,8 @@ This guide covers everything you need to go from zero to a merged pull request.
 **Requirements:** Python 3.11+, Git.
 
 ```bash
-git clone https://github.com/ibrahimkhalilCorp/aqlix
-cd aqlix
+git clone https://github.com/ibrahimkhalilCorp/AAIZAQL
+cd AAIZAQL
 pip install -e ".[dev]"
 pre-commit install
 ```
@@ -43,7 +43,7 @@ pytest tests/unit/          # fast, no API key needed
 ## Project structure
 
 ```
-src/aqlix/
+src/AAIZAQL/
 ├── core/          # QueryEngine, Settings, exceptions — the public API
 ├── nlp/           # SQLGenerator, SelfCorrector, prompts
 ├── memory/        # ContextManager, VectorStoreAdapter
@@ -53,7 +53,7 @@ src/aqlix/
 ├── federation/    # FederationCoordinator, QueryPlanner (Phase 3)
 ├── schema/        # SchemaIngester, SemanticLayer
 ├── visualization/ # ResultRenderer, NLSummarizer
-└── cli.py         # `aqlix` command-line entry point
+└── cli.py         # `AAIZAQL` command-line entry point
 tests/
 ├── unit/          # Pure unit tests — no DB, no API key, always fast
 ├── integration/   # Tests against a real SQLite database
@@ -76,7 +76,7 @@ pytest tests/unit/
 pytest tests/
 
 # With coverage report
-pytest tests/ --cov=src/aqlix --cov-report=term-missing
+pytest tests/ --cov=src/AAIZAQL --cov-report=term-missing
 
 # Run a specific file
 pytest tests/unit/test_validator.py -v
@@ -86,7 +86,7 @@ Tests marked `@pytest.mark.requires_api_key` are automatically skipped when no
 `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable is set. To run them locally:
 
 ```bash
-export AQLIX_GROQ_API_KEY="gsk_..."
+export AAIZAQL_GROQ_API_KEY="gsk_..."
 pytest tests/ -m requires_api_key
 ```
 
@@ -104,7 +104,7 @@ they also run locally before every commit.
 | `mypy` | Type-checks (non-strict) | `pyproject.toml` → `[tool.mypy]` |
 
 Line length is **100 characters**. Use type hints everywhere. Avoid bare `Exception` —
-raise the specific exception from `aqlix.core.exceptions` that matches the failure.
+raise the specific exception from `AAIZAQL.core.exceptions` that matches the failure.
 
 To run checks manually:
 
@@ -120,15 +120,15 @@ mypy src/
 
 ### Adding a new database connector
 
-1. Create `src/aqlix/connectors/<name>.py` — subclass `DatabaseConnector` and implement
+1. Create `src/AAIZAQL/connectors/<name>.py` — subclass `DatabaseConnector` and implement
    `connect()`, `execute()`, `get_schema()`, and `close()`. Follow the pattern in
    `connectors/sqlite.py` or `connectors/postgres.py`.
 
-2. Add a lazy-import block in `src/aqlix/connectors/__init__.py`:
+2. Add a lazy-import block in `src/AAIZAQL/connectors/__init__.py`:
 
    ```python
    try:
-       from aqlix.connectors.bigquery import BigQueryConnector
+       from AAIZAQL.connectors.bigquery import BigQueryConnector
        REGISTRY["bigquery"] = BigQueryConnector
    except ImportError:
        pass
@@ -145,10 +145,10 @@ mypy src/
 
 ### Adding a new LLM provider
 
-1. Create `src/aqlix/llm/<name>_provider.py` — subclass `LLMProvider` and implement
+1. Create `src/AAIZAQL/llm/<name>_provider.py` — subclass `LLMProvider` and implement
    `complete()`. Follow the pattern in `llm/groq_provider.py`.
 
-2. Register it in `src/aqlix/llm/__init__.py`.
+2. Register it in `src/AAIZAQL/llm/__init__.py`.
 
 3. Add the SDK to `pyproject.toml` as an optional dependency.
 
@@ -234,9 +234,9 @@ test: add unit tests for MySQLConnector DSN parser
 
 ## Reporting bugs
 
-Open a [GitHub issue](https://github.com/ibrahimkhalilCorp/aqlix/issues) and include:
+Open a [GitHub issue](https://github.com/ibrahimkhalilCorp/AAIZAQL/issues) and include:
 
-- aqlix version (`pip show aqlix`)
+- AAIZAQL version (`pip show AAIZAQL`)
 - Python version (`python --version`)
 - Database and LLM provider being used
 - The question you asked and the SQL that was generated (if any)

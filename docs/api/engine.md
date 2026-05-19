@@ -1,12 +1,12 @@
 # QueryEngine
 
-The `QueryEngine` is the single public entry point for the aqlix library.
+The `QueryEngine` is the single public entry point for the AAIZAQL library.
 All other modules (NLP, security, connectors, memory) are internal implementation details.
 
 ## Import
 
 ```python
-from aqlix import QueryEngine
+from AAIZAQL import QueryEngine
 ```
 
 ## Constructor

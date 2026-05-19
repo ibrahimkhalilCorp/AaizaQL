@@ -6,7 +6,7 @@ Unit tests for ContextManager (short-term session memory).
 
 from __future__ import annotations
 
-from aqlix.memory.context import ContextManager
+from AAIZAQL.memory.context import ContextManager
 
 
 class TestContextManager:
