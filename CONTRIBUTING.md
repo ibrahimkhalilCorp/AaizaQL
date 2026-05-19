@@ -23,7 +23,7 @@ This guide covers everything you need to go from zero to a merged pull request.
 **Requirements:** Python 3.11+, Git.
 
 ```bash
-git clone https://github.com/your-org/aqlix
+git clone https://github.com/ibrahimkhalilCorp/aqlix
 cd aqlix
 pip install -e ".[dev]"
 pre-commit install
@@ -234,7 +234,7 @@ test: add unit tests for MySQLConnector DSN parser
 
 ## Reporting bugs
 
-Open a [GitHub issue](https://github.com/your-org/aqlix/issues) and include:
+Open a [GitHub issue](https://github.com/ibrahimkhalilCorp/aqlix/issues) and include:
 
 - aqlix version (`pip show aqlix`)
 - Python version (`python --version`)

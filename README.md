@@ -215,7 +215,7 @@ All settings can be set via environment variables (prefixed `AQLIX_`) or passed 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-git clone https://github.com/ibrahimkhalil/aqlix
+git clone https://github.com/ibrahimkhalilCorp/aqlix
 cd aqlix
 pip install -e ".[dev]"
 pytest tests/
