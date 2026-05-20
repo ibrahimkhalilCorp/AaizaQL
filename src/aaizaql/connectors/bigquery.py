@@ -98,7 +98,9 @@ class BigQueryConnector(DatabaseConnector):
 
     def execute(self, sql: str) -> pd.DataFrame:
         if self._client is None:
-            raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="bigquery")
+            raise DatabaseError(
+                "Not connected. Call connect() first.", sql=sql, connector="bigquery"
+            )
         try:
             query_job = self._client.query(sql)
             return query_job.to_dataframe()
@@ -110,7 +112,6 @@ class BigQueryConnector(DatabaseConnector):
         if self._client is None:
             return ""
         try:
-            from google.cloud import bigquery
 
             dataset_ref = self._client.dataset(self._dataset)
             tables = list(self._client.list_tables(dataset_ref))
