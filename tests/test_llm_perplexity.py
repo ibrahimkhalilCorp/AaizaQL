@@ -70,8 +70,7 @@ class TestPerplexityProvider:
         from aaizaql.llm.perplexity_provider import PerplexityProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"openai": None}):
-            with pytest.raises(LLMError, match="openai package is not installed"):
+        with patch.dict("sys.modules", {"openai": None}), pytest.raises(LLMError, match="openai package is not installed"):
                 PerplexityProvider(settings)
 
     def test_init_success(self) -> None:

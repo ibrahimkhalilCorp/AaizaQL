@@ -60,8 +60,7 @@ class TestDeepSeekProvider:
         from aaizaql.llm.deepseek_provider import DeepSeekProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"openai": None}):
-            with pytest.raises(LLMError, match="openai package is not installed"):
+        with patch.dict("sys.modules", {"openai": None}), pytest.raises(LLMError, match="openai package is not installed"):
                 DeepSeekProvider(settings)
 
     def test_init_success(self) -> None:

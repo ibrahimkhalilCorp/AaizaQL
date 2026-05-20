@@ -70,8 +70,7 @@ class TestMistralProvider:
         from aaizaql.llm.mistral_provider import MistralProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"mistralai": None}):
-            with pytest.raises(LLMError, match="mistralai package is not installed"):
+        with patch.dict("sys.modules", {"mistralai": None}), pytest.raises(LLMError, match="mistralai package is not installed"):
                 MistralProvider(settings)
 
     def test_init_success(self) -> None:
