@@ -41,6 +41,36 @@ try:
 except ImportError:
     pass
 
+try:
+    from aaizaql.connectors.mssql import MSSQLConnector
+
+    REGISTRY["mssql"] = MSSQLConnector
+    REGISTRY["sqlserver"] = MSSQLConnector  # alias
+except ImportError:
+    pass
+
+try:
+    from aaizaql.connectors.oracle import OracleConnector
+
+    REGISTRY["oracle"] = OracleConnector
+except ImportError:
+    pass
+
+try:
+    from aaizaql.connectors.mongodb import MongoDBConnector
+
+    REGISTRY["mongodb"] = MongoDBConnector
+    REGISTRY["mongo"] = MongoDBConnector  # alias
+except ImportError:
+    pass
+
+try:
+    from aaizaql.connectors.bigquery import BigQueryConnector
+
+    REGISTRY["bigquery"] = BigQueryConnector
+except ImportError:
+    pass
+
 
 def get_connector(name: str) -> DatabaseConnector:
     """Instantiate and return a connector by name."""

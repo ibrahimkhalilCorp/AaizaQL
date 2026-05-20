@@ -19,6 +19,10 @@ class LLMProvider(StrEnum):
     OPENAI = "openai"
     OLLAMA = "ollama"
     GROQ = "groq"
+    DEEPSEEK = "deepseek"
+    PERPLEXITY = "perplexity"
+    GEMINI = "gemini"
+    MISTRAL = "mistral"
 
 
 class VectorStoreBackend(StrEnum):
@@ -65,6 +69,38 @@ class Settings(BaseSettings):
     groq_model: str = Field(
         default="llama-3.3-70b-versatile",
         description="Groq model string. Options: llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768, gemma2-9b-it",  # noqa: E501
+    )
+    deepseek_api_key: SecretStr | None = Field(
+        default=None,
+        description="DeepSeek API key (required when llm_provider=deepseek). Get at platform.deepseek.com",
+    )
+    deepseek_model: str = Field(
+        default="deepseek-chat",
+        description="DeepSeek model string. Options: deepseek-chat, deepseek-reasoner",
+    )
+    perplexity_api_key: SecretStr | None = Field(
+        default=None,
+        description="Perplexity API key (required when llm_provider=perplexity). Get at perplexity.ai/settings/api",
+    )
+    perplexity_model: str = Field(
+        default="sonar",
+        description="Perplexity model string. Options: sonar, sonar-pro, sonar-reasoning, sonar-reasoning-pro",
+    )
+    gemini_api_key: SecretStr | None = Field(
+        default=None,
+        description="Google Gemini API key (required when llm_provider=gemini). Get at aistudio.google.com",
+    )
+    gemini_model: str = Field(
+        default="gemini-2.5-flash",
+        description="Gemini model string. Options: gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash",
+    )
+    mistral_api_key: SecretStr | None = Field(
+        default=None,
+        description="Mistral API key (required when llm_provider=mistral). Get at console.mistral.ai",
+    )
+    mistral_model: str = Field(
+        default="mistral-large-latest",
+        description="Mistral model string. Options: mistral-large-latest, mistral-small-latest, codestral-latest",
     )
     ollama_base_url: str = Field(
         default="http://localhost:11434",

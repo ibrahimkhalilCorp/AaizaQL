@@ -51,8 +51,32 @@ pip install "aaizaql[claude]"
 # OpenAI
 pip install "aaizaql[openai]"
 
+# DeepSeek
+pip install "aaizaql[deepseek]"
+
+# Google Gemini
+pip install "aaizaql[gemini]"
+
+# Mistral
+pip install "aaizaql[mistral]"
+
+# Perplexity
+pip install "aaizaql[perplexity]"
+
 # PostgreSQL
 pip install "aaizaql[postgres]"
+
+# Microsoft SQL Server
+pip install "aaizaql[mssql]"
+
+# Oracle
+pip install "aaizaql[oracle]"
+
+# MongoDB
+pip install "aaizaql[mongodb]"
+
+# BigQuery
+pip install "aaizaql[bigquery]"
 
 # Everything
 pip install "aaizaql[all]"
@@ -143,21 +167,6 @@ Every SQL passes through a security gate before execution:
 - **Structural parsing** — uses `sqlglot` to catch disguised dangerous statements
 - **Multi-statement blocking** — `SELECT 1; DROP TABLE x` is rejected
 
-### Add a new database connector
-```python
-from aaizaql.connectors.base import DatabaseConnector
-from aaizaql.connectors import REGISTRY
-
-class BigQueryConnector(DatabaseConnector):
-    name = "bigquery"
-
-    def connect(self, dsn): ...
-    def execute(self, sql): ...
-    def get_schema(self): ...
-
-REGISTRY["bigquery"] = BigQueryConnector
-```
-
 ---
 
 ## Configuration
@@ -166,11 +175,19 @@ All settings can be set via environment variables (prefixed `AAIZAQL_`) or passe
 
 | Setting | Env var | Default | Description |
 |---|---|---|---|
-| LLM provider | `AAIZAQL_LLM_PROVIDER` | `groq` | `groq`, `claude`, `openai`, `ollama` |
-| Groq API key | `AAIZAQL_GROQ_API_KEY` | — | Get free key at console.groq.com |
-| Groq model | `AAIZAQL_GROQ_MODEL` | `llama3-70b-8192` | Any Groq-supported model |
+| LLM provider | `AAIZAQL_LLM_PROVIDER` | `groq` | See supported providers below |
+| Groq API key | `AAIZAQL_GROQ_API_KEY` | — | Free at console.groq.com |
+| Groq model | `AAIZAQL_GROQ_MODEL` | `llama-3.3-70b-versatile` | Any Groq-supported model |
 | Anthropic key | `AAIZAQL_ANTHROPIC_API_KEY` | — | For `llm="claude"` |
 | OpenAI key | `AAIZAQL_OPENAI_API_KEY` | — | For `llm="openai"` |
+| DeepSeek key | `AAIZAQL_DEEPSEEK_API_KEY` | — | For `llm="deepseek"` |
+| DeepSeek model | `AAIZAQL_DEEPSEEK_MODEL` | `deepseek-chat` | `deepseek-chat`, `deepseek-reasoner` |
+| Perplexity key | `AAIZAQL_PERPLEXITY_API_KEY` | — | For `llm="perplexity"` |
+| Perplexity model | `AAIZAQL_PERPLEXITY_MODEL` | `sonar` | `sonar`, `sonar-pro`, `sonar-reasoning` |
+| Gemini key | `AAIZAQL_GEMINI_API_KEY` | — | For `llm="gemini"` |
+| Gemini model | `AAIZAQL_GEMINI_MODEL` | `gemini-2.5-flash` | `gemini-2.5-flash`, `gemini-2.5-pro` |
+| Mistral key | `AAIZAQL_MISTRAL_API_KEY` | — | For `llm="mistral"` |
+| Mistral model | `AAIZAQL_MISTRAL_MODEL` | `mistral-large-latest` | `mistral-large-latest`, `codestral-latest` |
 | Ollama URL | `AAIZAQL_OLLAMA_BASE_URL` | `http://localhost:11434` | For local models |
 | Vector store | `AAIZAQL_VECTOR_STORE` | `chroma` | `chroma` or `qdrant` |
 | Max retries | `AAIZAQL_MAX_SELF_CORRECTION_RETRIES` | `3` | Self-correction attempts |
@@ -178,35 +195,114 @@ All settings can be set via environment variables (prefixed `AAIZAQL_`) or passe
 
 ---
 
+## Supported LLM Providers
+
+| Provider | Key | Default Model | Install | Notes |
+|---|---|---|---|---|
+| Groq | `groq` | `llama-3.3-70b-versatile` | `pip install "aaizaql[groq]"` | Free tier. Fastest inference. **Recommended.** |
+| Anthropic Claude | `claude` | `claude-sonnet-4-20250514` | `pip install "aaizaql[claude]"` | Best accuracy on complex schemas. |
+| OpenAI | `openai` | `gpt-4o` | `pip install "aaizaql[openai]"` | GPT-4o and others. |
+| DeepSeek | `deepseek` | `deepseek-chat` | `pip install "aaizaql[deepseek]"` | High quality at very low cost. |
+| Perplexity | `perplexity` | `sonar` | `pip install "aaizaql[perplexity]"` | Fast Sonar models. |
+| Google Gemini | `gemini` | `gemini-2.5-flash` | `pip install "aaizaql[gemini]"` | 1M token context window. |
+| Mistral | `mistral` | `mistral-large-latest` | `pip install "aaizaql[mistral]"` | `codestral-latest` great for SQL. |
+| Ollama | `ollama` | `llama3` | Built-in | Local, private, no API key. |
+
+### Provider usage examples
+
+```python
+# DeepSeek — high quality, very affordable
+engine = QueryEngine(
+    llm="deepseek",
+    database="sqlite",
+    dsn="sqlite:///mydata.db",
+    deepseek_api_key="sk-...",
+)
+
+# Google Gemini
+engine = QueryEngine(
+    llm="gemini",
+    database="postgresql",
+    dsn="postgresql://user:pass@localhost:5432/mydb",
+    gemini_api_key="AIza...",
+)
+
+# Mistral — codestral is specialized for code/SQL
+engine = QueryEngine(
+    llm="mistral",
+    database="mysql",
+    dsn="mysql+pymysql://user:pass@localhost/mydb",
+    mistral_api_key="...",
+    mistral_model="codestral-latest",
+)
+
+# Perplexity
+engine = QueryEngine(
+    llm="perplexity",
+    database="sqlite",
+    dsn="sqlite:///mydata.db",
+    perplexity_api_key="pplx-...",
+)
+```
+
+---
+
 ## Supported Databases
 
 | Database | Connector name | Install |
 |---|---|---|
-| SQLite | `sqlite` | Built-in |
+| SQLite | `sqlite` | Built-in (no install needed) |
 | PostgreSQL | `postgresql` / `postgres` | `pip install "aaizaql[postgres]"` |
 | MySQL | `mysql` | `pip install pymysql` |
 | Snowflake | `snowflake` | `pip install "aaizaql[snowflake]"` |
 | DuckDB | `duckdb` | `pip install "aaizaql[duckdb]"` |
+| Microsoft SQL Server | `mssql` / `sqlserver` | `pip install "aaizaql[mssql]"` |
+| Oracle | `oracle` | `pip install "aaizaql[oracle]"` |
+| MongoDB | `mongodb` / `mongo` | `pip install "aaizaql[mongodb]"` |
+| Google BigQuery | `bigquery` | `pip install "aaizaql[bigquery]"` |
 
----
+### Database usage examples
 
-## Supported LLM Providers
+```python
+# Microsoft SQL Server
+engine = QueryEngine(
+    llm="groq",
+    database="mssql",
+    dsn="mssql://user:password@localhost:1433/mydb",
+)
 
-| Provider | Key | Notes |
-|---|---|---|
-| Groq | `groq` | Free tier available. Fastest inference. Recommended. |
-| Anthropic Claude | `claude` | Best accuracy on complex schemas. |
-| OpenAI | `openai` | GPT-4o and others. |
-| Ollama | `ollama` | Local, private, no API key. |
+# Oracle (thin mode — no Oracle Client needed)
+engine = QueryEngine(
+    llm="groq",
+    database="oracle",
+    dsn="oracle://hr:password@localhost:1521/XEPDB1",
+)
+
+# MongoDB
+engine = QueryEngine(
+    llm="groq",
+    database="mongodb",
+    dsn="mongodb://user:password@localhost:27017/mydb",
+)
+
+# Google BigQuery
+engine = QueryEngine(
+    llm="gemini",
+    database="bigquery",
+    dsn="bigquery://my-project/my_dataset",
+)
+```
 
 ---
 
 ## Roadmap
 
 - [x] Phase 1: Core library (RAG, self-correction, security, memory, connectors)
-- [ ] Phase 2: SaaS web UI (FastAPI + Next.js)
-- [ ] Phase 3: Federated cross-database queries (DuckDB workspace)
-- [ ] Phase 4: Enterprise (SSO, RBAC, audit log, SOC2)
+- [x] Phase 2: Extended LLM providers (DeepSeek, Perplexity, Gemini, Mistral)
+- [x] Phase 2: Extended DB connectors (MSSQL, Oracle, MongoDB, BigQuery)
+- [ ] Phase 3: SaaS web UI (FastAPI + Next.js)
+- [ ] Phase 4: Federated cross-database queries (DuckDB workspace)
+- [ ] Phase 5: Enterprise (SSO, RBAC, audit log, SOC2)
 
 ---
 

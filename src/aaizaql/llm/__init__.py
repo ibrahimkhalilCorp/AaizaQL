@@ -30,6 +30,22 @@ def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
         from aaizaql.llm.groq_provider import GroqProvider
 
         return GroqProvider(settings)
+    if name == "deepseek":
+        from aaizaql.llm.deepseek_provider import DeepSeekProvider
+
+        return DeepSeekProvider(settings)
+    if name == "perplexity":
+        from aaizaql.llm.perplexity_provider import PerplexityProvider
+
+        return PerplexityProvider(settings)
+    if name == "gemini":
+        from aaizaql.llm.gemini_provider import GeminiProvider
+
+        return GeminiProvider(settings)
+    if name == "mistral":
+        from aaizaql.llm.mistral_provider import MistralProvider
+
+        return MistralProvider(settings)
     raise LLMProviderNotFound(name)
 
 

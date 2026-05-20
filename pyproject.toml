@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aaizaql"
-version = "0.1.1"
+version = "0.2.0"
 description = "Natural Language to SQL — open-source library with RAG, self-correction, and federation"
 readme = "README.md"
 license = { text = "MIT" }
@@ -40,15 +40,23 @@ dependencies = [
 [project.optional-dependencies]
 
 # LLM providers (install the one(s) you use)
-claude  = ["anthropic>=0.20"]
-openai  = ["openai>=1.10"]
-groq    = ["groq>=0.4"]
+claude     = ["anthropic>=0.20"]
+openai     = ["openai>=1.10"]
+groq       = ["groq>=0.4"]
+deepseek   = ["openai>=1.10"]           # DeepSeek uses the OpenAI-compatible SDK
+perplexity = ["openai>=1.10"]           # Perplexity uses the OpenAI-compatible SDK
+gemini     = ["google-genai>=1.0"]
+mistral    = ["mistralai>=1.0"]
 
 # Database connectors (install the one(s) you use)
 postgres  = ["psycopg2-binary>=2.9"]
 mysql     = ["pymysql>=1.1"]
 snowflake = ["snowflake-connector-python>=3.0"]
 duckdb    = ["duckdb>=0.10"]
+mssql     = ["pyodbc>=4.0"]
+oracle    = ["oracledb>=1.4"]
+mongodb   = ["pymongo>=4.0"]
+bigquery  = ["google-cloud-bigquery>=3.0", "db-dtypes>=1.0"]
 
 # Visualization
 charts = ["plotly>=5.0"]
@@ -61,9 +69,16 @@ all = [
   "anthropic>=0.20",
   "openai>=1.10",
   "groq>=0.4",
+  "google-genai>=1.0",
+  "mistralai>=1.0",
   "psycopg2-binary>=2.9",
   "pymysql>=1.1",
   "duckdb>=0.10",
+  "pyodbc>=4.0",
+  "oracledb>=1.4",
+  "pymongo>=4.0",
+  "google-cloud-bigquery>=3.0",
+  "db-dtypes>=1.0",
   "plotly>=5.0",
   "qdrant-client>=1.7",
 ]

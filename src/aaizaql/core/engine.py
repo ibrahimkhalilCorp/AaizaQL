@@ -65,8 +65,8 @@ class QueryEngine:
 
     Parameters
     ----------
-    llm      : str   Provider: "groq" | "claude" | "openai" | "ollama"
-    database : str   Connector: "sqlite" | "postgresql" | "mysql" | "snowflake"
+    llm      : str   Provider: "groq" | "claude" | "openai" | "ollama" | "deepseek" | "perplexity" | "gemini" | "mistral"
+    database : str   Connector: "sqlite" | "postgresql" | "mysql" | "snowflake" | "duckdb" | "mssql" | "oracle" | "mongodb" | "bigquery"
     dsn      : str   Connection string.
     **kwargs         Any Settings field (e.g. groq_model="llama-3.1-8b-instant")
     """
