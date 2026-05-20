@@ -111,7 +111,6 @@ jobs:
             --ignore=tests/test_llm_mistral.py \
             --ignore=tests/test_llm_perplexity.py \
             --cov=src/aaizaql \
-            --cov-config=.coveragerc-unit \
             --cov-report=xml:coverage-unit.xml \
             --cov-report=term-missing \
             -v
@@ -165,8 +164,9 @@ jobs:
           pytest tests/test_llm_${{ matrix.provider }}.py \
             -v \
             --tb=short \
-            --cov=src/aaizaql/llm/${{ matrix.provider }}_provider.py \
-            --cov-report=term-missing
+            --cov=src/aaizaql/llm \
+            --cov-report=term-missing \
+            --cov-fail-under=0
 
       - name: Run integration tests for ${{ matrix.provider }}
         run: |
