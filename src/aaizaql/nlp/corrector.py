@@ -36,7 +36,7 @@ class SelfCorrector:
         self,
         llm: LLMProvider,
         settings: Settings,
-        validator: "SQLValidator | None" = None,
+        validator: SQLValidator | None = None,
     ) -> None:
         self._llm = llm
         self._max_retries = settings.max_self_correction_retries

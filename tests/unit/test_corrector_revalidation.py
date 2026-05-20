@@ -12,16 +12,15 @@ No database or live LLM connection required.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
 from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import DatabaseError, MaxRetriesExceeded, SecurityException
+from aaizaql.core.exceptions import DatabaseError, SecurityException
 from aaizaql.nlp.corrector import SelfCorrector
 from aaizaql.security.validator import SQLValidator
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -228,9 +227,7 @@ class TestCorrectorRevalidation:
         # last_sql was set to the dangerous string before validation runs;
         # after the SecurityException the caller can't safely use it.
         # The important invariant is that execute() was never called with it.
-        dangerous_calls = [
-            c for c in executor.execute.call_args_list if "DROP" in str(c)
-        ]
+        dangerous_calls = [c for c in executor.execute.call_args_list if "DROP" in str(c)]
         assert dangerous_calls == [], "DROP TABLE must never reach the executor"
 
 
@@ -249,7 +246,6 @@ class TestEngineWiresValidatorIntoCorrectorIntegration:
         mock_llm: MagicMock,
         tmp_path,
     ) -> None:
-        from pathlib import Path
         from unittest.mock import patch
 
         from aaizaql import QueryEngine
@@ -264,8 +260,8 @@ class TestEngineWiresValidatorIntoCorrectorIntegration:
         # First LLM call → generator returns bad SQL (typo in table name).
         # Second LLM call (correction) → returns DROP TABLE.
         mock_llm.complete.side_effect = [
-            "SELECT * FORM employees",   # generator: bad SQL (will fail on DB)
-            "DROP TABLE employees",      # corrector: dangerous hallucination
+            "SELECT * FORM employees",  # generator: bad SQL (will fail on DB)
+            "DROP TABLE employees",  # corrector: dangerous hallucination
         ]
 
         with (
