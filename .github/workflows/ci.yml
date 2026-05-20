@@ -1,3 +1,16 @@
+# .github/workflows/ci.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Continuous Integration for aaizaql
+#
+# Jobs (in dependency order):
+#   lint     → ruff auto-fix + black auto-format, committed back to branch
+#   test     → unit + integration tests across Python 3.11 / 3.12 / 3.13
+#   providers→ provider-specific test matrix (deepseek/gemini/mistral/perplexity)
+#   security → security gate + prompt-injection tests in isolation
+#   coverage → upload merged coverage to Codecov (from 3.11 run)
+#   build    → wheel + sdist, twine check (needs lint + test + providers)
+# ─────────────────────────────────────────────────────────────────────────────
+
 name: CI
 
 on:
@@ -6,12 +19,26 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancel in-progress runs on the same branch/PR to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ── Shared env ────────────────────────────────────────────────────────────────
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 1 — Lint & Format
+# ══════════════════════════════════════════════════════════════════════════════
 jobs:
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write        # needed to commit auto-fixes back
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,7 +50,7 @@ jobs:
           cache: pip
 
       - name: Install linting tools
-        run: pip install ruff black mypy
+        run: pip install ruff black mypy pydantic pydantic-settings
 
       - name: Ruff auto-fix
         run: ruff check src/ tests/ --fix --unsafe-fixes
@@ -31,21 +58,33 @@ jobs:
       - name: Black auto-format
         run: black src/ tests/
 
-      - name: Commit fixes if needed
+      - name: Commit style fixes (if any)
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git diff --quiet && echo "No changes" || (git add -A && git commit -m "style: auto-fix ruff and black formatting")
+          git diff --quiet && echo "Nothing to commit" || \
+            (git add -A && git commit -m "style: auto-fix ruff + black [skip ci]")
 
       - name: Push fixes
         run: git push
 
-      - name: Ruff final check (must pass clean)
+      - name: Ruff final check (zero tolerance)
         run: ruff check src/ tests/
 
+      - name: Mypy type check
+        run: |
+          pip install -e ".[dev]" --quiet
+          mypy src/aaizaql --ignore-missing-imports --no-error-summary || true
+        # `|| true` keeps mypy non-blocking while the codebase matures;
+        # remove once strict mode is fully adopted
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 2 — Unit + Integration Tests (Python matrix)
+# ══════════════════════════════════════════════════════════════════════════════
   test:
-    name: Tests (Python ${{ matrix.python-version }})
+    name: Tests · Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -59,25 +98,141 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install package + dev dependencies
+      - name: Install package + connectors + dev deps
         run: |
-          pip install -e ".[duckdb,mysql,snowflake]"
-          pip install pytest pytest-cov pytest-asyncio
+          pip install -e ".[dev,duckdb,mysql,postgres,mssql,oracle,mongodb,bigquery]" --quiet
 
-      - name: Run tests
-        run: pytest tests/ --cov=src/aaizaql --cov-report=term-missing
+      - name: Run unit tests
+        run: |
+          pytest tests/ \
+            --ignore=tests/integration \
+            --ignore=tests/test_llm_deepseek.py \
+            --ignore=tests/test_llm_gemini.py \
+            --ignore=tests/test_llm_mistral.py \
+            --ignore=tests/test_llm_perplexity.py \
+            --cov=src/aaizaql \
+            --cov-report=xml:coverage-unit.xml \
+            --cov-report=term-missing \
+            -v
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ \
+            --cov=src/aaizaql \
+            --cov-append \
+            --cov-report=xml:coverage-integration.xml \
+            --cov-report=term-missing \
+            -v
+
+      - name: Upload coverage artifact (3.11 only)
         if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: .coverage
+          name: coverage-xml
+          path: |
+            coverage-unit.xml
+            coverage-integration.xml
 
-  build:
-    name: Build distribution
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 3 — Provider-specific test matrix
+# Tests each new LLM provider in isolation so failures are easy to pinpoint
+# ══════════════════════════════════════════════════════════════════════════════
+  providers:
+    name: Provider · ${{ matrix.provider }}
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [deepseek, gemini, mistral, perplexity]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install deps for ${{ matrix.provider }}
+        run: |
+          pip install -e ".[dev,${{ matrix.provider }}]" --quiet
+
+      - name: Run unit tests for ${{ matrix.provider }}
+        run: |
+          pytest tests/test_llm_${{ matrix.provider }}.py \
+            -v \
+            --tb=short \
+            --cov=src/aaizaql/llm \
+            --cov-report=term-missing
+
+      - name: Run integration tests for ${{ matrix.provider }}
+        run: |
+          pytest tests/integration/test_integration_pipeline.py \
+            -v \
+            --tb=short \
+            -k "${{ matrix.provider }}"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 4 — Security gate tests (isolated, always runs)
+# ══════════════════════════════════════════════════════════════════════════════
+  security:
+    name: Security Gate Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -e ".[dev]" --quiet
+
+      - name: Run security tests
+        run: |
+          pytest tests/test_security.py \
+            tests/integration/test_integration_pipeline.py::TestSecurityGatePipeline \
+            -v \
+            --tb=short
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 5 — Coverage upload to Codecov
+# ══════════════════════════════════════════════════════════════════════════════
+  coverage:
+    name: Upload Coverage
+    runs-on: ubuntu-latest
+    needs: [test, providers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage-unit.xml,coverage-integration.xml
+          flags: unittests,integration
+          fail_ci_if_error: false   # don't break CI if Codecov is down
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 6 — Build wheel + sdist (only after all tests pass)
+# ══════════════════════════════════════════════════════════════════════════════
+  build:
+    name: Build Distribution
+    runs-on: ubuntu-latest
+    needs: [test, providers, security]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -88,12 +243,12 @@ jobs:
 
       - name: Build wheel + sdist
         run: |
-          pip install hatchling build
+          pip install hatchling build --quiet
           python -m build
 
-      - name: Check distribution metadata
+      - name: Verify distribution metadata
         run: |
-          pip install twine
+          pip install twine --quiet
           twine check dist/*
 
       - name: Upload build artifacts
@@ -101,3 +256,4 @@ jobs:
         with:
           name: dist
           path: dist/
+          retention-days: 7
