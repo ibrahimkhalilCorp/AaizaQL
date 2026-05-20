@@ -19,8 +19,8 @@ from pydantic import SecretStr
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def make_settings(**kwargs) -> Settings:
     """
@@ -51,6 +51,7 @@ def _mock_genai_client(content: str | None = "SELECT 1;") -> MagicMock:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 class TestGeminiProvider:
     """GeminiProvider tests — patched google.genai client, zero network calls."""
 
@@ -69,7 +70,10 @@ class TestGeminiProvider:
         from aaizaql.llm.gemini_provider import GeminiProvider
 
         settings = make_settings()
-        with patch("aaizaql.llm.gemini_provider.genai", None), pytest.raises(LLMError, match="google-genai package is not installed"):
+        with (
+            patch("aaizaql.llm.gemini_provider.genai", None),
+            pytest.raises(LLMError, match="google-genai package is not installed"),
+        ):
             GeminiProvider(settings)
 
     def test_init_success(self) -> None:

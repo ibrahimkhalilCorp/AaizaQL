@@ -19,8 +19,8 @@ from pydantic import SecretStr
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def make_settings(**kwargs) -> Settings:
     """
@@ -52,6 +52,7 @@ def _mock_openai_client(content: str | None = "SELECT 1;") -> MagicMock:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 class TestPerplexityProvider:
     """PerplexityProvider tests — patched OpenAI-compat client, zero network calls."""
 
@@ -70,7 +71,10 @@ class TestPerplexityProvider:
         from aaizaql.llm.perplexity_provider import PerplexityProvider
 
         settings = make_settings()
-        with patch("aaizaql.llm.perplexity_provider.OpenAI", None), pytest.raises(LLMError, match="openai package is not installed"):
+        with (
+            patch("aaizaql.llm.perplexity_provider.OpenAI", None),
+            pytest.raises(LLMError, match="openai package is not installed"),
+        ):
             PerplexityProvider(settings)
 
     def test_init_success(self) -> None:
@@ -114,13 +118,13 @@ class TestPerplexityProvider:
         from aaizaql.llm.perplexity_provider import PerplexityProvider
 
         settings = make_settings(perplexity_model="sonar")
-        mock_client = _mock_openai_client(
-            "SELECT name, email FROM customers WHERE active = 1;"
-        )
+        mock_client = _mock_openai_client("SELECT name, email FROM customers WHERE active = 1;")
 
         with patch("aaizaql.llm.perplexity_provider.OpenAI", return_value=mock_client):
             provider = PerplexityProvider(settings)
-            result = provider.complete("List all active customers", system="You are a SQL generator")
+            result = provider.complete(
+                "List all active customers", system="You are a SQL generator"
+            )
 
         assert result == "SELECT name, email FROM customers WHERE active = 1;"
         call_kwargs = mock_client.chat.completions.create.call_args[1]

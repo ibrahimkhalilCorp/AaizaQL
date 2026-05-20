@@ -19,8 +19,8 @@ from pydantic import SecretStr
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def make_settings(**kwargs) -> Settings:
     """
@@ -42,6 +42,7 @@ def make_settings(**kwargs) -> Settings:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 class TestDeepSeekProvider:
     """DeepSeekProvider tests — patched OpenAI client, zero network calls."""
 
@@ -60,7 +61,10 @@ class TestDeepSeekProvider:
         from aaizaql.llm.deepseek_provider import DeepSeekProvider
 
         settings = make_settings()
-        with patch("aaizaql.llm.deepseek_provider.OpenAI", None), pytest.raises(LLMError, match="openai package is not installed"):
+        with (
+            patch("aaizaql.llm.deepseek_provider.OpenAI", None),
+            pytest.raises(LLMError, match="openai package is not installed"),
+        ):
             DeepSeekProvider(settings)
 
     def test_init_success(self) -> None:

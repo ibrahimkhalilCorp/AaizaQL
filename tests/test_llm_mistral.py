@@ -19,8 +19,8 @@ from pydantic import SecretStr
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def make_settings(**kwargs) -> Settings:
     """
@@ -52,6 +52,7 @@ def _mock_mistral_client(content: str | None = "SELECT 1;") -> MagicMock:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 class TestMistralProvider:
     """MistralProvider tests — patched Mistral client, zero network calls."""
 
@@ -70,7 +71,10 @@ class TestMistralProvider:
         from aaizaql.llm.mistral_provider import MistralProvider
 
         settings = make_settings()
-        with patch("aaizaql.llm.mistral_provider.Mistral", None), pytest.raises(LLMError, match="mistralai package is not installed"):
+        with (
+            patch("aaizaql.llm.mistral_provider.Mistral", None),
+            pytest.raises(LLMError, match="mistralai package is not installed"),
+        ):
             MistralProvider(settings)
 
     def test_init_success(self) -> None:
@@ -122,7 +126,9 @@ class TestMistralProvider:
 
         with patch("aaizaql.llm.mistral_provider.Mistral", return_value=mock_client):
             provider = MistralProvider(settings)
-            result = provider.complete("Total quantity per product", system="You are a SQL generator")
+            result = provider.complete(
+                "Total quantity per product", system="You are a SQL generator"
+            )
 
         assert result == "SELECT product_name, SUM(quantity) FROM orders GROUP BY product_name;"
         call_kwargs = mock_client.chat.complete.call_args[1]
