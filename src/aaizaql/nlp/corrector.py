@@ -6,7 +6,7 @@ SelfCorrector: executes SQL and retries with LLM correction on failure.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import structlog
@@ -16,6 +16,9 @@ from aaizaql.core.exceptions import DatabaseError, MaxRetriesExceeded
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SELF_CORRECTION_TEMPLATE
 
+if TYPE_CHECKING:
+    from aaizaql.security.validator import SQLValidator
+
 logger = structlog.get_logger(__name__)
 
 
@@ -23,11 +26,21 @@ class SelfCorrector:
     """
     Executes SQL against a connector; on DatabaseError sends the error
     back to the LLM for correction and retries up to MAX_RETRIES times.
+
+    The corrected SQL returned by the LLM is re-validated through
+    ``SQLValidator`` before execution to prevent hallucinated dangerous
+    statements (e.g. DROP TABLE) from slipping through on a correction pass.
     """
 
-    def __init__(self, llm: LLMProvider, settings: Settings) -> None:
+    def __init__(
+        self,
+        llm: LLMProvider,
+        settings: Settings,
+        validator: "SQLValidator | None" = None,
+    ) -> None:
         self._llm = llm
         self._max_retries = settings.max_self_correction_retries
+        self._validator = validator
         self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
 
     def execute_with_correction(
@@ -38,6 +51,10 @@ class SelfCorrector:
     ) -> tuple[pd.DataFrame, bool, int]:
         """
         Execute SQL with automatic self-correction on failure.
+
+        Each LLM-corrected SQL string is validated through ``SQLValidator``
+        before being executed, ensuring that a malicious or hallucinated
+        correction (e.g. ``DROP TABLE``) is caught before it reaches the DB.
 
         Returns
         -------
@@ -80,6 +97,18 @@ class SelfCorrector:
                 corrected = self._llm.complete(correction_prompt)
                 self.last_sql = corrected.strip().strip("`").strip()
                 was_corrected = True
+
+                # Re-validate the corrected SQL through the security layer
+                # before executing it.  A hallucinated correction could contain
+                # dangerous statements (DROP TABLE, DELETE, …) that must be
+                # blocked regardless of context.
+                if self._validator is not None:
+                    self._validator.validate(self.last_sql)
+                    logger.debug(
+                        "corrector.revalidated",
+                        attempt=attempt + 1,
+                        sql_preview=self.last_sql[:60],
+                    )
 
         # Should never reach here
         raise MaxRetriesExceeded(

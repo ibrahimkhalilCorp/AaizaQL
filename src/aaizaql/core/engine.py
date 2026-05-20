@@ -113,7 +113,7 @@ class QueryEngine:
             self._llm, self._vector_store, self._settings, self._semantic
         )
         self._validator = SQLValidator(self._settings)
-        self._corrector = SelfCorrector(self._llm, self._settings)
+        self._corrector = SelfCorrector(self._llm, self._settings, validator=self._validator)
         self._renderer = ResultRenderer()
         self._summarizer = NLSummarizer(self._llm)
 
