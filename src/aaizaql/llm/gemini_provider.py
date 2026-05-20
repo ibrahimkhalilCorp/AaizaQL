@@ -24,6 +24,13 @@ logger = structlog.get_logger(__name__)
 
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
+try:
+    from google import genai
+    from google.genai import types as genai_types
+except ImportError:
+    genai = None  # type: ignore[assignment]
+    genai_types = None  # type: ignore[assignment]
+
 
 class GeminiProvider(LLMProvider):
     """
@@ -51,16 +58,11 @@ class GeminiProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_GEMINI_API_KEY='AIza...'",
             )
 
-        try:
-            from google import genai
-            from google.genai import types  # noqa: F401
-        except ImportError as exc:
+        if genai is None:
             raise LLMError(
                 "gemini",
                 "google-genai package is not installed. Run:  pip install google-genai",
-            ) from exc
-
-        from google import genai
+            )
 
         self._client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
         self._model = settings.gemini_model
@@ -76,12 +78,10 @@ class GeminiProvider(LLMProvider):
     def complete(self, prompt: str, system: str = "") -> str:
         """Send prompt to Gemini and return the SQL response."""
         try:
-            from google.genai import types
-
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=prompt,
-                config=types.GenerateContentConfig(
+                config=genai_types.GenerateContentConfig(
                     system_instruction=system or SYSTEM_PROMPT,
                     max_output_tokens=self._max_tokens,
                     temperature=self._temperature,

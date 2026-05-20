@@ -25,6 +25,11 @@ logger = structlog.get_logger(__name__)
 DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None  # type: ignore[assignment,misc]
+
 
 class DeepSeekProvider(LLMProvider):
     """
@@ -52,17 +57,13 @@ class DeepSeekProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_DEEPSEEK_API_KEY='sk-...'",
             )
 
-        try:
-            from openai import OpenAI
-        except ImportError as exc:
+        if OpenAI is None:
             raise LLMError(
                 "deepseek",
                 "openai package is not installed. Run:  pip install openai",
-            ) from exc
+            )
 
         # DeepSeek exposes an OpenAI-compatible REST API
-        from openai import OpenAI
-
         self._client = OpenAI(
             api_key=settings.deepseek_api_key.get_secret_value(),
             base_url=DEEPSEEK_BASE_URL,

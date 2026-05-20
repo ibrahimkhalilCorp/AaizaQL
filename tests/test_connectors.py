@@ -288,6 +288,12 @@ class TestDuckDBConnector:
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+snowflake_connector = pytest.importorskip(
+    "snowflake.connector",
+    reason="snowflake-connector-python is not installed; skipping Snowflake tests",
+)
+
+
 class TestSnowflakeConnector:
     """
     SnowflakeConnector tests use a patched snowflake.connector —

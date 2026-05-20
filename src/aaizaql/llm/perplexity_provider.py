@@ -27,6 +27,11 @@ logger = structlog.get_logger(__name__)
 DEFAULT_PERPLEXITY_MODEL = "sonar"
 PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None  # type: ignore[assignment,misc]
+
 
 class PerplexityProvider(LLMProvider):
     """
@@ -54,15 +59,11 @@ class PerplexityProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_PERPLEXITY_API_KEY='pplx-...'",
             )
 
-        try:
-            from openai import OpenAI
-        except ImportError as exc:
+        if OpenAI is None:
             raise LLMError(
                 "perplexity",
                 "openai package is not installed. Run:  pip install openai",
-            ) from exc
-
-        from openai import OpenAI
+            )
 
         self._client = OpenAI(
             api_key=settings.perplexity_api_key.get_secret_value(),

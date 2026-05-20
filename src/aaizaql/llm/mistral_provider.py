@@ -25,6 +25,11 @@ logger = structlog.get_logger(__name__)
 
 DEFAULT_MISTRAL_MODEL = "mistral-large-latest"
 
+try:
+    from mistralai import Mistral
+except ImportError:
+    Mistral = None  # type: ignore[assignment,misc]
+
 
 class MistralProvider(LLMProvider):
     """
@@ -52,15 +57,11 @@ class MistralProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_MISTRAL_API_KEY='...'",
             )
 
-        try:
-            from mistralai import Mistral
-        except ImportError as exc:
+        if Mistral is None:
             raise LLMError(
                 "mistral",
                 "mistralai package is not installed. Run:  pip install mistralai",
-            ) from exc
-
-        from mistralai import Mistral
+            )
 
         self._client = Mistral(api_key=settings.mistral_api_key.get_secret_value())
         self._model = settings.mistral_model
