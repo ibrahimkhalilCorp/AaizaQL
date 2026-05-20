@@ -147,21 +147,7 @@ addopts = "-v --tb=short"
 
 [tool.coverage.run]
 source = ["src/aaizaql"]
-omit = [
-  "*/tests/*",
-  "*/__pycache__/*",
-  "*/llm/claude_provider.py",
-  "*/llm/openai_provider.py",
-  "*/llm/ollama_provider.py",
-  "*/llm/groq_provider.py",
-  "*/llm/deepseek_provider.py",
-  "*/llm/gemini_provider.py",
-  "*/llm/mistral_provider.py",
-  "*/llm/perplexity_provider.py",
-  "*/cli.py",
-  "*/security/audit.py",
-  "*/federation/__init__.py",
-]
+omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
 show_missing = true

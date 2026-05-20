@@ -228,8 +228,8 @@ class TestProviderPipelineEndToEnd:
         df = connector.execute(generated)
 
         assert len(df) == 4
-        assert df.iloc[0]["name"] == "Bob"  # 8100 highest
-        assert df.iloc[0]["total_sales"] == pytest.approx(8100.0)
+        assert df.iloc[0]["name"] == "Alice"  # 8200 highest (5000 + 3200)
+        assert df.iloc[0]["total_sales"] == pytest.approx(8200.0)
 
     @pytest.mark.parametrize("provider_name", ["deepseek", "gemini", "mistral", "perplexity"])
     def test_cte_query_end_to_end(self, provider_name, connector, settings):
@@ -315,7 +315,7 @@ class TestSelfCorrectionPipeline:
         )
 
         assert was_corrected is True
-        assert attempts == 1
+        assert attempts == 2  # first correction returns bad_sql again; second returns good_sql
         assert len(df) == 4
         assert corrector.last_sql == good_sql
 
@@ -355,7 +355,7 @@ class TestSelfCorrectionPipeline:
         """The correction prompt forwarded to the LLM must contain the DB error text."""
         bad_sql  = "SELECT * FROM ghost_table"
         good_sql = "SELECT * FROM employees LIMIT 1"
-        llm = FakeLLM(responses=[bad_sql, good_sql])
+        llm = FakeLLM(responses=[good_sql])
         corrector = SelfCorrector(llm=llm, settings=settings)
 
         corrector.execute_with_correction(
@@ -364,7 +364,7 @@ class TestSelfCorrectionPipeline:
             question=f"[{provider_name}] Correction prompt check",
         )
 
-        # The second call is the correction — the prompt should contain the error
+        # The corrector called the LLM once with the error prompt
         assert len(llm.calls) == 1  # one correction call
         assert "ghost_table" in llm.calls[0] or "no such table" in llm.calls[0].lower()
 
