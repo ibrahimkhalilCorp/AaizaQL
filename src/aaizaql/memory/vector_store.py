@@ -167,4 +167,6 @@ class VectorStoreAdapter:
         """Return the total number of documents in the store."""
         if self._backend == VectorStoreBackend.CHROMA:
             return int(self._collection.count())
-        raise NotImplementedError("Qdrant count() is not yet implemented. Use ChromaDB backend.")
+        raise NotImplementedError(
+            "Qdrant count() is not yet implemented. Use ChromaDB backend."
+        )

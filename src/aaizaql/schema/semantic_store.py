@@ -111,7 +111,7 @@ class SemanticStore:
         doc_id = f"pair_{self._fingerprint(question)}"
         embedding = self._embed(question)
         self._vs.upsert(
-            id=doc_id,
+            doc_id=doc_id,
             text=text,
             embedding=embedding,
             metadata={"type": "qa_pair"},
@@ -139,7 +139,7 @@ class SemanticStore:
         doc_id = f"enum_{key}"
         embedding = self._embed(text)
         self._vs.upsert(
-            id=doc_id,
+            doc_id=doc_id,
             text=text,
             embedding=embedding,
             metadata={"type": "enum", "table": table, "column": column},
