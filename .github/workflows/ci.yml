@@ -111,9 +111,9 @@ jobs:
             --ignore=tests/test_llm_mistral.py \
             --ignore=tests/test_llm_perplexity.py \
             --cov=src/aaizaql \
+            --cov-config=.coveragerc-unit \
             --cov-report=xml:coverage-unit.xml \
             --cov-report=term-missing \
-            --omit="src/aaizaql/llm/deepseek_provider.py,src/aaizaql/llm/gemini_provider.py,src/aaizaql/llm/mistral_provider.py,src/aaizaql/llm/perplexity_provider.py,src/aaizaql/llm/claude_provider.py,src/aaizaql/llm/openai_provider.py,src/aaizaql/llm/ollama_provider.py,src/aaizaql/llm/groq_provider.py,src/aaizaql/cli.py,src/aaizaql/security/audit.py,src/aaizaql/federation/__init__.py" \
             -v
 
       - name: Run integration tests
@@ -165,7 +165,7 @@ jobs:
           pytest tests/test_llm_${{ matrix.provider }}.py \
             -v \
             --tb=short \
-            --cov=src/aaizaql/llm \
+            --cov=src/aaizaql/llm/${{ matrix.provider }}_provider.py \
             --cov-report=term-missing
 
       - name: Run integration tests for ${{ matrix.provider }}

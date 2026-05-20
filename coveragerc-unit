@@ -1,0 +1,20 @@
+[run]
+source = src/aaizaql
+omit =
+    */tests/*
+    */__pycache__/*
+    src/aaizaql/llm/claude_provider.py
+    src/aaizaql/llm/openai_provider.py
+    src/aaizaql/llm/ollama_provider.py
+    src/aaizaql/llm/groq_provider.py
+    src/aaizaql/llm/deepseek_provider.py
+    src/aaizaql/llm/gemini_provider.py
+    src/aaizaql/llm/mistral_provider.py
+    src/aaizaql/llm/perplexity_provider.py
+    src/aaizaql/cli.py
+    src/aaizaql/security/audit.py
+    src/aaizaql/federation/__init__.py
+
+[report]
+show_missing = true
+fail_under = 60
