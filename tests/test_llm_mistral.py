@@ -70,8 +70,8 @@ class TestMistralProvider:
         from aaizaql.llm.mistral_provider import MistralProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"mistralai": None}), pytest.raises(LLMError, match="mistralai package is not installed"):
-                MistralProvider(settings)
+        with patch("aaizaql.llm.mistral_provider.Mistral", None), pytest.raises(LLMError, match="mistralai package is not installed"):
+            MistralProvider(settings)
 
     def test_init_success(self) -> None:
         """Should initialise and store the model name when settings are valid."""

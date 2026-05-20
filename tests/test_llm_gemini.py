@@ -69,8 +69,8 @@ class TestGeminiProvider:
         from aaizaql.llm.gemini_provider import GeminiProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"google": None, "google.genai": None}), pytest.raises(LLMError, match="google-genai package is not installed"):
-                GeminiProvider(settings)
+        with patch("aaizaql.llm.gemini_provider.genai", None), pytest.raises(LLMError, match="google-genai package is not installed"):
+            GeminiProvider(settings)
 
     def test_init_success(self) -> None:
         """Should initialise and store the model name when settings are valid."""

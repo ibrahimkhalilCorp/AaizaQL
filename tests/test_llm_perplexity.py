@@ -70,8 +70,8 @@ class TestPerplexityProvider:
         from aaizaql.llm.perplexity_provider import PerplexityProvider
 
         settings = make_settings()
-        with patch.dict("sys.modules", {"openai": None}), pytest.raises(LLMError, match="openai package is not installed"):
-                PerplexityProvider(settings)
+        with patch("aaizaql.llm.perplexity_provider.OpenAI", None), pytest.raises(LLMError, match="openai package is not installed"):
+            PerplexityProvider(settings)
 
     def test_init_success(self) -> None:
         """Should initialise and store the model name when settings are valid."""
