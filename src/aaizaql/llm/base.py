@@ -14,7 +14,7 @@ class LLMProvider(ABC):
     """Abstract base — every LLM adapter must implement complete()."""
 
     @abstractmethod
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """
         Send a prompt to the LLM and return the text response.
 

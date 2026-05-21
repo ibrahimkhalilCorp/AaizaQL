@@ -390,25 +390,30 @@ class TestMSSQLConnector:
         except AaizaConnectionError as exc:
             pytest.skip(f"MSSQL not reachable: {exc}")
 
-        # Idempotent setup using MSSQL-compatible DDL
+        # Use raw cursor for DDL — pd.read_sql_query requires a result set
+        cur = c._conn.cursor()
         try:
-            c.execute("DROP TABLE IF EXISTS employees")
-        except Exception:
-            pass
-        c.execute(
-            "CREATE TABLE employees ("
-            "id INT PRIMARY KEY, name NVARCHAR(100) NOT NULL, "
-            "department NVARCHAR(50) NOT NULL, salary DECIMAL(10,2) NOT NULL)"
-        )
-        for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
+            cur.execute("DROP TABLE IF EXISTS employees")
+            c._conn.commit()
+            cur.execute(
+                "CREATE TABLE employees ("
+                "id INT PRIMARY KEY, name NVARCHAR(100) NOT NULL, "
+                "department NVARCHAR(50) NOT NULL, salary DECIMAL(10,2) NOT NULL)"
             )
+            for row in _SEED_EMPLOYEES:
+                cur.execute(
+                    "INSERT INTO employees VALUES (?, ?, ?, ?)", row
+                )
+            c._conn.commit()
+        finally:
+            cur.close()
         yield c
+        cur = c._conn.cursor()
         try:
-            c.execute("DROP TABLE IF EXISTS employees")
-        except Exception:
-            pass
+            cur.execute("DROP TABLE IF EXISTS employees")
+            c._conn.commit()
+        finally:
+            cur.close()
         c.close()
 
     def test_connect_and_select_all(self, connector):

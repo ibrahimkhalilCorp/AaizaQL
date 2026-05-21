@@ -89,7 +89,7 @@ class FakeLLM:
         self._call_count = 0
         self.calls: list[str] = []  # captured prompts for assertion
 
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         self.calls.append(prompt)
         if self._responses and self._call_count < len(self._responses):
             result = self._responses[self._call_count]
