@@ -24,7 +24,6 @@ import requests
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 
-
 # ── Settings ──────────────────────────────────────────────────────────────────
 
 
@@ -78,7 +77,7 @@ class TestLLMTimeoutError:
 
 
 class TestOllamaTimeout:
-    def _make_provider(self, timeout: int = 5) -> "OllamaProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> OllamaProvider:  # noqa: F821
         from aaizaql.llm.ollama_provider import OllamaProvider
 
         s = Settings(llm_timeout_seconds=timeout)
@@ -99,9 +98,8 @@ class TestOllamaTimeout:
             captured.append(timeout)
             raise requests.Timeout("forced")
 
-        with patch("requests.post", side_effect=fake_post):
-            with pytest.raises(LLMTimeoutError):
-                provider.complete("SELECT 1", timeout=7)
+        with patch("requests.post", side_effect=fake_post), pytest.raises(LLMTimeoutError):
+            provider.complete("SELECT 1", timeout=7)
 
         assert captured == [7]
 
@@ -110,9 +108,8 @@ class TestOllamaTimeout:
         with patch(
             "requests.post",
             side_effect=requests.ConnectionError("refused"),
-        ):
-            with pytest.raises(LLMError) as exc_info:
-                provider.complete("SELECT 1")
+        ), pytest.raises(LLMError) as exc_info:
+            provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
 
@@ -120,19 +117,19 @@ class TestOllamaTimeout:
 #   All three use the openai SDK; same mock pattern applies.
 
 
-def _make_openai_timeout_exc() -> "openai.APITimeoutError":  # noqa: F821
+def _make_openai_timeout_exc() -> openai.APITimeoutError:  # noqa: F821
     import openai
 
     return openai.APITimeoutError(request=MagicMock())
 
 
 class TestOpenAITimeout:
-    def _make_provider(self, timeout: int = 5) -> "OpenAIProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> OpenAIProvider:  # noqa: F821
         import openai
 
         from aaizaql.llm.openai_provider import OpenAIProvider
 
-        s = Settings(openai_api_key="sk-fake", llm_timeout_seconds=timeout)
+        Settings(openai_api_key="sk-fake", llm_timeout_seconds=timeout)
         provider = OpenAIProvider.__new__(OpenAIProvider)
         provider._client = MagicMock(spec=openai.OpenAI)
         provider._model = "gpt-4o"
@@ -178,7 +175,7 @@ class TestOpenAITimeout:
 
 
 class TestDeepSeekTimeout:
-    def _make_provider(self, timeout: int = 5) -> "DeepSeekProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> DeepSeekProvider:  # noqa: F821
         import openai
 
         from aaizaql.llm.deepseek_provider import DeepSeekProvider
@@ -204,7 +201,7 @@ class TestDeepSeekTimeout:
 
 
 class TestPerplexityTimeout:
-    def _make_provider(self, timeout: int = 5) -> "PerplexityProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> PerplexityProvider:  # noqa: F821
         import openai
 
         from aaizaql.llm.perplexity_provider import PerplexityProvider
@@ -233,7 +230,7 @@ class TestPerplexityTimeout:
 
 
 class TestGroqTimeout:
-    def _make_provider(self, timeout: int = 5) -> "GroqProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> GroqProvider:  # noqa: F821
         from aaizaql.llm.groq_provider import GroqProvider
 
         provider = GroqProvider.__new__(GroqProvider)
@@ -271,7 +268,7 @@ class TestGroqTimeout:
 
 
 class TestGeminiTimeout:
-    def _make_provider(self, timeout: int = 1) -> "GeminiProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 1) -> GeminiProvider:  # noqa: F821
         from aaizaql.llm.gemini_provider import GeminiProvider
 
         provider = GeminiProvider.__new__(GeminiProvider)
@@ -315,7 +312,7 @@ class TestGeminiTimeout:
 
 
 class TestMistralTimeout:
-    def _make_provider(self, timeout: int = 1) -> "MistralProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 1) -> MistralProvider:  # noqa: F821
         from aaizaql.llm.mistral_provider import MistralProvider
 
         provider = MistralProvider.__new__(MistralProvider)
@@ -331,7 +328,6 @@ class TestMistralTimeout:
 
         provider = self._make_provider(timeout=1)
 
-        original_submit = concurrent.futures.ThreadPoolExecutor.submit
 
         def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
             future: concurrent.futures.Future = concurrent.futures.Future()
@@ -348,7 +344,7 @@ class TestMistralTimeout:
 
 
 class TestClaudeTimeout:
-    def _make_provider(self, timeout: int = 5) -> "ClaudeProvider":  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> ClaudeProvider:  # noqa: F821
         import anthropic
 
         from aaizaql.llm.claude_provider import ClaudeProvider

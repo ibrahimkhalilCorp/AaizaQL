@@ -209,7 +209,7 @@ class TestGroqProvider:
                 create=True,
             ),
         ):
-            provider = GroqProvider(settings)
+            GroqProvider(settings)
 
         # Re-patch complete's local import too
         import aaizaql.llm.groq_provider as gmod

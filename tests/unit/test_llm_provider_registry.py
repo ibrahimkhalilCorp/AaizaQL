@@ -18,7 +18,6 @@ import pytest
 from aaizaql.core.exceptions import LLMProviderNotFound
 from aaizaql.llm import REGISTRY, build_llm_provider
 
-
 EXPECTED_PROVIDERS = frozenset(
     {"claude", "openai", "ollama", "groq", "deepseek", "perplexity", "gemini", "mistral"}
 )

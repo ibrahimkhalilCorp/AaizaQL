@@ -28,8 +28,8 @@ DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
 try:
-    from groq import Groq
     from groq import APITimeoutError as _GroqAPITimeoutError
+    from groq import Groq
 except ImportError:
     Groq = None  # type: ignore[assignment,misc]
     _GroqAPITimeoutError = None  # type: ignore[assignment,misc]
