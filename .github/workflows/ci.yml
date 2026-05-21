@@ -61,6 +61,7 @@ jobs:
         run: black src/ tests/
 
       - name: Commit style fixes (if any)
+        if: github.ref_type == 'branch'   # skip on tag triggers (detached HEAD)
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -68,6 +69,7 @@ jobs:
             (git add -A && git commit -m "style: auto-fix ruff + black [skip ci]")
 
       - name: Push fixes
+        if: github.ref_type == 'branch'   # skip on tag triggers (detached HEAD)
         run: git push
 
       - name: Ruff final check (zero tolerance)
