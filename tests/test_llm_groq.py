@@ -70,7 +70,7 @@ class TestGroqProvider:
         """Should raise LLMError if the groq package is absent."""
         from aaizaql.llm.groq_provider import GroqProvider
 
-        settings = make_settings()
+        settings = make_settings(groq_api_key="gsk_fake_key_for_test")
         with (
             patch.dict("sys.modules", {"groq": None}),
             pytest.raises((LLMError, ImportError)),
@@ -209,7 +209,7 @@ class TestGroqProvider:
                 create=True,
             ),
         ):
-            GroqProvider(settings)
+            provider = GroqProvider(settings)
 
         # Re-patch complete's local import too
         import aaizaql.llm.groq_provider as gmod
