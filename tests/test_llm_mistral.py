@@ -219,3 +219,40 @@ class TestMistralProvider:
 
         call_kwargs = mock_client.chat.complete.call_args[1]
         assert call_kwargs["messages"][0]["content"] == "Custom SQL expert prompt"
+
+
+# ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
+
+class TestMistralProviderTimeout:
+    """Timeout path tests for MistralProvider."""
+
+    def test_complete_timeout_raises_llm_timeout_error(self) -> None:
+        """concurrent.futures.TimeoutError should be re-raised as LLMTimeoutError."""
+        import concurrent.futures
+        from aaizaql.llm.mistral_provider import MistralProvider
+        from aaizaql.core.exceptions import LLMTimeoutError
+
+        settings = make_settings(llm_timeout_seconds=1)
+        mock_client = _mock_mistral_client()
+
+        # Make the future.result() raise TimeoutError
+        with patch("aaizaql.llm.mistral_provider.Mistral", return_value=mock_client):
+            provider = MistralProvider(settings)
+
+        with patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError):
+            with pytest.raises(LLMTimeoutError):
+                provider.complete("test", timeout=1)
+
+    def test_complete_api_error_raises_llm_error(self) -> None:
+        """Any non-timeout exception should be re-raised as LLMError."""
+        from aaizaql.llm.mistral_provider import MistralProvider
+
+        settings = make_settings()
+        mock_client = _mock_mistral_client()
+        mock_client.chat.complete.side_effect = Exception("500 Server Error")
+
+        with patch("aaizaql.llm.mistral_provider.Mistral", return_value=mock_client):
+            provider = MistralProvider(settings)
+            with pytest.raises(LLMError, match="500 Server Error"):
+                provider.complete("test query")

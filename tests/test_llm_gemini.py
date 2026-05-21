@@ -225,3 +225,55 @@ class TestGeminiProvider:
         assert "AVG(price)" in result
         call_kwargs = mock_client.models.generate_content.call_args[1]
         assert call_kwargs["model"] == "gemini-2.5-pro"
+
+
+# ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
+
+class TestGeminiProviderTimeout:
+    """Timeout path tests for GeminiProvider."""
+
+    def test_complete_timeout_raises_llm_timeout_error(self) -> None:
+        """concurrent.futures.TimeoutError should be re-raised as LLMTimeoutError."""
+        import concurrent.futures
+        from aaizaql.llm.gemini_provider import GeminiProvider
+        from aaizaql.core.exceptions import LLMTimeoutError
+
+        settings = make_settings(llm_timeout_seconds=1)
+        mock_client = _mock_genai_client()
+
+        with patch("aaizaql.llm.gemini_provider.genai") as mock_genai:
+            mock_genai.Client.return_value = mock_client
+            provider = GeminiProvider(settings)
+
+        with patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError):
+            with pytest.raises(LLMTimeoutError):
+                provider.complete("test", timeout=1)
+
+    def test_complete_api_error_raises_llm_error(self) -> None:
+        """Any non-timeout exception should be re-raised as LLMError."""
+        from aaizaql.llm.gemini_provider import GeminiProvider
+
+        settings = make_settings()
+        mock_client = _mock_genai_client()
+        mock_client.models.generate_content.side_effect = Exception("503 Service Unavailable")
+
+        with patch("aaizaql.llm.gemini_provider.genai") as mock_genai:
+            mock_genai.Client.return_value = mock_client
+            provider = GeminiProvider(settings)
+            with pytest.raises(LLMError, match="503 Service Unavailable"):
+                provider.complete("test query")
+
+    def test_complete_handles_none_text(self) -> None:
+        """None .text from Gemini should be normalised to empty string."""
+        from aaizaql.llm.gemini_provider import GeminiProvider
+
+        settings = make_settings()
+        mock_client = _mock_genai_client(content=None)
+
+        with patch("aaizaql.llm.gemini_provider.genai") as mock_genai:
+            mock_genai.Client.return_value = mock_client
+            provider = GeminiProvider(settings)
+            result = provider.complete("test")
+
+        assert result == ""

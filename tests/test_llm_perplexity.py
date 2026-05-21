@@ -213,3 +213,48 @@ class TestPerplexityProvider:
         assert "SELECT COUNT(*)" in result
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "sonar-pro"
+
+
+# ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
+
+class TestPerplexityProviderTimeout:
+    """Timeout path tests for PerplexityProvider."""
+
+    def test_complete_timeout_raises_llm_timeout_error(self) -> None:
+        """openai.APITimeoutError should be re-raised as LLMTimeoutError."""
+        from aaizaql.llm.perplexity_provider import PerplexityProvider
+        from aaizaql.core.exceptions import LLMTimeoutError
+
+        settings = make_settings(llm_timeout_seconds=5)
+        mock_client = MagicMock()
+
+        class FakeAPITimeoutError(Exception):
+            pass
+
+        mock_client.chat.completions.create.side_effect = FakeAPITimeoutError("timed out")
+
+        with patch("aaizaql.llm.perplexity_provider.OpenAI", return_value=mock_client):
+            provider = PerplexityProvider(settings)
+            provider._client = mock_client
+            import aaizaql.llm.perplexity_provider as pmod
+            import openai as _openai
+            with patch.object(pmod, "openai") as mock_oai:
+                mock_oai.APITimeoutError = FakeAPITimeoutError
+                with pytest.raises((LLMTimeoutError, LLMError)):
+                    provider.complete("test", timeout=5)
+
+    def test_complete_timeout_explicit_param_forwarded(self) -> None:
+        """Explicit timeout param should reach the API call."""
+        from aaizaql.llm.perplexity_provider import PerplexityProvider
+
+        settings = make_settings(llm_timeout_seconds=30)
+        mock_client = _mock_openai_client("SELECT 1;")
+
+        with patch("aaizaql.llm.perplexity_provider.OpenAI", return_value=mock_client):
+            provider = PerplexityProvider(settings)
+            result = provider.complete("test", timeout=60)
+
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["timeout"] == 60
+        assert result == "SELECT 1;"

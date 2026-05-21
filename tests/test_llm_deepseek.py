@@ -200,3 +200,58 @@ class TestDeepSeekProvider:
         call_kwargs = mock_openai.call_args[1]
         assert call_kwargs["base_url"] == DEEPSEEK_BASE_URL
         assert call_kwargs["base_url"] == "https://api.deepseek.com"
+
+
+# ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
+
+class TestDeepSeekProviderTimeout:
+    """Timeout path tests for DeepSeekProvider."""
+
+    def test_complete_timeout_raises_llm_timeout_error(self) -> None:
+        """openai.APITimeoutError should be re-raised as LLMTimeoutError."""
+        from aaizaql.llm.deepseek_provider import DeepSeekProvider
+        from aaizaql.core.exceptions import LLMTimeoutError
+
+        settings = make_settings(llm_timeout_seconds=5)
+        mock_client = MagicMock()
+
+        class FakeAPITimeoutError(Exception):
+            pass
+
+        mock_client.chat.completions.create.side_effect = FakeAPITimeoutError("timed out")
+
+        import openai as _openai
+        with (
+            patch("aaizaql.llm.deepseek_provider.OpenAI", return_value=mock_client),
+            patch.object(_openai, "APITimeoutError", FakeAPITimeoutError),
+        ):
+            provider = DeepSeekProvider(settings)
+            provider._client = mock_client
+            with pytest.raises((LLMTimeoutError, LLMError)):
+                import importlib
+                import aaizaql.llm.deepseek_provider as dmod
+                with patch.object(dmod, "openai") as mock_oai:
+                    mock_oai.APITimeoutError = FakeAPITimeoutError
+                    provider.complete("test", timeout=5)
+
+    def test_complete_timeout_explicit_param_forwarded(self) -> None:
+        """Explicit timeout param should reach the API call."""
+        from aaizaql.llm.deepseek_provider import DeepSeekProvider
+
+        settings = make_settings(llm_timeout_seconds=30)
+        mock_client = MagicMock()
+        resp = MagicMock()
+        resp.choices = [MagicMock()]
+        resp.choices[0].message.content = "SELECT 1;"
+        resp.usage.prompt_tokens = 5
+        resp.usage.completion_tokens = 3
+        mock_client.chat.completions.create.return_value = resp
+
+        with patch("aaizaql.llm.deepseek_provider.OpenAI", return_value=mock_client):
+            provider = DeepSeekProvider(settings)
+            result = provider.complete("test", timeout=60)
+
+        call_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert call_kwargs["timeout"] == 60
+        assert result == "SELECT 1;"
