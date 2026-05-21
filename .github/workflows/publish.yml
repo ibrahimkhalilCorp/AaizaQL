@@ -3,15 +3,16 @@
 # Publishes aaizaql to PyPI on every version tag (v*.*.*).
 #
 # Flow:
-#   1. Triggered by pushing a tag like `v0.2.1`
+#   1. Triggered by pushing a tag like `v0.2.0`
 #   2. Runs the full CI suite (lint → test → providers → security)
-#   3. Builds the distribution
-#   4. Publishes to PyPI using Trusted Publishing (no token stored in secrets)
-#   5. Creates a GitHub Release with the built artifacts attached
+#   3. Builds fresh distribution from the tagged commit
+#   4. Publishes to PyPI using Trusted Publishing (OIDC — no stored token)
+#   5. Creates a GitHub Release with changelog section + dist artifacts
 #
 # Setup required (one-time):
 #   - Go to https://pypi.org/manage/project/aaizaql/settings/publishing/
-#   - Add a "Trusted Publisher" for this repo / workflow
+#   - Add a Trusted Publisher: owner=ibrahimkhalil, repo=aaizaql,
+#     workflow=publish.yml, environment=pypi
 #   - No PYPI_API_TOKEN secret needed — OIDC handles auth automatically
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -20,10 +21,9 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"          # e.g. v0.2.1
-      - "v[0-9]+.[0-9]+.[0-9]+.post[0-9]+" # e.g. v0.2.1.post1
+      - "v[0-9]+.[0-9]+.[0-9]+"             # e.g. v0.2.0
+      - "v[0-9]+.[0-9]+.[0-9]+.post[0-9]+"  # e.g. v0.2.0.post1
 
-# Only one publish can run at a time
 concurrency:
   group: publish-${{ github.ref }}
   cancel-in-progress: false
@@ -34,13 +34,13 @@ env:
 
 jobs:
 # ══════════════════════════════════════════════════════════════════════════════
-# Job 1 — Full CI gate (must pass before anything is published)
+# Job 1 — Full CI gate
 # ══════════════════════════════════════════════════════════════════════════════
   ci-gate:
     name: CI Gate · Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true          # abort immediately if any version fails
+      fail-fast: true
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
 
@@ -67,12 +67,13 @@ jobs:
             --ignore=tests/integration \
             -v --tb=short
 
-      - name: Integration tests
+      - name: Integration tests (SQLite + DuckDB — no container needed)
         run: |
           pytest tests/integration/ \
+            -k "TestSQLiteConnector or TestDuckDBConnector or not (TestPostgreSQL or TestMySQL or TestMSSQL or TestMongoDB or TestSnowflake or TestBigQuery or TestOracle)" \
             -v --tb=short
 
-      - name: Provider tests (all four)
+      - name: Provider tests
         run: |
           pytest \
             tests/test_llm_deepseek.py \
@@ -88,7 +89,7 @@ jobs:
             -v --tb=short
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Job 2 — Build distribution
+# Job 2 — Build distribution from the tagged commit
 # ══════════════════════════════════════════════════════════════════════════════
   build:
     name: Build Distribution
@@ -129,7 +130,6 @@ jobs:
       name: pypi
       url: https://pypi.org/project/aaizaql/
 
-    # OIDC requires these two permissions
     permissions:
       id-token: write
       contents: read
@@ -143,7 +143,7 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # No api_token needed — Trusted Publishing handles authentication
+        # No api_token needed — Trusted Publishing (OIDC) handles authentication
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Job 4 — Create GitHub Release with changelog + artifacts
@@ -154,12 +154,12 @@ jobs:
     needs: publish-pypi
 
     permissions:
-      contents: write          # needed to create releases and upload assets
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0       # full history so we can generate a changelog
+          fetch-depth: 0
 
       - name: Download dist artifacts
         uses: actions/download-artifact@v4
@@ -171,23 +171,18 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Build changelog since last tag
+      - name: Extract changelog section for this version
         id: changelog
         run: |
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^$GITHUB_REF_NAME$" | head -1)
-          if [ -z "$PREV_TAG" ]; then
-            RANGE="HEAD"
-          else
-            RANGE="${PREV_TAG}..HEAD"
+          VERSION="${{ steps.version.outputs.version }}"
+          # Pull the block between this version header and the next one
+          SECTION=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          if [ -z "$SECTION" ]; then
+            SECTION="See CHANGELOG.md for full details."
           fi
-          CHANGELOG=$(git log "$RANGE" \
-            --pretty=format:"- %s (%h)" \
-            --no-merges \
-            | head -40)
-          # Escape for GitHub Actions multiline output
           echo "text<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$CHANGELOG"  >> "$GITHUB_OUTPUT"
-          echo "EOF"          >> "$GITHUB_OUTPUT"
+          echo "$SECTION"  >> "$GITHUB_OUTPUT"
+          echo "EOF"        >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -195,7 +190,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "aaizaql ${{ github.ref_name }}"
           body: |
-            ## What's changed in ${{ github.ref_name }}
+            ## What's new in ${{ github.ref_name }}
 
             ${{ steps.changelog.outputs.text }}
 
@@ -206,15 +201,17 @@ jobs:
             ```bash
             pip install aaizaql==${{ steps.version.outputs.version }}
 
-            # With provider extras
-            pip install "aaizaql[deepseek]==${{ steps.version.outputs.version }}"
-            pip install "aaizaql[gemini]==${{ steps.version.outputs.version }}"
-            pip install "aaizaql[mistral]==${{ steps.version.outputs.version }}"
-            pip install "aaizaql[perplexity]==${{ steps.version.outputs.version }}"
+            # With LLM provider
+            pip install "aaizaql[groq]==${{ steps.version.outputs.version }}"
+            pip install "aaizaql[claude]==${{ steps.version.outputs.version }}"
+
+            # With database connector
+            pip install "aaizaql[postgres]==${{ steps.version.outputs.version }}"
+            pip install "aaizaql[mysql]==${{ steps.version.outputs.version }}"
             ```
 
-            ### Full PyPI page
-            https://pypi.org/project/aaizaql/${{ steps.version.outputs.version }}/
+            Full changelog: [CHANGELOG.md](https://github.com/ibrahimkhalil/aaizaql/blob/main/CHANGELOG.md)  
+            PyPI: https://pypi.org/project/aaizaql/${{ steps.version.outputs.version }}/
           files: dist/*
           draft: false
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
