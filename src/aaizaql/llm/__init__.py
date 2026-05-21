@@ -6,14 +6,9 @@ LLM provider factory.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMProviderNotFound
 from aaizaql.llm.base import LLMProvider
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 # Central registry of all supported LLM provider names.
 # Add new providers here — LLMProviderNotFound will always stay current.

@@ -104,9 +104,8 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}):
-            with pytest.raises(VectorStoreError) as exc_info:
-                VectorStoreAdapter(settings)
+        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+            VectorStoreAdapter(settings)
 
         assert not isinstance(exc_info.value.__cause__, type(None))
 
@@ -117,9 +116,8 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}):
-            with pytest.raises(VectorStoreError) as exc_info:
-                VectorStoreAdapter(settings)
+        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+            VectorStoreAdapter(settings)
 
         msg = str(exc_info.value)
         assert "rag" in msg.lower(), f"Expected 'rag' in error message, got: {msg}"
@@ -132,9 +130,8 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}):
-            with pytest.raises(VectorStoreError) as exc_info:
-                VectorStoreAdapter(settings)
+        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+            VectorStoreAdapter(settings)
 
         assert "chromadb" in str(exc_info.value)
 
@@ -150,18 +147,16 @@ class TestSentenceEmbedderMissingSentenceTransformers:
 
     def test_raises_import_error_when_missing(self) -> None:
         embedder = self._make_embedder()
-        with patch.dict(sys.modules, {"sentence_transformers": None}):
-            with pytest.raises(ImportError) as exc_info:
-                embedder._load()
+        with patch.dict(sys.modules, {"sentence_transformers": None}), pytest.raises(ImportError) as exc_info:
+            embedder._load()
 
         msg = str(exc_info.value)
         assert "sentence-transformers" in msg
 
     def test_error_message_mentions_rag_extra(self) -> None:
         embedder = self._make_embedder()
-        with patch.dict(sys.modules, {"sentence_transformers": None}):
-            with pytest.raises(ImportError) as exc_info:
-                embedder._load()
+        with patch.dict(sys.modules, {"sentence_transformers": None}), pytest.raises(ImportError) as exc_info:
+            embedder._load()
 
         msg = str(exc_info.value)
         assert "rag" in msg.lower(), f"Expected 'rag' in error message, got: {msg}"
@@ -170,9 +165,8 @@ class TestSentenceEmbedderMissingSentenceTransformers:
     def test_no_silent_fallback_on_import_error(self) -> None:
         """embed() must propagate the ImportError — no silent hash fallback."""
         embedder = self._make_embedder()
-        with patch.dict(sys.modules, {"sentence_transformers": None}):
-            with pytest.raises(ImportError):
-                embedder.embed("SELECT 1")
+        with patch.dict(sys.modules, {"sentence_transformers": None}), pytest.raises(ImportError):
+            embedder.embed("SELECT 1")
 
     def test_fallback_embed_still_works_for_runtime_errors(self) -> None:
         """_fallback_embed() itself must still produce a vector (used for encode() failures)."""

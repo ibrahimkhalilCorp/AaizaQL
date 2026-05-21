@@ -43,11 +43,15 @@ class TestSettings:
         assert s.llm_timeout_seconds == 45
 
     def test_timeout_minimum(self) -> None:
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             Settings(llm_timeout_seconds=0)
 
     def test_timeout_maximum(self) -> None:
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             Settings(llm_timeout_seconds=301)
 
 
@@ -82,8 +86,7 @@ class TestOllamaTimeout:
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
         provider = self._make_provider(timeout=5)
-        with patch("requests.post", side_effect=requests.Timeout("timed out")):
-            with pytest.raises(LLMTimeoutError) as exc_info:
+        with patch("requests.post", side_effect=requests.Timeout("timed out")), pytest.raises(LLMTimeoutError) as exc_info:
                 provider.complete("SELECT 1")
         assert exc_info.value.provider == "ollama"
         assert exc_info.value.timeout == 5
@@ -364,8 +367,7 @@ class TestClaudeTimeout:
         mock_client_instance.__enter__ = MagicMock(return_value=mock_client_instance)
         mock_client_instance.__exit__ = MagicMock(return_value=False)
 
-        with patch("anthropic.Anthropic", return_value=mock_client_instance):
-            with pytest.raises(LLMTimeoutError) as exc_info:
+        with patch("anthropic.Anthropic", return_value=mock_client_instance), pytest.raises(LLMTimeoutError) as exc_info:
                 provider.complete("SELECT 1")
         assert exc_info.value.provider == "claude"
         assert exc_info.value.timeout == 5

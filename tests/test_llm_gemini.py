@@ -246,8 +246,7 @@ class TestGeminiProviderTimeout:
             mock_genai.Client.return_value = mock_client
             provider = GeminiProvider(settings)
 
-        with patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError):
-            with pytest.raises(LLMTimeoutError):
+        with patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError), pytest.raises(LLMTimeoutError):
                 provider.complete("test", timeout=1)
 
     def test_complete_api_error_raises_llm_error(self) -> None:
