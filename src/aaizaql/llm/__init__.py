@@ -36,7 +36,7 @@ def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
     """Return the correct LLMProvider instance for the given name."""
     name = name.lower()
     if name not in _PROVIDER_REGISTRY:
-        raise LLMProviderNotFound(name)
+        raise LLMProviderNotFound(name, available=sorted(_PROVIDER_REGISTRY.keys()))
 
     # Lazy import — keeps optional SDK deps out of the import chain
     module_path, class_name = _PROVIDER_REGISTRY[name].rsplit(".", 1)

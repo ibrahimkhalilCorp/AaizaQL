@@ -96,11 +96,12 @@ class ConnectionError(AAIZAQLError):
 class ConnectorNotFound(AAIZAQLError):
     """Raised when an unknown connector name is requested."""
 
-    def __init__(self, name: str) -> None:
-        from aaizaql.connectors import REGISTRY  # lazy to avoid circular import
-
+    def __init__(self, name: str, available: list[str] | None = None) -> None:
+        self.name = name
+        self.available = available or []
         super().__init__(
-            f"No connector registered for '{name}'. " f"Available: {sorted(REGISTRY.keys())}"
+            f"No connector registered for '{name}'. "
+            f"Available: {sorted(self.available)}"
         )
 
 
@@ -126,12 +127,12 @@ class LLMTimeoutError(LLMError):
 class LLMProviderNotFound(AAIZAQLError):
     """Raised when an unknown LLM provider name is requested."""
 
-    def __init__(self, name: str) -> None:
-        from aaizaql.llm import REGISTRY  # lazy to avoid circular import
-
+    def __init__(self, name: str, available: list[str] | None = None) -> None:
+        self.name = name
+        self.available = available or []
         super().__init__(
             f"No LLM provider registered for '{name}'. "
-            f"Available: {sorted(REGISTRY)}"
+            f"Available: {sorted(self.available)}"
         )
 
 
