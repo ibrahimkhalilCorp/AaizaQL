@@ -61,16 +61,13 @@ class GroqProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_GROQ_API_KEY='gsk_api_key'",
             )
 
-        try:
-            import groq as _groq_module
-            _GroqClass = _groq_module.Groq
-        except (ImportError, AttributeError) as exc:
+        if Groq is None:
             raise LLMError(
                 "groq",
                 "groq package is not installed. Run:  pip install groq",
-            ) from exc
+            )
 
-        self._client = _GroqClass(api_key=settings.groq_api_key.get_secret_value())
+        self._client = Groq(api_key=settings.groq_api_key.get_secret_value())
         self._model = settings.groq_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature

@@ -55,7 +55,17 @@ class MySQLConnector(DatabaseConnector):
         if self._conn is None:
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="mysql")
         try:
-            return pd.read_sql_query(sql, self._conn)
+            import pymysql
+
+            # Use a plain (non-Dict) cursor so pandas receives raw tuples
+            # and constructs column names from the cursor description itself.
+            with self._conn.cursor(pymysql.cursors.Cursor) as cur:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                columns = [d[0] for d in cur.description] if cur.description else []
+            return pd.DataFrame(rows, columns=columns)
+        except DatabaseError:
+            raise
         except Exception as exc:
             raise DatabaseError(str(exc), sql=sql, connector="mysql") from exc
 
@@ -84,8 +94,12 @@ class MySQLConnector(DatabaseConnector):
             ORDER BY TABLE_NAME;
         """
         try:
-            df = pd.read_sql_query(query, self._conn)
-            return "\n\n".join(df.iloc[:, 0].tolist())
+            import pymysql
+
+            with self._conn.cursor(pymysql.cursors.Cursor) as cur:
+                cur.execute(query)
+                rows = cur.fetchall()
+            return "\n\n".join(row[0] for row in rows if row[0])
         except Exception:
             return ""
 
