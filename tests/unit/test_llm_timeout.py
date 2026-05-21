@@ -85,8 +85,11 @@ class TestOllamaTimeout:
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
         provider = self._make_provider(timeout=5)
-        with patch("requests.post", side_effect=requests.Timeout("timed out")), pytest.raises(LLMTimeoutError) as exc_info:
-                provider.complete("SELECT 1")
+        with (
+            patch("requests.post", side_effect=requests.Timeout("timed out")),
+            pytest.raises(LLMTimeoutError) as exc_info,
+        ):
+            provider.complete("SELECT 1")
         assert exc_info.value.provider == "ollama"
         assert exc_info.value.timeout == 5
 
@@ -105,10 +108,13 @@ class TestOllamaTimeout:
 
     def test_requests_exception_not_timeout_raises_llm_error(self) -> None:
         provider = self._make_provider()
-        with patch(
-            "requests.post",
-            side_effect=requests.ConnectionError("refused"),
-        ), pytest.raises(LLMError) as exc_info:
+        with (
+            patch(
+                "requests.post",
+                side_effect=requests.ConnectionError("refused"),
+            ),
+            pytest.raises(LLMError) as exc_info,
+        ):
             provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
@@ -245,9 +251,7 @@ class TestGroqTimeout:
         from groq import APITimeoutError
 
         provider = self._make_provider(timeout=5)
-        provider._client.chat.completions.create.side_effect = APITimeoutError(
-            request=MagicMock()
-        )
+        provider._client.chat.completions.create.side_effect = APITimeoutError(request=MagicMock())
         with pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "groq"
@@ -289,7 +293,10 @@ class TestGeminiTimeout:
             future.set_exception(concurrent.futures.TimeoutError())
             return future
 
-        with patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit), pytest.raises(LLMTimeoutError) as exc_info:
+        with (
+            patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit),
+            pytest.raises(LLMTimeoutError) as exc_info,
+        ):
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "gemini"
         assert exc_info.value.timeout == 1
@@ -303,7 +310,17 @@ class TestGeminiTimeout:
         mock_genai_types.GenerateContentConfig = MagicMock(return_value=MagicMock())
         mock_google = MagicMock()
         mock_google.genai.types = mock_genai_types
-        with patch.dict(sys.modules, {"google": mock_google, "google.genai": MagicMock(), "google.genai.types": mock_genai_types}), pytest.raises(LLMError) as exc_info:
+        with (
+            patch.dict(
+                sys.modules,
+                {
+                    "google": mock_google,
+                    "google.genai": MagicMock(),
+                    "google.genai.types": mock_genai_types,
+                },
+            ),
+            pytest.raises(LLMError) as exc_info,
+        ):
             provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
@@ -328,13 +345,15 @@ class TestMistralTimeout:
 
         provider = self._make_provider(timeout=1)
 
-
         def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
             future: concurrent.futures.Future = concurrent.futures.Future()
             future.set_exception(concurrent.futures.TimeoutError())
             return future
 
-        with patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit), pytest.raises(LLMTimeoutError) as exc_info:
+        with (
+            patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit),
+            pytest.raises(LLMTimeoutError) as exc_info,
+        ):
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "mistral"
         assert exc_info.value.timeout == 1
@@ -370,8 +389,11 @@ class TestClaudeTimeout:
         mock_client_instance.__enter__ = MagicMock(return_value=mock_client_instance)
         mock_client_instance.__exit__ = MagicMock(return_value=False)
 
-        with patch("anthropic.Anthropic", return_value=mock_client_instance), pytest.raises(LLMTimeoutError) as exc_info:
-                provider.complete("SELECT 1")
+        with (
+            patch("anthropic.Anthropic", return_value=mock_client_instance),
+            pytest.raises(LLMTimeoutError) as exc_info,
+        ):
+            provider.complete("SELECT 1")
         assert exc_info.value.provider == "claude"
         assert exc_info.value.timeout == 5
 

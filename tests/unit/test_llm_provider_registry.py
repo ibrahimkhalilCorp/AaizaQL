@@ -46,9 +46,9 @@ class TestLLMProviderNotFound:
         except LLMProviderNotFound as exc:
             msg = str(exc)
             for provider in EXPECTED_PROVIDERS:
-                assert provider in msg, (
-                    f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
-                )
+                assert (
+                    provider in msg
+                ), f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
 
     def test_error_message_does_not_contain_stale_hardcoded_list(self) -> None:
         """Regression: old message hardcoded only 'claude', 'openai', 'ollama'."""

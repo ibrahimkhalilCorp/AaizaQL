@@ -64,6 +64,7 @@ class GroqProvider(LLMProvider):
         # Check at call-time so tests can simulate absence via
         # patch.dict("sys.modules", {"groq": None}).
         import sys
+
         if sys.modules.get("groq") is None or Groq is None:
             raise LLMError(
                 "groq",
