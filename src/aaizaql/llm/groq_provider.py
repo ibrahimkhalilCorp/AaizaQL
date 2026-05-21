@@ -61,13 +61,21 @@ class GroqProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_GROQ_API_KEY='gsk_api_key'",
             )
 
-        if Groq is None:
+        # Check at call-time so tests can simulate absence via
+        # patch.dict("sys.modules", {"groq": None}).
+        import sys
+        if sys.modules.get("groq") is None or Groq is None:
             raise LLMError(
                 "groq",
                 "groq package is not installed. Run:  pip install groq",
             )
 
-        self._client = Groq(api_key=settings.groq_api_key.get_secret_value())
+        api_key = (
+            settings.groq_api_key.get_secret_value()
+            if hasattr(settings.groq_api_key, "get_secret_value")
+            else settings.groq_api_key
+        )
+        self._client = Groq(api_key=api_key)
         self._model = settings.groq_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
