@@ -152,6 +152,12 @@ warn_return_any = false
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
+markers = [
+  "integration_pg: requires a live PostgreSQL instance (set POSTGRES_TEST_DSN)",
+  "integration_mysql: requires a live MySQL instance (set MYSQL_TEST_DSN)",
+  "integration_mssql: requires a live MSSQL instance (set MSSQL_TEST_DSN)",
+  "integration_mongodb: requires a live MongoDB instance (set MONGODB_TEST_DSN)",
+]
 
 [tool.coverage.run]
 source = ["src/aaizaql"]

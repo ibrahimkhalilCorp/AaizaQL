@@ -202,12 +202,121 @@ jobs:
             --tb=short
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Job 4b — Connector integration matrix
+# Spins up Postgres, MySQL, MSSQL, MongoDB via Docker Compose.
+# SQLite and DuckDB run without a container.
+# Snowflake, BigQuery, Oracle are skipped unless their DSN env var is set.
+# ══════════════════════════════════════════════════════════════════════════════
+  connector-matrix:
+    name: Connector Matrix · ${{ matrix.connector }}
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        connector: [sqlite, duckdb, postgres, mysql, mssql, mongodb]
+
+    services:
+      postgres:
+        image: ${{ matrix.connector == 'postgres' && 'postgres:16-alpine' || '' }}
+        env:
+          POSTGRES_USER: aaizaql
+          POSTGRES_PASSWORD: aaizaql
+          POSTGRES_DB: aaizaql_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aaizaql -d aaizaql_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      mysql:
+        image: ${{ matrix.connector == 'mysql' && 'mysql:8.0' || '' }}
+        env:
+          MYSQL_ROOT_PASSWORD: aaizaql
+          MYSQL_USER: aaizaql
+          MYSQL_PASSWORD: aaizaql
+          MYSQL_DATABASE: aaizaql_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u aaizaql -paaizaql"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+
+      mssql:
+        image: ${{ matrix.connector == 'mssql' && 'mcr.microsoft.com/mssql/server:2022-latest' || '' }}
+        env:
+          ACCEPT_EULA: "Y"
+          SA_PASSWORD: "AaizaQL_2024!"
+          MSSQL_PID: Developer
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'AaizaQL_2024!' -Q 'SELECT 1' -No -C"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 15
+
+      mongodb:
+        image: ${{ matrix.connector == 'mongodb' && 'mongo:7.0' || '' }}
+        env:
+          MONGO_INITDB_ROOT_USERNAME: aaizaql
+          MONGO_INITDB_ROOT_PASSWORD: aaizaql
+          MONGO_INITDB_DATABASE: aaizaql_test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval \"db.adminCommand('ping')\" --quiet"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ODBC driver (MSSQL only)
+        if: matrix.connector == 'mssql'
+        run: |
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          curl -fsSL https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list | \
+            sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update -q
+          sudo ACCEPT_EULA=Y apt-get install -yq msodbcsql18 unixodbc-dev
+
+      - name: Install connector dependencies
+        run: |
+          pip install -e ".[dev,duckdb,postgres,mysql,mssql,mongodb]" --quiet
+
+      - name: Run connector matrix tests · ${{ matrix.connector }}
+        env:
+          POSTGRES_TEST_DSN: postgresql://aaizaql:aaizaql@localhost:5432/aaizaql_test
+          MYSQL_TEST_DSN: mysql://aaizaql:aaizaql@localhost:3306/aaizaql_test
+          MSSQL_TEST_DSN: mssql://sa:AaizaQL_2024!@localhost:1433/master
+          MONGODB_TEST_DSN: mongodb://aaizaql:aaizaql@localhost:27017/aaizaql_test?authSource=admin
+        run: |
+          pytest tests/integration/test_connector_matrix.py \
+            -k "Test${{ matrix.connector == 'sqlite' && 'SQLite' || matrix.connector == 'duckdb' && 'DuckDB' || matrix.connector == 'postgres' && 'PostgreSQL' || matrix.connector == 'mysql' && 'MySQL' || matrix.connector == 'mssql' && 'MSSQL' || 'MongoDB' }}Connector" \
+            -v \
+            --tb=short \
+            --cov=src/aaizaql/connectors \
+            --cov-report=term-missing \
+            --cov-fail-under=0
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Job 5 — Coverage upload to Codecov
 # ══════════════════════════════════════════════════════════════════════════════
   coverage:
     name: Upload Coverage
     runs-on: ubuntu-latest
-    needs: [test, providers]
+    needs: [test, providers, connector-matrix]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -232,7 +341,7 @@ jobs:
   build:
     name: Build Distribution
     runs-on: ubuntu-latest
-    needs: [test, providers, security]
+    needs: [test, providers, security, connector-matrix]
 
     steps:
       - uses: actions/checkout@v4
