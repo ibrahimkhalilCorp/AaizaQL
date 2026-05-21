@@ -18,7 +18,6 @@ import pytest
 from aaizaql.core.exceptions import LLMProviderNotFound
 from aaizaql.llm import REGISTRY, build_llm_provider
 
-
 EXPECTED_PROVIDERS = frozenset(
     {"claude", "openai", "ollama", "groq", "deepseek", "perplexity", "gemini", "mistral"}
 )
@@ -47,9 +46,9 @@ class TestLLMProviderNotFound:
         except LLMProviderNotFound as exc:
             msg = str(exc)
             for provider in EXPECTED_PROVIDERS:
-                assert provider in msg, (
-                    f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
-                )
+                assert (
+                    provider in msg
+                ), f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
 
     def test_error_message_does_not_contain_stale_hardcoded_list(self) -> None:
         """Regression: old message hardcoded only 'claude', 'openai', 'ollama'."""

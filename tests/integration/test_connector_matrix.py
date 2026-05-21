@@ -21,6 +21,7 @@ Skipped unless env var gate is set:
 
 from __future__ import annotations
 
+import contextlib
 import os
 
 import pandas as pd
@@ -126,9 +127,7 @@ class TestSQLiteConnector:
             "department TEXT NOT NULL, salary REAL NOT NULL)"
         )
         for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
-            )
+            c.execute(f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})")
         yield c
         c.close()
 
@@ -136,9 +135,7 @@ class TestSQLiteConnector:
         _assert_select_all(connector.execute("SELECT * FROM employees"))
 
     def test_filter_by_department(self, connector):
-        _assert_filter(
-            connector.execute("SELECT * FROM employees WHERE department='Engineering'")
-        )
+        _assert_filter(connector.execute("SELECT * FROM employees WHERE department='Engineering'"))
 
     def test_aggregate_count(self, connector):
         _assert_aggregate(connector.execute("SELECT COUNT(*) FROM employees"))
@@ -184,9 +181,7 @@ class TestDuckDBConnector:
             "department VARCHAR NOT NULL, salary DECIMAL(10,2) NOT NULL)"
         )
         for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
-            )
+            c.execute(f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})")
         yield c
         c.close()
 
@@ -194,9 +189,7 @@ class TestDuckDBConnector:
         _assert_select_all(connector.execute("SELECT * FROM employees"))
 
     def test_filter_by_department(self, connector):
-        _assert_filter(
-            connector.execute("SELECT * FROM employees WHERE department='Engineering'")
-        )
+        _assert_filter(connector.execute("SELECT * FROM employees WHERE department='Engineering'"))
 
     def test_aggregate_count(self, connector):
         _assert_aggregate(connector.execute("SELECT COUNT(*) FROM employees"))
@@ -255,9 +248,7 @@ class TestPostgreSQLConnector:
             "department VARCHAR(50) NOT NULL, salary DECIMAL(10,2) NOT NULL)"
         )
         for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
-            )
+            c.execute(f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})")
         yield c
         c.execute("DROP TABLE IF EXISTS employees")
         c.close()
@@ -266,9 +257,7 @@ class TestPostgreSQLConnector:
         _assert_select_all(connector.execute("SELECT * FROM employees"))
 
     def test_filter_by_department(self, connector):
-        _assert_filter(
-            connector.execute("SELECT * FROM employees WHERE department='Engineering'")
-        )
+        _assert_filter(connector.execute("SELECT * FROM employees WHERE department='Engineering'"))
 
     def test_aggregate_count(self, connector):
         _assert_aggregate(connector.execute("SELECT COUNT(*) FROM employees"))
@@ -321,9 +310,7 @@ class TestMySQLConnector:
             "department VARCHAR(50) NOT NULL, salary DECIMAL(10,2) NOT NULL)"
         )
         for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
-            )
+            c.execute(f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})")
         yield c
         c.execute("DROP TABLE IF EXISTS employees")
         c.close()
@@ -332,9 +319,7 @@ class TestMySQLConnector:
         _assert_select_all(connector.execute("SELECT * FROM employees"))
 
     def test_filter_by_department(self, connector):
-        _assert_filter(
-            connector.execute("SELECT * FROM employees WHERE department='Engineering'")
-        )
+        _assert_filter(connector.execute("SELECT * FROM employees WHERE department='Engineering'"))
 
     def test_aggregate_count(self, connector):
         _assert_aggregate(connector.execute("SELECT COUNT(*) FROM employees"))
@@ -381,33 +366,25 @@ class TestMSSQLConnector:
             pytest.skip(f"MSSQL not reachable: {exc}")
 
         # Idempotent setup using MSSQL-compatible DDL
-        try:
+        with contextlib.suppress(Exception):
             c.execute("DROP TABLE IF EXISTS employees")
-        except Exception:
-            pass
         c.execute(
             "CREATE TABLE employees ("
             "id INT PRIMARY KEY, name NVARCHAR(100) NOT NULL, "
             "department NVARCHAR(50) NOT NULL, salary DECIMAL(10,2) NOT NULL)"
         )
         for row in _SEED_EMPLOYEES:
-            c.execute(
-                f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})"
-            )
+            c.execute(f"INSERT INTO employees VALUES ({row[0]}, '{row[1]}', '{row[2]}', {row[3]})")
         yield c
-        try:
+        with contextlib.suppress(Exception):
             c.execute("DROP TABLE IF EXISTS employees")
-        except Exception:
-            pass
         c.close()
 
     def test_connect_and_select_all(self, connector):
         _assert_select_all(connector.execute("SELECT * FROM employees"))
 
     def test_filter_by_department(self, connector):
-        _assert_filter(
-            connector.execute("SELECT * FROM employees WHERE department='Engineering'")
-        )
+        _assert_filter(connector.execute("SELECT * FROM employees WHERE department='Engineering'"))
 
     def test_aggregate_count(self, connector):
         _assert_aggregate(connector.execute("SELECT COUNT(*) FROM employees"))
@@ -487,7 +464,9 @@ class TestMongoDBConnector:
         from aaizaql.core.exceptions import DatabaseError
 
         with pytest.raises(DatabaseError):
-            connector.execute('{"collection": "__nonexistent_xyz__", "filter": {}, "raise_if_empty": true}')
+            connector.execute(
+                '{"collection": "__nonexistent_xyz__", "filter": {}, "raise_if_empty": true}'
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -504,7 +483,9 @@ class TestSnowflakeConnector:
 
     @pytest.fixture(autouse=True)
     def connector(self):
-        pytest.importorskip("snowflake.connector", reason="snowflake-connector-python not installed")
+        pytest.importorskip(
+            "snowflake.connector", reason="snowflake-connector-python not installed"
+        )
         from aaizaql.connectors.snowflake import SnowflakeConnector
 
         c = SnowflakeConnector()

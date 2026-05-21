@@ -223,8 +223,8 @@ class TestPerplexityProviderTimeout:
 
     def test_complete_timeout_raises_llm_timeout_error(self) -> None:
         """openai.APITimeoutError should be re-raised as LLMTimeoutError."""
-        from aaizaql.llm.perplexity_provider import PerplexityProvider
         from aaizaql.core.exceptions import LLMTimeoutError
+        from aaizaql.llm.perplexity_provider import PerplexityProvider
 
         settings = make_settings(llm_timeout_seconds=5)
         mock_client = MagicMock()
@@ -237,8 +237,9 @@ class TestPerplexityProviderTimeout:
         with patch("aaizaql.llm.perplexity_provider.OpenAI", return_value=mock_client):
             provider = PerplexityProvider(settings)
             provider._client = mock_client
+
             import aaizaql.llm.perplexity_provider as pmod
-            import openai as _openai
+
             with patch.object(pmod, "openai") as mock_oai:
                 mock_oai.APITimeoutError = FakeAPITimeoutError
                 with pytest.raises((LLMTimeoutError, LLMError)):

@@ -210,8 +210,8 @@ class TestDeepSeekProviderTimeout:
 
     def test_complete_timeout_raises_llm_timeout_error(self) -> None:
         """openai.APITimeoutError should be re-raised as LLMTimeoutError."""
-        from aaizaql.llm.deepseek_provider import DeepSeekProvider
         from aaizaql.core.exceptions import LLMTimeoutError
+        from aaizaql.llm.deepseek_provider import DeepSeekProvider
 
         settings = make_settings(llm_timeout_seconds=5)
         mock_client = MagicMock()
@@ -222,6 +222,7 @@ class TestDeepSeekProviderTimeout:
         mock_client.chat.completions.create.side_effect = FakeAPITimeoutError("timed out")
 
         import openai as _openai
+
         with (
             patch("aaizaql.llm.deepseek_provider.OpenAI", return_value=mock_client),
             patch.object(_openai, "APITimeoutError", FakeAPITimeoutError),
@@ -229,8 +230,8 @@ class TestDeepSeekProviderTimeout:
             provider = DeepSeekProvider(settings)
             provider._client = mock_client
             with pytest.raises((LLMTimeoutError, LLMError)):
-                import importlib
                 import aaizaql.llm.deepseek_provider as dmod
+
                 with patch.object(dmod, "openai") as mock_oai:
                     mock_oai.APITimeoutError = FakeAPITimeoutError
                     provider.complete("test", timeout=5)

@@ -17,12 +17,11 @@ No API keys or network calls required.
 from __future__ import annotations
 
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from aaizaql.core.exceptions import ConnectorNotFound, LLMProviderNotFound
-
 
 # ── ConnectorNotFound ─────────────────────────────────────────────────────────
 

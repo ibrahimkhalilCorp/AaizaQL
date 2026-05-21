@@ -230,8 +230,9 @@ class TestMistralProviderTimeout:
     def test_complete_timeout_raises_llm_timeout_error(self) -> None:
         """concurrent.futures.TimeoutError should be re-raised as LLMTimeoutError."""
         import concurrent.futures
-        from aaizaql.llm.mistral_provider import MistralProvider
+
         from aaizaql.core.exceptions import LLMTimeoutError
+        from aaizaql.llm.mistral_provider import MistralProvider
 
         settings = make_settings(llm_timeout_seconds=1)
         mock_client = _mock_mistral_client()
@@ -240,8 +241,11 @@ class TestMistralProviderTimeout:
         with patch("aaizaql.llm.mistral_provider.Mistral", return_value=mock_client):
             provider = MistralProvider(settings)
 
-        with patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError), pytest.raises(LLMTimeoutError):
-                provider.complete("test", timeout=1)
+        with (
+            patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError),
+            pytest.raises(LLMTimeoutError),
+        ):
+            provider.complete("test", timeout=1)
 
     def test_complete_api_error_raises_llm_error(self) -> None:
         """Any non-timeout exception should be re-raised as LLMError."""

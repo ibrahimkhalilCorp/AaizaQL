@@ -100,8 +100,7 @@ class ConnectorNotFound(AAIZAQLError):
         self.name = name
         self.available = available or []
         super().__init__(
-            f"No connector registered for '{name}'. "
-            f"Available: {sorted(self.available)}"
+            f"No connector registered for '{name}'. " f"Available: {sorted(self.available)}"
         )
 
 
@@ -131,8 +130,7 @@ class LLMProviderNotFound(AAIZAQLError):
         self.name = name
         self.available = available or []
         super().__init__(
-            f"No LLM provider registered for '{name}'. "
-            f"Available: {sorted(self.available)}"
+            f"No LLM provider registered for '{name}'. " f"Available: {sorted(self.available)}"
         )
 
 

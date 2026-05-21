@@ -10,7 +10,6 @@ content, timeout, and missing-key guard.
 
 from __future__ import annotations
 
-import concurrent.futures
 from unittest.mock import MagicMock, patch
 
 import pytest

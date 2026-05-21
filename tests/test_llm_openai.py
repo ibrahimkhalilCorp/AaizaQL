@@ -186,9 +186,7 @@ class TestOpenAIProvider:
         class FakeOpenAIError(Exception):
             pass
 
-        mock_client.chat.completions.create.side_effect = FakeOpenAIError(
-            "503 Service Unavailable"
-        )
+        mock_client.chat.completions.create.side_effect = FakeOpenAIError("503 Service Unavailable")
 
         with patch("aaizaql.llm.openai_provider.openai") as mock_openai:
             mock_openai.OpenAI.return_value = mock_client

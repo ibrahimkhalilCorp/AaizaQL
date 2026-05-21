@@ -20,15 +20,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ── pyproject.toml structure ──────────────────────────────────────────────────
 
 
 class TestPyprojectToml:
     def _load_toml(self) -> dict:
-        from pathlib import Path
-
         import tomllib
+        from pathlib import Path
 
         root = Path(__file__).parent.parent.parent
         toml_path = root / "pyproject.toml"
@@ -38,16 +36,16 @@ class TestPyprojectToml:
     def test_chromadb_not_in_core_dependencies(self) -> None:
         data = self._load_toml()
         core_deps = data["project"]["dependencies"]
-        assert not any("chromadb" in dep for dep in core_deps), (
-            "chromadb should not be in core dependencies"
-        )
+        assert not any(
+            "chromadb" in dep for dep in core_deps
+        ), "chromadb should not be in core dependencies"
 
     def test_sentence_transformers_not_in_core_dependencies(self) -> None:
         data = self._load_toml()
         core_deps = data["project"]["dependencies"]
-        assert not any("sentence-transformers" in dep for dep in core_deps), (
-            "sentence-transformers should not be in core dependencies"
-        )
+        assert not any(
+            "sentence-transformers" in dep for dep in core_deps
+        ), "sentence-transformers should not be in core dependencies"
 
     def test_rag_optional_group_exists(self) -> None:
         data = self._load_toml()
@@ -57,30 +55,30 @@ class TestPyprojectToml:
     def test_rag_group_contains_chromadb(self) -> None:
         data = self._load_toml()
         rag_deps = data["project"]["optional-dependencies"]["rag"]
-        assert any("chromadb" in dep for dep in rag_deps), (
-            "chromadb missing from [rag] optional group"
-        )
+        assert any(
+            "chromadb" in dep for dep in rag_deps
+        ), "chromadb missing from [rag] optional group"
 
     def test_rag_group_contains_sentence_transformers(self) -> None:
         data = self._load_toml()
         rag_deps = data["project"]["optional-dependencies"]["rag"]
-        assert any("sentence-transformers" in dep for dep in rag_deps), (
-            "sentence-transformers missing from [rag] optional group"
-        )
+        assert any(
+            "sentence-transformers" in dep for dep in rag_deps
+        ), "sentence-transformers missing from [rag] optional group"
 
     def test_all_group_contains_chromadb(self) -> None:
         data = self._load_toml()
         all_deps = data["project"]["optional-dependencies"]["all"]
-        assert any("chromadb" in dep for dep in all_deps), (
-            "chromadb missing from [all] optional group"
-        )
+        assert any(
+            "chromadb" in dep for dep in all_deps
+        ), "chromadb missing from [all] optional group"
 
     def test_all_group_contains_sentence_transformers(self) -> None:
         data = self._load_toml()
         all_deps = data["project"]["optional-dependencies"]["all"]
-        assert any("sentence-transformers" in dep for dep in all_deps), (
-            "sentence-transformers missing from [all] optional group"
-        )
+        assert any(
+            "sentence-transformers" in dep for dep in all_deps
+        ), "sentence-transformers missing from [all] optional group"
 
     def test_dev_group_contains_chromadb(self) -> None:
         data = self._load_toml()
@@ -104,7 +102,10 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+        with (
+            patch.dict(sys.modules, {"chromadb": None}),
+            pytest.raises(VectorStoreError) as exc_info,
+        ):
             VectorStoreAdapter(settings)
 
         assert not isinstance(exc_info.value.__cause__, type(None))
@@ -116,7 +117,10 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+        with (
+            patch.dict(sys.modules, {"chromadb": None}),
+            pytest.raises(VectorStoreError) as exc_info,
+        ):
             VectorStoreAdapter(settings)
 
         msg = str(exc_info.value)
@@ -130,7 +134,10 @@ class TestVectorStoreAdapterMissingChromadb:
 
         settings = Settings(vector_store="chroma")
 
-        with patch.dict(sys.modules, {"chromadb": None}), pytest.raises(VectorStoreError) as exc_info:
+        with (
+            patch.dict(sys.modules, {"chromadb": None}),
+            pytest.raises(VectorStoreError) as exc_info,
+        ):
             VectorStoreAdapter(settings)
 
         assert "chromadb" in str(exc_info.value)
@@ -140,14 +147,17 @@ class TestVectorStoreAdapterMissingChromadb:
 
 
 class TestSentenceEmbedderMissingSentenceTransformers:
-    def _make_embedder(self) -> "_SentenceEmbedder":  # noqa: F821
+    def _make_embedder(self) -> _SentenceEmbedder:  # noqa: F821
         from aaizaql.schema.ingestion import _SentenceEmbedder
 
         return _SentenceEmbedder()
 
     def test_raises_import_error_when_missing(self) -> None:
         embedder = self._make_embedder()
-        with patch.dict(sys.modules, {"sentence_transformers": None}), pytest.raises(ImportError) as exc_info:
+        with (
+            patch.dict(sys.modules, {"sentence_transformers": None}),
+            pytest.raises(ImportError) as exc_info,
+        ):
             embedder._load()
 
         msg = str(exc_info.value)
@@ -155,7 +165,10 @@ class TestSentenceEmbedderMissingSentenceTransformers:
 
     def test_error_message_mentions_rag_extra(self) -> None:
         embedder = self._make_embedder()
-        with patch.dict(sys.modules, {"sentence_transformers": None}), pytest.raises(ImportError) as exc_info:
+        with (
+            patch.dict(sys.modules, {"sentence_transformers": None}),
+            pytest.raises(ImportError) as exc_info,
+        ):
             embedder._load()
 
         msg = str(exc_info.value)

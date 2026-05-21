@@ -105,7 +105,9 @@ class TestOllamaProvider:
         settings = make_settings()
         mock_resp = _mock_response({"response": "SELECT * FROM orders WHERE status = 'open';"})
 
-        with patch("aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp) as mock_post:
+        with patch(
+            "aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp
+        ) as mock_post:
             provider = OllamaProvider(settings)
             result = provider.complete("Show open orders", system="You are a SQL expert")
 
@@ -123,7 +125,9 @@ class TestOllamaProvider:
         settings = make_settings()
         mock_resp = _mock_response({"response": "SELECT 1;"})
 
-        with patch("aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp) as mock_post:
+        with patch(
+            "aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp
+        ) as mock_post:
             provider = OllamaProvider(settings)
             provider.complete("user question", system="CUSTOM SYSTEM")
 
@@ -138,7 +142,9 @@ class TestOllamaProvider:
         settings = make_settings()
         mock_resp = _mock_response({"response": "SELECT 1;"})
 
-        with patch("aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp) as mock_post:
+        with patch(
+            "aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp
+        ) as mock_post:
             provider = OllamaProvider(settings)
             provider.complete("Simple query")
 
@@ -165,7 +171,9 @@ class TestOllamaProvider:
         settings = make_settings(llm_max_tokens=256)
         mock_resp = _mock_response({"response": "SELECT 1;"})
 
-        with patch("aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp) as mock_post:
+        with patch(
+            "aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp
+        ) as mock_post:
             provider = OllamaProvider(settings)
             provider.complete("test")
 
@@ -249,7 +257,9 @@ class TestOllamaProvider:
         settings = make_settings(llm_timeout_seconds=30)
         mock_resp = _mock_response({"response": "SELECT 1;"})
 
-        with patch("aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp) as mock_post:
+        with patch(
+            "aaizaql.llm.ollama_provider.requests.post", return_value=mock_resp
+        ) as mock_post:
             provider = OllamaProvider(settings)
             provider.complete("test", timeout=45)
 

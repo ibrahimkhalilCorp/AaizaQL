@@ -14,8 +14,8 @@ Quick start::
 
 from __future__ import annotations
 
-from aaizaql.core.engine import QueryEngine, QueryResult
 from aaizaql.core.config import make_settings
+from aaizaql.core.engine import QueryEngine, QueryResult
 from aaizaql.core.exceptions import (
     AAIZAQLError,
     ConnectorNotFound,
