@@ -127,8 +127,11 @@ class LLMProviderNotFound(AAIZAQLError):
     """Raised when an unknown LLM provider name is requested."""
 
     def __init__(self, name: str) -> None:
+        from aaizaql.llm import REGISTRY  # lazy to avoid circular import
+
         super().__init__(
-            f"No LLM provider registered for '{name}'. " "Available: 'claude', 'openai', 'ollama'"
+            f"No LLM provider registered for '{name}'. "
+            f"Available: {sorted(REGISTRY)}"
         )
 
 

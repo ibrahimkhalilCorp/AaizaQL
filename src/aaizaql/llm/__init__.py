@@ -6,47 +6,45 @@ LLM provider factory.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMProviderNotFound
 from aaizaql.llm.base import LLMProvider
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+# Central registry of all supported LLM provider names.
+# Add new providers here — LLMProviderNotFound will always stay current.
+_PROVIDER_REGISTRY: dict[str, str] = {
+    "claude": "aaizaql.llm.claude_provider.ClaudeProvider",
+    "openai": "aaizaql.llm.openai_provider.OpenAIProvider",
+    "ollama": "aaizaql.llm.ollama_provider.OllamaProvider",
+    "groq": "aaizaql.llm.groq_provider.GroqProvider",
+    "deepseek": "aaizaql.llm.deepseek_provider.DeepSeekProvider",
+    "perplexity": "aaizaql.llm.perplexity_provider.PerplexityProvider",
+    "gemini": "aaizaql.llm.gemini_provider.GeminiProvider",
+    "mistral": "aaizaql.llm.mistral_provider.MistralProvider",
+}
+
+# Public read-only view consumed by LLMProviderNotFound
+REGISTRY: frozenset[str] = frozenset(_PROVIDER_REGISTRY)
 
 
 def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
     """Return the correct LLMProvider instance for the given name."""
     name = name.lower()
-    if name == "claude":
-        from aaizaql.llm.claude_provider import ClaudeProvider
+    if name not in _PROVIDER_REGISTRY:
+        raise LLMProviderNotFound(name)
 
-        return ClaudeProvider(settings)
-    if name == "openai":
-        from aaizaql.llm.openai_provider import OpenAIProvider
+    # Lazy import — keeps optional SDK deps out of the import chain
+    module_path, class_name = _PROVIDER_REGISTRY[name].rsplit(".", 1)
+    import importlib
 
-        return OpenAIProvider(settings)
-    if name == "ollama":
-        from aaizaql.llm.ollama_provider import OllamaProvider
-
-        return OllamaProvider(settings)
-    if name == "groq":
-        from aaizaql.llm.groq_provider import GroqProvider
-
-        return GroqProvider(settings)
-    if name == "deepseek":
-        from aaizaql.llm.deepseek_provider import DeepSeekProvider
-
-        return DeepSeekProvider(settings)
-    if name == "perplexity":
-        from aaizaql.llm.perplexity_provider import PerplexityProvider
-
-        return PerplexityProvider(settings)
-    if name == "gemini":
-        from aaizaql.llm.gemini_provider import GeminiProvider
-
-        return GeminiProvider(settings)
-    if name == "mistral":
-        from aaizaql.llm.mistral_provider import MistralProvider
-
-        return MistralProvider(settings)
-    raise LLMProviderNotFound(name)
+    module = importlib.import_module(module_path)
+    cls = getattr(module, class_name)
+    return cls(settings)
 
 
-__all__ = ["LLMProvider", "build_llm_provider"]
+__all__ = ["LLMProvider", "REGISTRY", "build_llm_provider"]
