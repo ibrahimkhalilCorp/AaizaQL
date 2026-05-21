@@ -18,6 +18,7 @@ import pytest
 from aaizaql.core.exceptions import LLMProviderNotFound
 from aaizaql.llm import REGISTRY, build_llm_provider
 
+
 EXPECTED_PROVIDERS = frozenset(
     {"claude", "openai", "ollama", "groq", "deepseek", "perplexity", "gemini", "mistral"}
 )
@@ -46,9 +47,9 @@ class TestLLMProviderNotFound:
         except LLMProviderNotFound as exc:
             msg = str(exc)
             for provider in EXPECTED_PROVIDERS:
-                assert (
-                    provider in msg
-                ), f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
+                assert provider in msg, (
+                    f"Provider '{provider}' missing from LLMProviderNotFound message: {msg}"
+                )
 
     def test_error_message_does_not_contain_stale_hardcoded_list(self) -> None:
         """Regression: old message hardcoded only 'claude', 'openai', 'ollama'."""
@@ -71,9 +72,10 @@ class TestLLMProviderNotFound:
             build_llm_provider("UNKNOWN", None)  # type: ignore[arg-type]
 
     def test_direct_exception_construction_uses_registry(self) -> None:
-        """LLMProviderNotFound can be constructed standalone and still reflects registry."""
-        exc = LLMProviderNotFound("whatever")
-        msg = str(exc)
+        """LLMProviderNotFound raised by build_llm_provider lists all registry providers."""
+        with pytest.raises(LLMProviderNotFound) as exc_info:
+            build_llm_provider("whatever", None)  # type: ignore[arg-type]
+        msg = str(exc_info.value)
         for provider in EXPECTED_PROVIDERS:
             assert provider in msg
 

@@ -97,8 +97,8 @@ def _assert_filter(df: pd.DataFrame) -> None:
 def _assert_aggregate(df: pd.DataFrame) -> None:
     assert isinstance(df, pd.DataFrame)
     assert len(df) >= 1
-    col = df.columns[0]
-    assert int(df[col].iloc[0]) == 4
+    # Use positional access — column may be named 'COUNT(*)' or 'n' depending on dialect
+    assert int(df.iloc[0, 0]) == 4
 
 
 def _assert_schema_nonempty(schema: str) -> None:
@@ -295,7 +295,7 @@ class TestPostgreSQLConnector:
 
     def test_order_by_salary_desc(self, connector):
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
-        assert df.iloc[0]["name"] == "Carol"
+        assert df["name"].iloc[0] == "Carol"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -366,7 +366,7 @@ class TestMySQLConnector:
 
     def test_order_by_salary_desc(self, connector):
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
-        assert df.iloc[0]["name"] == "Carol"
+        assert df["name"].iloc[0] == "Carol"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -441,7 +441,7 @@ class TestMSSQLConnector:
 
     def test_order_by_salary_desc(self, connector):
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
-        assert df.iloc[0]["name"] == "Carol"
+        assert df["name"].iloc[0] == "Carol"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -129,14 +129,7 @@ class LLMProviderNotFound(AAIZAQLError):
 
     def __init__(self, name: str, available: list[str] | None = None) -> None:
         self.name = name
-        if available is None:
-            # Avoid circular import: import at raise-time, not module load
-            try:
-                from aaizaql.llm import REGISTRY as _LLM_REGISTRY  # type: ignore[import]
-                available = list(_LLM_REGISTRY)
-            except Exception:
-                available = []
-        self.available = available
+        self.available = available if available is not None else []
         super().__init__(
             f"No LLM provider registered for '{name}'. "
             f"Available: {sorted(self.available)}"

@@ -85,7 +85,7 @@ class MySQLConnector(DatabaseConnector):
         """
         try:
             df = pd.read_sql_query(query, self._conn)
-            return "\n\n".join(df["ddl"].tolist())
+            return "\n\n".join(df.iloc[:, 0].tolist())
         except Exception:
             return ""
 
