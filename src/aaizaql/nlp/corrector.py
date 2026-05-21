@@ -41,6 +41,7 @@ class SelfCorrector:
         self._llm = llm
         self._max_retries = settings.max_self_correction_retries
         self._validator = validator
+        self._timeout = settings.llm_timeout_seconds
         self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
 
     def execute_with_correction(
@@ -94,7 +95,7 @@ class SelfCorrector:
                     error=str(exc),
                     schema_chunks="(see previously provided schema)",
                 )
-                corrected = self._llm.complete(correction_prompt)
+                corrected = self._llm.complete(correction_prompt, timeout=self._timeout)
                 self.last_sql = corrected.strip().strip("`").strip()
                 was_corrected = True
 

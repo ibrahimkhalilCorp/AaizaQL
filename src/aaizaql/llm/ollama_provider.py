@@ -10,7 +10,7 @@ import requests
 import structlog
 
 from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import LLMError
+from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
@@ -24,12 +24,14 @@ class OllamaProvider(LLMProvider):
         self._base_url = settings.ollama_base_url.rstrip("/")
         self._model = settings.ollama_model
         self._max_tokens = settings.llm_max_tokens
+        self._timeout = settings.llm_timeout_seconds
 
     @property
     def name(self) -> str:
         return f"ollama/{self._model}"
 
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+        effective_timeout = timeout or self._timeout
         full_prompt = f"{system or SYSTEM_PROMPT}\n\n{prompt}"
         try:
             response = requests.post(
@@ -40,12 +42,14 @@ class OllamaProvider(LLMProvider):
                     "stream": False,
                     "options": {"num_predict": self._max_tokens},
                 },
-                timeout=120,
+                timeout=effective_timeout,
             )
             response.raise_for_status()
             text = str(response.json().get("response", ""))
             logger.debug("llm.complete", provider=self.name)
             return text
+        except requests.Timeout as exc:
+            raise LLMTimeoutError("ollama", effective_timeout) from exc
         except requests.RequestException as exc:
             raise LLMError(
                 "ollama",

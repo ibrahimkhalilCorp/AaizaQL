@@ -18,13 +18,12 @@ from __future__ import annotations
 import structlog
 
 from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import LLMError
+from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-# Default model — best balance of speed + accuracy for SQL generation
 DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
@@ -66,6 +65,7 @@ class GroqProvider(LLMProvider):
         self._model = settings.groq_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
+        self._timeout = settings.llm_timeout_seconds
 
         logger.info("groq.ready", model=self._model)
 
@@ -73,13 +73,17 @@ class GroqProvider(LLMProvider):
     def name(self) -> str:
         return f"groq/{self._model}"
 
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
         """Send prompt to Groq and return the SQL response."""
+        from groq import APITimeoutError
+
+        effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
                 temperature=self._temperature,
+                timeout=effective_timeout,
                 messages=[
                     {"role": "system", "content": system or SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
@@ -94,6 +98,7 @@ class GroqProvider(LLMProvider):
             )
             return text
 
+        except APITimeoutError as exc:
+            raise LLMTimeoutError("groq", effective_timeout) from exc
         except Exception as exc:
-            # Groq raises groq.APIError, groq.RateLimitError, etc.
             raise LLMError("groq", str(exc)) from exc

@@ -10,7 +10,7 @@ import openai
 import structlog
 
 from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import LLMError
+from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
@@ -31,17 +31,20 @@ class OpenAIProvider(LLMProvider):
         self._model = settings.openai_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
+        self._timeout = settings.llm_timeout_seconds
 
     @property
     def name(self) -> str:
         return f"openai/{self._model}"
 
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+        effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
                 temperature=self._temperature,
+                timeout=effective_timeout,
                 messages=[
                     {"role": "system", "content": system or SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
@@ -52,5 +55,7 @@ class OpenAIProvider(LLMProvider):
                 "llm.complete", provider=self.name, tokens=response.usage.completion_tokens
             )
             return text
+        except openai.APITimeoutError as exc:
+            raise LLMTimeoutError("openai", effective_timeout) from exc
         except openai.OpenAIError as exc:
             raise LLMError("openai", str(exc)) from exc

@@ -17,7 +17,7 @@ from __future__ import annotations
 import structlog
 
 from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import LLMError
+from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
@@ -63,10 +63,14 @@ class MistralProvider(LLMProvider):
                 "mistralai package is not installed. Run:  pip install mistralai",
             )
 
-        self._client = Mistral(api_key=settings.mistral_api_key.get_secret_value())
+        self._client = Mistral(
+            api_key=settings.mistral_api_key.get_secret_value(),
+            timeout_ms=None,  # we manage timeout per-call
+        )
         self._model = settings.mistral_model
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
+        self._timeout = settings.llm_timeout_seconds
 
         logger.info("mistral.ready", model=self._model)
 
@@ -74,9 +78,13 @@ class MistralProvider(LLMProvider):
     def name(self) -> str:
         return f"mistral/{self._model}"
 
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
         """Send prompt to Mistral and return the SQL response."""
-        try:
+        import concurrent.futures
+
+        effective_timeout = timeout or self._timeout
+
+        def _call() -> str:
             response = self._client.chat.complete(
                 model=self._model,
                 max_tokens=self._max_tokens,
@@ -95,5 +103,14 @@ class MistralProvider(LLMProvider):
             )
             return text
 
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_call)
+                try:
+                    return future.result(timeout=effective_timeout)
+                except concurrent.futures.TimeoutError as exc:
+                    raise LLMTimeoutError("mistral", effective_timeout) from exc
+        except LLMTimeoutError:
+            raise
         except Exception as exc:
             raise LLMError("mistral", str(exc)) from exc

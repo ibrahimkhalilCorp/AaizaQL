@@ -89,6 +89,7 @@ class SQLGenerator:
         self._vs = vector_store
         self._settings = settings
         self._semantic = semantic_store
+        self._timeout = settings.llm_timeout_seconds
 
     def generate(self, question: str, history: list[Turn]) -> str:
         schema_chunks, example_pairs = self._build_rag_context(question)
@@ -115,7 +116,7 @@ class SQLGenerator:
             question=question[:60],
         )
 
-        raw = self._llm.complete(prompt, system=SYSTEM_PROMPT)
+        raw = self._llm.complete(prompt, system=SYSTEM_PROMPT, timeout=self._timeout)
         sql = self._parse_response(raw, use_cot=use_cot)
 
         if not sql:

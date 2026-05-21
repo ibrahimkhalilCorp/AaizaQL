@@ -115,6 +115,14 @@ class LLMError(AAIZAQLError):
         super().__init__(f"LLM provider '{provider}' error" + (f": {detail}" if detail else ""))
 
 
+class LLMTimeoutError(LLMError):
+    """Raised when an LLM API call exceeds llm_timeout_seconds."""
+
+    def __init__(self, provider: str, timeout: int) -> None:
+        self.timeout = timeout
+        super().__init__(provider, f"call timed out after {timeout}s")
+
+
 class LLMProviderNotFound(AAIZAQLError):
     """Raised when an unknown LLM provider name is requested."""
 

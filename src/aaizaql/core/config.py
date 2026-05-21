@@ -120,6 +120,12 @@ class Settings(BaseSettings):
     )
     llm_max_tokens: int = Field(default=1024, ge=256, le=8192)
     llm_temperature: float = Field(default=0.0, ge=0.0, le=1.0)
+    llm_timeout_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=300,
+        description="Seconds before an LLM API call is cancelled. Applies to all providers.",
+    )
 
     # ── Vector Store ─────────────────────────────────────────────────────────
     vector_store: VectorStoreBackend = Field(

@@ -20,6 +20,7 @@ from aaizaql.core.exceptions import (
     ConnectorNotFound,
     DatabaseError,
     LLMError,
+    LLMTimeoutError,
     MaxRetriesExceeded,
     SecurityException,
     SQLGenerationError,
@@ -39,5 +40,6 @@ __all__ = [
     "DatabaseError",
     "ConnectorNotFound",
     "LLMError",
+    "LLMTimeoutError",
     "__version__",
 ]

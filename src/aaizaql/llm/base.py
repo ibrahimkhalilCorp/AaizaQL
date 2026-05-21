@@ -9,21 +9,20 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-# from AAIZAQL.core.exceptions import LLMProviderNotFound
-
 
 class LLMProvider(ABC):
     """Abstract base — every LLM adapter must implement complete()."""
 
     @abstractmethod
-    def complete(self, prompt: str, system: str = "") -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
         """
         Send a prompt to the LLM and return the text response.
 
         Parameters
         ----------
-        prompt : str   The user-facing content (question + context).
-        system : str   Optional system instruction override.
+        prompt  : str  The user-facing content (question + context).
+        system  : str  Optional system instruction override.
+        timeout : int  Seconds before the call is cancelled. Default: 30.
 
         Returns
         -------
