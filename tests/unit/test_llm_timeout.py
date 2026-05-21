@@ -15,6 +15,7 @@ No real API keys or network calls are made.
 
 from __future__ import annotations
 
+import concurrent.futures
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,6 +23,7 @@ import requests
 
 from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import LLMError, LLMTimeoutError
+
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -76,7 +78,7 @@ class TestLLMTimeoutError:
 
 
 class TestOllamaTimeout:
-    def _make_provider(self, timeout: int = 5) -> OllamaProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "OllamaProvider":  # noqa: F821
         from aaizaql.llm.ollama_provider import OllamaProvider
 
         s = Settings(llm_timeout_seconds=timeout)
@@ -84,11 +86,8 @@ class TestOllamaTimeout:
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
         provider = self._make_provider(timeout=5)
-        with (
-            patch("requests.post", side_effect=requests.Timeout("timed out")),
-            pytest.raises(LLMTimeoutError) as exc_info,
-        ):
-            provider.complete("SELECT 1")
+        with patch("requests.post", side_effect=requests.Timeout("timed out")), pytest.raises(LLMTimeoutError) as exc_info:
+                provider.complete("SELECT 1")
         assert exc_info.value.provider == "ollama"
         assert exc_info.value.timeout == 5
 
@@ -100,21 +99,20 @@ class TestOllamaTimeout:
             captured.append(timeout)
             raise requests.Timeout("forced")
 
-        with patch("requests.post", side_effect=fake_post), pytest.raises(LLMTimeoutError):
-            provider.complete("SELECT 1", timeout=7)
+        with patch("requests.post", side_effect=fake_post):
+            with pytest.raises(LLMTimeoutError):
+                provider.complete("SELECT 1", timeout=7)
 
         assert captured == [7]
 
     def test_requests_exception_not_timeout_raises_llm_error(self) -> None:
         provider = self._make_provider()
-        with (
-            patch(
-                "requests.post",
-                side_effect=requests.ConnectionError("refused"),
-            ),
-            pytest.raises(LLMError) as exc_info,
+        with patch(
+            "requests.post",
+            side_effect=requests.ConnectionError("refused"),
         ):
-            provider.complete("SELECT 1")
+            with pytest.raises(LLMError) as exc_info:
+                provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
 
@@ -122,19 +120,19 @@ class TestOllamaTimeout:
 #   All three use the openai SDK; same mock pattern applies.
 
 
-def _make_openai_timeout_exc() -> openai.APITimeoutError:  # noqa: F821
+def _make_openai_timeout_exc() -> "openai.APITimeoutError":  # noqa: F821
     import openai
 
     return openai.APITimeoutError(request=MagicMock())
 
 
 class TestOpenAITimeout:
-    def _make_provider(self, timeout: int = 5) -> OpenAIProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "OpenAIProvider":  # noqa: F821
         import openai
 
         from aaizaql.llm.openai_provider import OpenAIProvider
 
-        Settings(openai_api_key="sk-fake", llm_timeout_seconds=timeout)
+        s = Settings(openai_api_key="sk-fake", llm_timeout_seconds=timeout)
         provider = OpenAIProvider.__new__(OpenAIProvider)
         provider._client = MagicMock(spec=openai.OpenAI)
         provider._model = "gpt-4o"
@@ -180,7 +178,7 @@ class TestOpenAITimeout:
 
 
 class TestDeepSeekTimeout:
-    def _make_provider(self, timeout: int = 5) -> DeepSeekProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "DeepSeekProvider":  # noqa: F821
         import openai
 
         from aaizaql.llm.deepseek_provider import DeepSeekProvider
@@ -206,7 +204,7 @@ class TestDeepSeekTimeout:
 
 
 class TestPerplexityTimeout:
-    def _make_provider(self, timeout: int = 5) -> PerplexityProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "PerplexityProvider":  # noqa: F821
         import openai
 
         from aaizaql.llm.perplexity_provider import PerplexityProvider
@@ -235,7 +233,7 @@ class TestPerplexityTimeout:
 
 
 class TestGroqTimeout:
-    def _make_provider(self, timeout: int = 5) -> GroqProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "GroqProvider":  # noqa: F821
         from aaizaql.llm.groq_provider import GroqProvider
 
         provider = GroqProvider.__new__(GroqProvider)
@@ -250,7 +248,9 @@ class TestGroqTimeout:
         from groq import APITimeoutError
 
         provider = self._make_provider(timeout=5)
-        provider._client.chat.completions.create.side_effect = APITimeoutError(request=MagicMock())
+        provider._client.chat.completions.create.side_effect = APITimeoutError(
+            request=MagicMock()
+        )
         with pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "groq"
@@ -271,7 +271,7 @@ class TestGroqTimeout:
 
 
 class TestGeminiTimeout:
-    def _make_provider(self, timeout: int = 1) -> GeminiProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 1) -> "GeminiProvider":  # noqa: F821
         from aaizaql.llm.gemini_provider import GeminiProvider
 
         provider = GeminiProvider.__new__(GeminiProvider)
@@ -283,25 +283,30 @@ class TestGeminiTimeout:
         return provider
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
-        import time
+        import concurrent.futures
 
         provider = self._make_provider(timeout=1)
 
-        def slow_call(*args, **kwargs):  # type: ignore[no-untyped-def]
-            time.sleep(5)
-            return MagicMock(text="SELECT 1", usage_metadata=MagicMock())
+        def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
+            future: concurrent.futures.Future = concurrent.futures.Future()
+            future.set_exception(concurrent.futures.TimeoutError())
+            return future
 
-        provider._client.models.generate_content.side_effect = slow_call
-
-        with pytest.raises(LLMTimeoutError) as exc_info:
+        with patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit), pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "gemini"
         assert exc_info.value.timeout == 1
 
     def test_api_error_raises_llm_error(self) -> None:
+        import sys
+
         provider = self._make_provider(timeout=5)
         provider._client.models.generate_content.side_effect = RuntimeError("api error")
-        with pytest.raises(LLMError) as exc_info:
+        mock_genai_types = MagicMock()
+        mock_genai_types.GenerateContentConfig = MagicMock(return_value=MagicMock())
+        mock_google = MagicMock()
+        mock_google.genai.types = mock_genai_types
+        with patch.dict(sys.modules, {"google": mock_google, "google.genai": MagicMock(), "google.genai.types": mock_genai_types}), pytest.raises(LLMError) as exc_info:
             provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
@@ -310,7 +315,7 @@ class TestGeminiTimeout:
 
 
 class TestMistralTimeout:
-    def _make_provider(self, timeout: int = 1) -> MistralProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 1) -> "MistralProvider":  # noqa: F821
         from aaizaql.llm.mistral_provider import MistralProvider
 
         provider = MistralProvider.__new__(MistralProvider)
@@ -322,16 +327,18 @@ class TestMistralTimeout:
         return provider
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
-        import time
+        import concurrent.futures
 
         provider = self._make_provider(timeout=1)
 
-        def slow_call(*args, **kwargs):  # type: ignore[no-untyped-def]
-            time.sleep(5)
+        original_submit = concurrent.futures.ThreadPoolExecutor.submit
 
-        provider._client.chat.complete.side_effect = slow_call
+        def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
+            future: concurrent.futures.Future = concurrent.futures.Future()
+            future.set_exception(concurrent.futures.TimeoutError())
+            return future
 
-        with pytest.raises(LLMTimeoutError) as exc_info:
+        with patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit), pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "mistral"
         assert exc_info.value.timeout == 1
@@ -341,7 +348,7 @@ class TestMistralTimeout:
 
 
 class TestClaudeTimeout:
-    def _make_provider(self, timeout: int = 5) -> ClaudeProvider:  # noqa: F821
+    def _make_provider(self, timeout: int = 5) -> "ClaudeProvider":  # noqa: F821
         import anthropic
 
         from aaizaql.llm.claude_provider import ClaudeProvider
@@ -367,11 +374,8 @@ class TestClaudeTimeout:
         mock_client_instance.__enter__ = MagicMock(return_value=mock_client_instance)
         mock_client_instance.__exit__ = MagicMock(return_value=False)
 
-        with (
-            patch("anthropic.Anthropic", return_value=mock_client_instance),
-            pytest.raises(LLMTimeoutError) as exc_info,
-        ):
-            provider.complete("SELECT 1")
+        with patch("anthropic.Anthropic", return_value=mock_client_instance), pytest.raises(LLMTimeoutError) as exc_info:
+                provider.complete("SELECT 1")
         assert exc_info.value.provider == "claude"
         assert exc_info.value.timeout == 5
 

@@ -76,17 +76,19 @@ class GeminiProvider(LLMProvider):
     def name(self) -> str:
         return f"gemini/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """Send prompt to Gemini and return the SQL response."""
         import concurrent.futures
 
         effective_timeout = timeout or self._timeout
 
         def _call() -> str:
+            from google.genai import types as _genai_types
+
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=prompt,
-                config=genai_types.GenerateContentConfig(
+                config=_genai_types.GenerateContentConfig(
                     system_instruction=system or SYSTEM_PROMPT,
                     max_output_tokens=self._max_tokens,
                     temperature=self._temperature,

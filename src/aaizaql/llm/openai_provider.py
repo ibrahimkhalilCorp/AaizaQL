@@ -37,7 +37,7 @@ class OpenAIProvider(LLMProvider):
     def name(self) -> str:
         return f"openai/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(

@@ -30,7 +30,7 @@ class OllamaProvider(LLMProvider):
     def name(self) -> str:
         return f"ollama/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         effective_timeout = timeout or self._timeout
         full_prompt = f"{system or SYSTEM_PROMPT}\n\n{prompt}"
         try:

@@ -26,8 +26,10 @@ DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
 try:
+    import openai
     from openai import OpenAI
 except ImportError:
+    openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
 
@@ -78,10 +80,8 @@ class DeepSeekProvider(LLMProvider):
     def name(self) -> str:
         return f"deepseek/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """Send prompt to DeepSeek and return the SQL response."""
-        import openai
-
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(

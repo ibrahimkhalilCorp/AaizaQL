@@ -78,7 +78,7 @@ class MistralProvider(LLMProvider):
     def name(self) -> str:
         return f"mistral/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """Send prompt to Mistral and return the SQL response."""
         import concurrent.futures
 

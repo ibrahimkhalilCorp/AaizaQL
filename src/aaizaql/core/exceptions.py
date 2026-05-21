@@ -100,7 +100,8 @@ class ConnectorNotFound(AAIZAQLError):
         self.name = name
         self.available = available or []
         super().__init__(
-            f"No connector registered for '{name}'. " f"Available: {sorted(self.available)}"
+            f"No connector registered for '{name}'. "
+            f"Available: {sorted(self.available)}"
         )
 
 
@@ -128,9 +129,17 @@ class LLMProviderNotFound(AAIZAQLError):
 
     def __init__(self, name: str, available: list[str] | None = None) -> None:
         self.name = name
-        self.available = available or []
+        if available is None:
+            # Avoid circular import: import at raise-time, not module load
+            try:
+                from aaizaql.llm import REGISTRY as _LLM_REGISTRY  # type: ignore[import]
+                available = list(_LLM_REGISTRY)
+            except Exception:
+                available = []
+        self.available = available
         super().__init__(
-            f"No LLM provider registered for '{name}'. " f"Available: {sorted(self.available)}"
+            f"No LLM provider registered for '{name}'. "
+            f"Available: {sorted(self.available)}"
         )
 
 

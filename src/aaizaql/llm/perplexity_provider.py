@@ -28,8 +28,10 @@ DEFAULT_PERPLEXITY_MODEL = "sonar"
 PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
 try:
+    import openai
     from openai import OpenAI
 except ImportError:
+    openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
 
@@ -80,10 +82,8 @@ class PerplexityProvider(LLMProvider):
     def name(self) -> str:
         return f"perplexity/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """Send prompt to Perplexity and return the SQL response."""
-        import openai
-
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(

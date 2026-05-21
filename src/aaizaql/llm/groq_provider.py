@@ -27,6 +27,14 @@ logger = structlog.get_logger(__name__)
 DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
+try:
+    from groq import Groq
+    from groq import APITimeoutError as _GroqAPITimeoutError
+except ImportError:
+    Groq = None  # type: ignore[assignment,misc]
+    _GroqAPITimeoutError = None  # type: ignore[assignment,misc]
+
+
 class GroqProvider(LLMProvider):
     """
     Groq Cloud LLM provider.
@@ -53,13 +61,11 @@ class GroqProvider(LLMProvider):
                 "Then set it:  $env:AAIZAQL_GROQ_API_KEY='gsk_api_key'",
             )
 
-        try:
-            from groq import Groq
-        except ImportError as exc:
+        if Groq is None:
             raise LLMError(
                 "groq",
                 "groq package is not installed. Run:  pip install groq",
-            ) from exc
+            )
 
         self._client = Groq(api_key=settings.groq_api_key.get_secret_value())
         self._model = settings.groq_model
@@ -73,7 +79,7 @@ class GroqProvider(LLMProvider):
     def name(self) -> str:
         return f"groq/{self._model}"
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 30) -> str:
+    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """Send prompt to Groq and return the SQL response."""
         from groq import APITimeoutError
 

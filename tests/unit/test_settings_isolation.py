@@ -19,6 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+
 # ── make_settings factory ─────────────────────────────────────────────────────
 
 
@@ -45,8 +46,7 @@ class TestMakeSettings:
         assert s2.llm_timeout_seconds == 20
 
     def test_does_not_mutate_singleton(self) -> None:
-        from aaizaql.core.config import make_settings
-        from aaizaql.core.config import settings as singleton
+        from aaizaql.core.config import make_settings, settings as singleton
 
         original_timeout = singleton.llm_timeout_seconds
         make_settings(llm_timeout_seconds=original_timeout + 100)
@@ -74,7 +74,7 @@ class TestMakeSettings:
 # ── QueryEngine per-instance isolation ───────────────────────────────────────
 
 
-def _make_engine(llm: str = "groq", timeout: int = 30, **extra) -> QueryEngine:  # noqa: F821
+def _make_engine(llm: str = "groq", timeout: int = 30, **extra) -> "QueryEngine":  # noqa: F821
     """Build a QueryEngine with all heavy components mocked out."""
     from aaizaql.core.engine import QueryEngine
 
@@ -111,14 +111,16 @@ class TestQueryEngineSettingsIsolation:
     def test_engine_does_not_share_singleton(self) -> None:
         from aaizaql.core.config import settings as singleton
 
-        engine = _make_engine(timeout=999)
+        engine = _make_engine(timeout=299)
         assert engine._settings is not singleton
 
     def test_engine_does_not_mutate_singleton(self) -> None:
         from aaizaql.core.config import settings as singleton
 
         original = singleton.llm_timeout_seconds
-        _make_engine(timeout=original + 500)
+        # Use a value different from original but within valid range
+        different = 299 if original != 299 else 298
+        _make_engine(timeout=different)
         assert singleton.llm_timeout_seconds == original
 
     def test_explicit_settings_kwarg_used_as_is(self) -> None:
