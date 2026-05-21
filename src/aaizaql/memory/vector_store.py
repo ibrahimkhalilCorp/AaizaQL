@@ -58,7 +58,11 @@ class VectorStoreAdapter:
             )
             logger.info("vector_store.chroma.ready", namespace=self._namespace)
         except ImportError as exc:
-            raise VectorStoreError("chromadb is not installed. Run: pip install chromadb") from exc
+            raise VectorStoreError(
+                "chromadb is not installed. "
+                "Run: pip install 'aaizaql[rag]'  "
+                "(or: pip install chromadb sentence-transformers)"
+            ) from exc
 
     def _init_qdrant(self) -> None:
         try:

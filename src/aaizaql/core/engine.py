@@ -27,8 +27,7 @@ import pandas as pd
 import structlog
 
 from aaizaql.connectors import REGISTRY
-from aaizaql.core.config import Settings
-from aaizaql.core.config import settings as _default_settings
+from aaizaql.core.config import Settings, make_settings
 from aaizaql.core.exceptions import ConnectorNotFound, SQLGenerationError, UnsupportedQueryError
 from aaizaql.llm import build_llm_provider
 from aaizaql.memory.context import ContextManager
@@ -79,17 +78,17 @@ class QueryEngine:
         settings: Settings | None = None,
         **kwargs: Any,
     ) -> None:
-        # Settings
+        # Settings — build a fresh instance from env vars + caller overrides.
+        # Never mutate or copy the module-level singleton: doing so causes
+        # surprising cross-engine bleed in multi-engine / multi-threaded use.
         if settings is None:
-            overrides = {"llm_provider": llm}
-            overrides.update(kwargs)
-            self._settings = _default_settings.model_copy(update=overrides)
+            self._settings = make_settings(llm_provider=llm, **kwargs)
         else:
             self._settings = settings
 
         # Database connector
         if database not in REGISTRY:
-            raise ConnectorNotFound(database)
+            raise ConnectorNotFound(database, available=sorted(REGISTRY.keys()))
         self._connector = REGISTRY[database]()
         if dsn:
             self._connector.connect(dsn)

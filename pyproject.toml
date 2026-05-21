@@ -32,8 +32,6 @@ dependencies = [
   "sqlglot>=20.0",
   "structlog>=23.0",
   "requests>=2.28",
-  "chromadb>=0.4",
-  "sentence-transformers>=2.2",
 ]
 
 # ── Optional dependency groups ─────────────────────────────────────────────
@@ -47,6 +45,14 @@ deepseek   = ["openai>=1.10"]           # DeepSeek uses the OpenAI-compatible SD
 perplexity = ["openai>=1.10"]           # Perplexity uses the OpenAI-compatible SDK
 gemini     = ["google-genai>=1.0"]
 mistral    = ["mistralai>=1.0"]
+
+# RAG / local embeddings — ChromaDB vector store + sentence-transformers embedder
+# Required for ingest_schema() and query() with the default ChromaDB backend.
+# pip install aaizaql[rag]
+rag = [
+  "chromadb>=0.4",
+  "sentence-transformers>=2.2",
+]
 
 # Database connectors (install the one(s) you use)
 postgres  = ["psycopg2-binary>=2.9"]
@@ -71,6 +77,8 @@ all = [
   "groq>=0.4",
   "google-genai>=1.0",
   "mistralai>=1.0",
+  "chromadb>=0.4",
+  "sentence-transformers>=2.2",
   "psycopg2-binary>=2.9",
   "pymysql>=1.1",
   "duckdb>=0.10",

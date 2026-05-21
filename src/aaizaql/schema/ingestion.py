@@ -148,8 +148,12 @@ class _SentenceEmbedder:
     """
     Thin wrapper around sentence-transformers.
     Lazy-loads the model on first use to keep import time fast.
-    Falls back to a deterministic zero-vector when the library is absent
-    so unit tests can run without downloading a model.
+
+    Raises
+    ------
+    ImportError
+        If sentence-transformers is not installed. Install with:
+        ``pip install 'aaizaql[rag]'``
     """
 
     _MODEL_NAME = "all-MiniLM-L6-v2"
@@ -162,11 +166,8 @@ class _SentenceEmbedder:
         """Return a normalised embedding vector for text."""
         if self._model is None:
             self._load()
-        if self._model is None:
-            # Fallback — deterministic pseudo-embedding for offline testing
-            return self._fallback_embed(text)
         try:
-            vec = self._model.encode(text, normalize_embeddings=True)  # type: ignore[attr-defined]
+            vec = self._model.encode(text, normalize_embeddings=True)  # type: ignore[union-attr]
             return vec.tolist()
         except Exception as exc:
             logger.warning("embedder.failed", detail=str(exc)[:80])
@@ -178,19 +179,20 @@ class _SentenceEmbedder:
 
             self._model = SentenceTransformer(self._MODEL_NAME)
             logger.info("embedder.loaded", model=self._MODEL_NAME)
-        except ImportError:
-            logger.warning(
-                "embedder.missing",
-                detail="sentence-transformers not installed. "
-                "Falling back to hash-based embeddings (lower accuracy). "
-                "Install with: pip install sentence-transformers",
-            )
+        except ImportError as exc:
+            raise ImportError(
+                "sentence-transformers is not installed but is required for schema ingestion "
+                "and semantic search.\n"
+                "Install the RAG extras:  pip install 'aaizaql[rag]'\n"
+                "Or install directly:     pip install sentence-transformers"
+            ) from exc
 
     @classmethod
     def _fallback_embed(cls, text: str) -> list[float]:
         """
-        Hash-based pseudo-embedding.  Not semantically meaningful but allows
-        the vector store to operate without the transformers library.
+        Hash-based pseudo-embedding used only when encode() raises at runtime
+        (e.g. GPU OOM, corrupted model).  Not semantically meaningful — for
+        offline unit-testing use a mock instead of relying on this path.
         One float per 4-char slice of the sha256 hex digest, normalised.
         """
         digest = hashlib.sha256(text.encode()).hexdigest()

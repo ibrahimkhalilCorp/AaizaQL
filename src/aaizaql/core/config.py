@@ -194,5 +194,33 @@ class Settings(BaseSettings):
         return [op.upper() for op in v]
 
 
-# Module-level singleton — import this wherever settings are needed
+def make_settings(**overrides: object) -> Settings:
+    """
+    Create a fresh Settings instance from environment variables, then apply
+    ``overrides`` on top.
+
+    Use this instead of the module-level ``settings`` singleton whenever you
+    need per-engine configuration — particularly in tests or multi-tenant
+    servers where different engines need different settings in the same process.
+
+    Example
+    -------
+    ::
+
+        s = make_settings(llm_provider="groq", groq_api_key="gsk_...", llm_timeout_seconds=60)
+        engine = QueryEngine(settings=s)
+    """
+    return Settings(**overrides)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# Backwards-compatible module-level singleton.
+#
+# Importing this directly is DEPRECATED for library code.  It is read once at
+# import time, so a second QueryEngine with different env vars in the same
+# process will see stale values.
+#
+# Use ``make_settings(**overrides)`` or pass ``settings=`` to QueryEngine
+# instead.
+# ---------------------------------------------------------------------------
 settings = Settings()

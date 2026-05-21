@@ -15,6 +15,7 @@ Quick start::
 from __future__ import annotations
 
 from aaizaql.core.engine import QueryEngine, QueryResult
+from aaizaql.core.config import make_settings
 from aaizaql.core.exceptions import (
     AAIZAQLError,
     ConnectorNotFound,
@@ -32,6 +33,7 @@ __version__ = "0.2.0"
 __all__ = [
     "QueryEngine",
     "QueryResult",
+    "make_settings",
     "AAIZAQLError",
     "SecurityException",
     "SQLGenerationError",

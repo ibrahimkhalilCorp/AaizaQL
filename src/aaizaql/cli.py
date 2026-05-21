@@ -58,7 +58,7 @@ def cmd_query(args: object) -> None:
     """Run a natural language query (interactive REPL or single question)."""
     from aaizaql import QueryEngine
 
-    _require("chromadb", "chromadb")
+    _require("chromadb", "'aaizaql[rag]'  # also installs sentence-transformers")
 
     print(f"[aaizaql] Connecting with LLM={args.llm} DB={args.db} …")  # type: ignore[attr-defined]
     try:
