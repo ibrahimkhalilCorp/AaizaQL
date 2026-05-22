@@ -14,6 +14,7 @@ from aaizaql.schema.semantic_store import EnumMapping, SemanticStore
 # Patch _embed globally for all tests in this module
 pytestmark = pytest.mark.usefixtures("mock_embed")
 
+
 @pytest.fixture(autouse=True)
 def mock_embed():
     """Patch _embed so sentence-transformers is never loaded."""
@@ -23,17 +24,21 @@ def mock_embed():
     ):
         yield
 
+
 @pytest.fixture
 def mock_vs():
     vs = MagicMock()
     vs.search.return_value = []
     return vs
 
+
 @pytest.fixture
 def store(mock_vs):
     return SemanticStore(mock_vs)
 
+
 # ── EnumMapping ───────────────────────────────────────────────────────────────
+
 
 class TestEnumMapping:
     def test_to_prompt_text(self):
@@ -48,7 +53,9 @@ class TestEnumMapping:
         text = e.to_prompt_text()
         assert "DH=Dhaka" in text
 
+
 # ── define_enum ───────────────────────────────────────────────────────────────
+
 
 class TestDefineEnum:
     def test_enum_registered(self, store):
@@ -107,7 +114,9 @@ class TestDefineEnum:
             store.define_enum("t", "c", {1: "A"})
         assert store.enum_count() == 1
 
+
 # ── train_documentation ───────────────────────────────────────────────────────
+
 
 class TestDocumentation:
     def test_empty_documentation_ignored(self, store, mock_vs):
@@ -141,7 +150,9 @@ class TestDocumentation:
         result = store.search_documentation("nothing here")
         assert result == ""
 
+
 # ── train_sql_pair ────────────────────────────────────────────────────────────
+
 
 class TestSQLPair:
     def test_pair_stored_in_vector_store(self, store, mock_vs):
@@ -163,7 +174,9 @@ class TestSQLPair:
         call_kwargs = mock_vs.upsert.call_args.kwargs
         assert "embedding" in call_kwargs
 
+
 # ── has_enums / enum_count ────────────────────────────────────────────────────
+
 
 class TestHelpers:
     def test_has_enums_false_initially(self, store):

@@ -6,6 +6,7 @@ T4.1 — GraphStore: NetworkX-backed schema graph with Leiden clustering.
 Node types : TABLE, COLUMN, INDEX, QUERY
 Edge types : HAS_COLUMN, FK_OF, INDEXED_BY, USED_IN, USED_FN
 """
+
 from __future__ import annotations
 
 import json
@@ -21,6 +22,7 @@ try:
 except ImportError:
     nx = None  # type: ignore[assignment]
 
+
 class GraphStore:
     """
     In-memory schema graph persisted to graph.json.
@@ -29,9 +31,7 @@ class GraphStore:
 
     def __init__(self, persist_path: str = ".aaizaql_graph/graph.json") -> None:
         if nx is None:
-            raise ImportError(
-                "networkx is required for GraphRAG. Run: pip install networkx"
-            )
+            raise ImportError("networkx is required for GraphRAG. Run: pip install networkx")
         self._path = Path(persist_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._G: Any = nx.DiGraph()
@@ -61,13 +61,12 @@ class GraphStore:
         self._G.add_node(node_id, type="TABLE", name=name, tenant=tenant_id, **attrs)
         return node_id
 
-    def add_column(
-        self, name: str, table_name: str, tenant_id: str, **attrs: Any
-    ) -> str:
+    def add_column(self, name: str, table_name: str, tenant_id: str, **attrs: Any) -> str:
         table_id = f"{tenant_id}::TABLE::{table_name}"
         col_id = f"{tenant_id}::COLUMN::{table_name}.{name}"
-        self._G.add_node(col_id, type="COLUMN", name=name, table=table_name,
-                         tenant=tenant_id, **attrs)
+        self._G.add_node(
+            col_id, type="COLUMN", name=name, table=table_name, tenant=tenant_id, **attrs
+        )
         self._G.add_edge(table_id, col_id, rel="HAS_COLUMN")
         return col_id
 
@@ -83,10 +82,9 @@ class GraphStore:
         dst = f"{tenant_id}::COLUMN::{to_table}.{to_col}"
         self._G.add_edge(src, dst, rel="FK_OF")
 
-    def add_query_node(
-        self, sql: str, question: str, tables: list[str], tenant_id: str
-    ) -> str:
+    def add_query_node(self, sql: str, question: str, tables: list[str], tenant_id: str) -> str:
         import hashlib
+
         q_id = f"{tenant_id}::QUERY::{hashlib.sha256(sql.encode()).hexdigest()[:12]}"
         self._G.add_node(q_id, type="QUERY", sql=sql, question=question, tenant=tenant_id)
         for table in tables:
@@ -124,21 +122,18 @@ class GraphStore:
         Falls back to connected components if python-leidenalg is unavailable.
         """
         subgraph_nodes = [
-            n for n, d in self._G.nodes(data=True)
+            n
+            for n, d in self._G.nodes(data=True)
             if d.get("tenant") == tenant_id and d.get("type") == "TABLE"
         ]
         subgraph = self._G.subgraph(subgraph_nodes).to_undirected()
         try:
             import igraph as ig  # type: ignore[import]
             import leidenalg  # type: ignore[import]
+
             ig_graph = ig.Graph.from_networkx(subgraph)
             partition = leidenalg.find_partition(ig_graph, leidenalg.ModularityVertexPartition)
-            return [
-                [subgraph_nodes[i] for i in community]
-                for community in partition
-            ]
+            return [[subgraph_nodes[i] for i in community] for community in partition]
         except ImportError:
             # Fallback: connected components
-            return [
-                list(c) for c in nx.connected_components(subgraph)
-            ]
+            return [list(c) for c in nx.connected_components(subgraph)]

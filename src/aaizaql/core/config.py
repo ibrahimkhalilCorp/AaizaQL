@@ -24,9 +24,11 @@ class LLMProvider(StrEnum):
     GEMINI = "gemini"
     MISTRAL = "mistral"
 
+
 class VectorStoreBackend(StrEnum):
     CHROMA = "chroma"
     QDRANT = "qdrant"
+
 
 class Settings(BaseSettings):
     """
@@ -227,6 +229,7 @@ class Settings(BaseSettings):
     def uppercase_ops(cls, v: list[str]) -> list[str]:
         return [op.upper() for op in v]
 
+
 def make_settings(**overrides: object) -> Settings:
     """
     Create a fresh Settings instance from environment variables, then apply
@@ -244,6 +247,7 @@ def make_settings(**overrides: object) -> Settings:
         engine = QueryEngine(settings=s)
     """
     return Settings(**overrides)  # type: ignore[arg-type]
+
 
 # ---------------------------------------------------------------------------
 # Backwards-compatible module-level singleton.

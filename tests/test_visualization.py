@@ -60,6 +60,7 @@ class TestResultRenderer:
         except Exception as exc:
             pytest.fail(f"render() should not raise: {exc}")
 
+
 class TestNLSummarizer:
     def test_empty_dataframe_returns_fixed_message(self) -> None:
         mock_llm = MagicMock()

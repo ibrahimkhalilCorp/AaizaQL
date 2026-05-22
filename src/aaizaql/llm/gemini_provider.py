@@ -29,6 +29,7 @@ try:
 except ImportError:
     genai = None  # type: ignore[assignment]
 
+
 class GeminiProvider(LLMProvider):
     """
     Google Gemini LLM provider.

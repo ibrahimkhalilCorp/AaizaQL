@@ -16,6 +16,7 @@ class Turn(TypedDict):
     sql: str
     row_count: int
 
+
 class ContextManager:
     """
     In-process session memory.

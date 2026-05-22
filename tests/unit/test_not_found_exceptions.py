@@ -25,6 +25,7 @@ from aaizaql.core.exceptions import ConnectorNotFound, LLMProviderNotFound
 
 # ── ConnectorNotFound ─────────────────────────────────────────────────────────
 
+
 class TestConnectorNotFound:
     def test_basic_construction(self) -> None:
         exc = ConnectorNotFound("redis", available=["sqlite", "postgres"])
@@ -65,7 +66,9 @@ class TestConnectorNotFound:
 
         assert isinstance(ConnectorNotFound("x", available=[]), AAIZAQLError)
 
+
 # ── LLMProviderNotFound ───────────────────────────────────────────────────────
+
 
 class TestLLMProviderNotFound:
     def test_basic_construction(self) -> None:
@@ -105,7 +108,9 @@ class TestLLMProviderNotFound:
 
         assert isinstance(LLMProviderNotFound("x", available=[]), AAIZAQLError)
 
+
 # ── Call-site integration: get_connector ─────────────────────────────────────
+
 
 class TestGetConnectorCallSite:
     def test_raises_with_correct_available_list(self) -> None:
@@ -128,7 +133,9 @@ class TestGetConnectorCallSite:
 
         assert set(exc_info.value.available) == set(REGISTRY.keys())
 
+
 # ── Call-site integration: build_llm_provider ─────────────────────────────────
+
 
 class TestBuildLLMProviderCallSite:
     def test_raises_with_correct_available_list(self) -> None:

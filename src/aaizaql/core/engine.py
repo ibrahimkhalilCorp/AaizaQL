@@ -51,10 +51,9 @@ from aaizaql.visualization.summarizer import NLSummarizer
 
 logger = structlog.get_logger(__name__)
 
+
 @dataclass
-
 class QueryResult:
-
     """Everything returned from a single engine.query() call."""
 
     question: str
@@ -77,8 +76,8 @@ class QueryResult:
 
     truncated: bool = False  # T1.4 — True if result was LIMIT-truncated
 
-class QueryEngine:
 
+class QueryEngine:
     """
 
     Main entry point for the AAIZAQL library.
@@ -98,19 +97,12 @@ class QueryEngine:
     """
 
     def __init__(
-
         self,
-
         llm: str = "groq",
-
         database: str = "sqlite",
-
         dsn: str = "",
-
         settings: Settings | None = None,
-
         **kwargs: Any,
-
     ) -> None:
 
         # Settings — build a fresh instance from env vars + caller overrides.
@@ -162,23 +154,20 @@ class QueryEngine:
         self._context = ContextManager(limit=self._settings.session_history_limit)
 
         self._generator = SQLGenerator(
-
-            self._llm, self._vector_store, self._settings, self._semantic,
-
+            self._llm,
+            self._vector_store,
+            self._settings,
+            self._semantic,
             connector=self._connector,  # T1.1 dialect fix
-
         )
 
         self._validator = SQLValidator(self._settings)
 
         self._corrector = SelfCorrector(
-
-            self._llm, self._settings,
-
+            self._llm,
+            self._settings,
             validator=self._validator,
-
             vector_store=self._vector_store,  # T2.7
-
         )
 
         self._renderer = ResultRenderer()
@@ -197,7 +186,6 @@ class QueryEngine:
     # ─────────────────────────────────────────────────────────────────────────
 
     def ingest_schema(self) -> int:
-
         """
 
         Auto-read the connected database schema and store it in the vector store.
@@ -221,17 +209,11 @@ class QueryEngine:
     # ─────────────────────────────────────────────────────────────────────────
 
     def train(
-
         self,
-
         documentation: str | None = None,
-
         question: str | None = None,
-
         sql: str | None = None,
-
     ) -> None:
-
         """
 
         Train the engine with business knowledge.
@@ -277,25 +259,16 @@ class QueryEngine:
         elif question is not None or sql is not None:
 
             logger.warning(
-
                 "engine.train.incomplete_pair",
-
                 detail="Both 'question' and 'sql' are required together. Skipping pair.",
-
             )
 
     def define_enum(
-
         self,
-
         table: str,
-
         column: str,
-
         mapping: dict[int | str, str],
-
     ) -> None:
-
         """
 
         Register a numeric code → label mapping for a column.
@@ -335,7 +308,6 @@ class QueryEngine:
         self._semantic.define_enum(table, column, mapping)
 
     def teach(self, question: str, sql: str) -> None:
-
         """
 
         Shortcut for engine.train(question=..., sql=...).
@@ -349,7 +321,6 @@ class QueryEngine:
         logger.info("engine.taught", question=question[:60])
 
     def training_info(self) -> dict[str, object]:
-
         """Return a summary of all training data currently loaded."""
 
         enums_list = self._semantic.list_enums()
@@ -357,11 +328,8 @@ class QueryEngine:
         enums_dict = {f"{e['table']}.{e['column']}": e["mapping"] for e in enums_list}
 
         return {
-
             "enums": enums_dict,
-
             "enum_count": self._semantic.enum_count(),
-
         }
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -371,15 +339,10 @@ class QueryEngine:
     # ─────────────────────────────────────────────────────────────────────────
 
     def query(
-
         self,
-
         question: str,
-
         session_id: str | None = None,
-
     ) -> QueryResult:
-
         """
 
         Convert a natural language question to SQL and execute it.
@@ -432,13 +395,9 @@ class QueryEngine:
             self._validator.validate(sql)
 
         data, was_corrected, attempts = self._corrector.execute_with_correction(
-
             sql=sql,
-
             executor=self._connector,
-
             question=question,
-
         )
 
         sql = self._corrector.last_sql
@@ -452,39 +411,23 @@ class QueryEngine:
         execution_ms = int((time.monotonic() - t_start) * 1000)
 
         logger.info(
-
             "query.complete",
-
             session_id=sid,
-
             rows=len(data),
-
             execution_ms=execution_ms,
-
             was_corrected=was_corrected,
-
         )
 
         return QueryResult(
-
             question=question,
-
             sql=sql,
-
             data=data,
-
             summary=summary,
-
             chart=chart,
-
             execution_time_ms=execution_ms,
-
             session_id=sid,
-
             was_corrected=was_corrected,
-
             correction_attempts=attempts,
-
         )
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -494,7 +437,6 @@ class QueryEngine:
     # ─────────────────────────────────────────────────────────────────────────
 
     def health_check(self) -> dict:
-
         """T5.1 — Run health checks on all subsystems."""
 
         from aaizaql.api.health import run_health_check
@@ -502,7 +444,6 @@ class QueryEngine:
         return run_health_check(self)
 
     def reset_session(self, session_id: str) -> None:
-
         """Clear conversation memory for a session."""
 
         self._context.clear(session_id)

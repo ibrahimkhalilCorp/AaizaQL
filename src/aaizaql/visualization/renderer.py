@@ -26,6 +26,7 @@ logger = structlog.get_logger(__name__)
 # Threshold for pie chart (too many slices = unreadable)
 _PIE_MAX_ROWS = 8
 
+
 def _is_datetime_col(series: pd.Series) -> bool:
     """True if the column looks like a date/time column."""
     if pd.api.types.is_datetime64_any_dtype(series):
@@ -37,6 +38,7 @@ def _is_datetime_col(series: pd.Series) -> bool:
         except Exception:
             return False
     return False
+
 
 class ResultRenderer:
     """

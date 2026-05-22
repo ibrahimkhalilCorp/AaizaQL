@@ -30,6 +30,7 @@ try:
 except ImportError:
     Mistral = None  # type: ignore[assignment,misc]
 
+
 class MistralProvider(LLMProvider):
     """
     Mistral AI LLM provider.

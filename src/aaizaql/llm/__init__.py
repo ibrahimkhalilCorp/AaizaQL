@@ -26,6 +26,7 @@ _PROVIDER_REGISTRY: dict[str, str] = {
 # Public read-only view consumed by LLMProviderNotFound
 REGISTRY: frozenset[str] = frozenset(_PROVIDER_REGISTRY)
 
+
 def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
     """Return the correct LLMProvider instance for the given name."""
     name = name.lower()
@@ -39,5 +40,6 @@ def build_llm_provider(name: str, settings: Settings) -> LLMProvider:
     module = importlib.import_module(module_path)
     cls = getattr(module, class_name)
     return cls(settings)
+
 
 __all__ = ["LLMProvider", "REGISTRY", "build_llm_provider"]

@@ -11,7 +11,9 @@ from __future__ import annotations
 class AAIZAQLError(Exception):
     """Base exception for all AAIZAQL errors."""
 
+
 # ── Security ────────────────────────────────────────────────────────────────
+
 
 class SecurityException(AAIZAQLError):
     """Raised when SQL fails security validation before execution."""
@@ -21,10 +23,13 @@ class SecurityException(AAIZAQLError):
         self.sql = sql
         super().__init__(f"Security violation: {reason}" + (f"\nSQL: {sql}" if sql else ""))
 
+
 class PromptInjectionDetected(SecurityException):
     """Raised when prompt injection is detected in the user's question."""
 
+
 # ── SQL Generation ───────────────────────────────────────────────────────────
+
 
 class SQLGenerationError(AAIZAQLError):
     """Raised when the LLM fails to produce valid SQL."""
@@ -33,15 +38,17 @@ class SQLGenerationError(AAIZAQLError):
         self.question = question
         super().__init__(f"Failed to generate SQL for: '{question}'. {detail}".strip())
 
+
 class RateLimitError(AAIZAQLError):
     """T5.3 — Raised when a tenant exceeds their query rate limit."""
+
     def __init__(self, tenant_id: str, retry_after_seconds: int = 60) -> None:
         self.tenant_id = tenant_id
         self.retry_after_seconds = retry_after_seconds
         super().__init__(
-            f"Rate limit exceeded for tenant '{tenant_id}'. "
-            f"Retry after {retry_after_seconds}s."
+            f"Rate limit exceeded for tenant '{tenant_id}'. " f"Retry after {retry_after_seconds}s."
         )
+
 
 class UnsupportedQueryError(AAIZAQLError):
     """Raised when the question cannot be answered with a SELECT statement."""
@@ -52,6 +59,7 @@ class UnsupportedQueryError(AAIZAQLError):
             f"Query cannot be answered with SELECT: '{question}'. "
             "Try rephrasing as a data retrieval question."
         )
+
 
 class MaxRetriesExceeded(AAIZAQLError):
     """Raised when the self-correction loop exhausts all retries."""
@@ -66,7 +74,9 @@ class MaxRetriesExceeded(AAIZAQLError):
             f"Last SQL: {sql}"
         )
 
+
 # ── Database / Connectors ────────────────────────────────────────────────────
+
 
 class DatabaseError(AAIZAQLError):
     """Raised when query execution fails at the database level."""
@@ -81,6 +91,7 @@ class DatabaseError(AAIZAQLError):
             parts.append(f"SQL: {sql}")
         super().__init__("\n".join(parts))
 
+
 class ConnectionError(AAIZAQLError):
     """Raised when a database connection cannot be established."""
 
@@ -92,6 +103,7 @@ class ConnectionError(AAIZAQLError):
             + (f": {detail}" if detail else "")
         )
 
+
 class ConnectorNotFound(AAIZAQLError):
     """Raised when an unknown connector name is requested."""
 
@@ -102,7 +114,9 @@ class ConnectorNotFound(AAIZAQLError):
             f"No connector registered for '{name}'. " f"Available: {sorted(self.available)}"
         )
 
+
 # ── LLM Providers ────────────────────────────────────────────────────────────
+
 
 class LLMError(AAIZAQLError):
     """Raised when an LLM API call fails."""
@@ -111,12 +125,14 @@ class LLMError(AAIZAQLError):
         self.provider = provider
         super().__init__(f"LLM provider '{provider}' error" + (f": {detail}" if detail else ""))
 
+
 class LLMTimeoutError(LLMError):
     """Raised when an LLM API call exceeds llm_timeout_seconds."""
 
     def __init__(self, provider: str, timeout: int) -> None:
         self.timeout = timeout
         super().__init__(provider, f"call timed out after {timeout}s")
+
 
 class LLMProviderNotFound(AAIZAQLError):
     """Raised when an unknown LLM provider name is requested."""
@@ -128,15 +144,20 @@ class LLMProviderNotFound(AAIZAQLError):
             f"No LLM provider registered for '{name}'. " f"Available: {sorted(self.available)}"
         )
 
+
 # ── Vector Store / RAG ───────────────────────────────────────────────────────
+
 
 class VectorStoreError(AAIZAQLError):
     """Raised when a vector store operation fails."""
 
+
 class SchemaIngestionError(AAIZAQLError):
     """Raised when schema introspection or ingestion fails."""
 
+
 # ── Federation ───────────────────────────────────────────────────────────────
+
 
 class FederationError(AAIZAQLError):
     """Raised when a federated query fails."""
@@ -145,6 +166,7 @@ class FederationError(AAIZAQLError):
         self.sources = sources or []
         suffix = f" (sources: {self.sources})" if self.sources else ""
         super().__init__(f"Federation failed{suffix}: {detail}")
+
 
 class CredentialError(AAIZAQLError):
     """Raised when credential encryption/decryption fails."""

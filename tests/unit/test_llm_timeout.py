@@ -25,6 +25,7 @@ from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 
+
 class TestSettings:
     def test_default_timeout(self) -> None:
         s = Settings()
@@ -51,7 +52,9 @@ class TestSettings:
         with pytest.raises(ValidationError):
             Settings(llm_timeout_seconds=301)
 
+
 # ── LLMTimeoutError ───────────────────────────────────────────────────────────
+
 
 class TestLLMTimeoutError:
     def test_is_llm_error_subclass(self) -> None:
@@ -68,7 +71,9 @@ class TestLLMTimeoutError:
         assert "20" in str(err)
         assert "claude" in str(err)
 
+
 # ── OllamaProvider timeout ────────────────────────────────────────────────────
+
 
 class TestOllamaTimeout:
     def _make_provider(self, timeout: int = 5) -> OllamaProvider:  # noqa: F821
@@ -112,13 +117,16 @@ class TestOllamaTimeout:
             provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
+
 # ── OpenAI-compatible providers (openai, deepseek, perplexity) ────────────────
 #   All three use the openai SDK; same mock pattern applies.
+
 
 def _make_openai_timeout_exc() -> openai.APITimeoutError:  # noqa: F821
     import openai
 
     return openai.APITimeoutError(request=MagicMock())
+
 
 class TestOpenAITimeout:
     def _make_provider(self, timeout: int = 5) -> OpenAIProvider:  # noqa: F821
@@ -170,6 +178,7 @@ class TestOpenAITimeout:
         call_kwargs = provider._client.chat.completions.create.call_args[1]
         assert call_kwargs["timeout"] == 12
 
+
 class TestDeepSeekTimeout:
     def _make_provider(self, timeout: int = 5) -> DeepSeekProvider:  # noqa: F821
         import openai
@@ -194,6 +203,7 @@ class TestDeepSeekTimeout:
         with pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "deepseek"
+
 
 class TestPerplexityTimeout:
     def _make_provider(self, timeout: int = 5) -> PerplexityProvider:  # noqa: F821
@@ -220,7 +230,9 @@ class TestPerplexityTimeout:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "perplexity"
 
+
 # ── Groq timeout ──────────────────────────────────────────────────────────────
+
 
 class TestGroqTimeout:
     def _make_provider(self, timeout: int = 5) -> GroqProvider:  # noqa: F821
@@ -254,7 +266,9 @@ class TestGroqTimeout:
         call_kwargs = provider._client.chat.completions.create.call_args[1]
         assert call_kwargs["timeout"] == 8
 
+
 # ── Gemini timeout (ThreadPoolExecutor path) ──────────────────────────────────
+
 
 class TestGeminiTimeout:
     def _make_provider(self, timeout: int = 1) -> GeminiProvider:  # noqa: F821
@@ -297,7 +311,9 @@ class TestGeminiTimeout:
             provider.complete("SELECT 1")
         assert not isinstance(exc_info.value, LLMTimeoutError)
 
+
 # ── Mistral timeout (ThreadPoolExecutor path) ─────────────────────────────────
+
 
 class TestMistralTimeout:
     def _make_provider(self, timeout: int = 1) -> MistralProvider:  # noqa: F821
@@ -322,7 +338,9 @@ class TestMistralTimeout:
         assert exc_info.value.provider == "mistral"
         assert exc_info.value.timeout == 1
 
+
 # ── Claude timeout ────────────────────────────────────────────────────────────
+
 
 class TestClaudeTimeout:
     def _make_provider(self, timeout: int = 5) -> ClaudeProvider:  # noqa: F821
@@ -354,7 +372,9 @@ class TestClaudeTimeout:
         assert exc_info.value.provider == "claude"
         assert exc_info.value.timeout == 5
 
+
 # ── Generator forwards timeout ────────────────────────────────────────────────
+
 
 class TestGeneratorForwardsTimeout:
     def test_generate_passes_timeout_to_complete(self) -> None:
@@ -378,7 +398,9 @@ class TestGeneratorForwardsTimeout:
         call_kwargs = mock_llm.complete.call_args[1]
         assert call_kwargs.get("timeout") == 42
 
+
 # ── Corrector forwards timeout ────────────────────────────────────────────────
+
 
 class TestCorrectorForwardsTimeout:
     def test_correction_passes_timeout_to_complete(self) -> None:

@@ -21,6 +21,7 @@ from aaizaql.core.exceptions import LLMError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -35,6 +36,7 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
+
 def _mock_mistral_client(content: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics the Mistral client with a canned response."""
     resp = MagicMock()
@@ -47,7 +49,9 @@ def _mock_mistral_client(content: str | None = "SELECT 1;") -> MagicMock:
     client.chat.complete.return_value = resp
     return client
 
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
+
 
 class TestMistralProvider:
     """MistralProvider tests — patched Mistral client, zero network calls."""
@@ -216,7 +220,9 @@ class TestMistralProvider:
         call_kwargs = mock_client.chat.complete.call_args[1]
         assert call_kwargs["messages"][0]["content"] == "Custom SQL expert prompt"
 
+
 # ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
 
 class TestMistralProviderTimeout:
     """Timeout path tests for MistralProvider."""

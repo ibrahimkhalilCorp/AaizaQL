@@ -21,6 +21,7 @@ from aaizaql.memory.vector_store import VectorStoreAdapter
 
 logger = structlog.get_logger(__name__)
 
+
 class EnumMapping:
     """
     A code → label mapping for a single table column.
@@ -48,6 +49,7 @@ class EnumMapping:
         """Format as a single line ready for prompt injection."""
         pairs = ", ".join(f"{k}={v}" for k, v in self.mapping.items())
         return f"{self.table}.{self.column}: {pairs}"
+
 
 class SemanticStore:
     """
@@ -186,6 +188,7 @@ class SemanticStore:
         """T2.4 — Delegate to the singleton EmbeddingService (one model load)."""
         try:
             from aaizaql.schema.embedder import EmbeddingService
+
             return EmbeddingService.get_instance().embed(text)
         except Exception:
             return [0.0] * 384  # safe fallback

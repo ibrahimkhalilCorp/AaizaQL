@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
+
 class SchemaIngester:
     """
     Reads database schema and stores it in the vector store.
@@ -40,6 +41,7 @@ class SchemaIngester:
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
         self._vs = vector_store
         from aaizaql.schema.embedder import EmbeddingService  # T2.4 singleton
+
         self._embedder = EmbeddingService.get_instance()
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -96,6 +98,7 @@ class SchemaIngester:
 
         # T5.5 — store schema version hash for drift detection
         import hashlib
+
         version_hash = hashlib.sha256(ddl.encode()).hexdigest()[:16]
         self._vs.upsert(
             doc_id="schema_version",
@@ -103,8 +106,12 @@ class SchemaIngester:
             embedding=[0.0] * 384,  # sentinel; not used for search
             metadata={"type": "schema_version", "hash": version_hash},
         )
-        logger.info("schema.ingested", tables=len(chunks), stale_removed=len(old_ids - new_ids),
-                    schema_version=version_hash)
+        logger.info(
+            "schema.ingested",
+            tables=len(chunks),
+            stale_removed=len(old_ids - new_ids),
+            schema_version=version_hash,
+        )
         return len(chunks)
 
     # T2.5 — ingest_sql_pair() removed (dead code; use SemanticStore.train_sql_pair() instead)
@@ -142,7 +149,9 @@ class SchemaIngester:
         """Stable 12-char hex fingerprint of a string."""
         return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16
 
+
 # ── Embedding helper ──────────────────────────────────────────────────────────
+
 
 class _SentenceEmbedder:
     """

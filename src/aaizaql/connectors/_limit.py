@@ -3,6 +3,7 @@ aaizaql.connectors._limit
 ─────────────────────────
 T1.4 — Shared LIMIT injection utility used by all SQL connectors.
 """
+
 from __future__ import annotations
 
 

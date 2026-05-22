@@ -71,11 +71,13 @@ try:
 except ImportError:
     pass
 
+
 def get_connector(name: str) -> DatabaseConnector:
     """Instantiate and return a connector by name."""
     name = name.lower()
     if name not in REGISTRY:
         raise _ConnectorNotFound(name, available=sorted(REGISTRY.keys()))
     return REGISTRY[name]()
+
 
 __all__ = ["DatabaseConnector", "REGISTRY", "get_connector"]

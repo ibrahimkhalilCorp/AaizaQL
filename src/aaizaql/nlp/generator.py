@@ -37,58 +37,33 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 _COT_KEYWORDS = {
-
     # T3.1 — removed "per" (false-positive: expenses, temperature, department…)
-
     "join",
-
     "joining",
-
     "combine",
-
     "merge",
-
     "group by",
-
     "grouped",
-
     "by month",
-
     "by year",
-
     "by week",
-
     "compare",
-
     "difference",
-
     "trend",
-
     "average",
-
     "sum",
-
     "count",
-
     "most",
-
     "least",
-
     "top",
-
     "bottom",
-
     "rank",
-
     "ranking",
-
     "between",
-
     "range",
-
     "having",
-
 }
+
 
 def _needs_cot(question: str) -> bool:
 
@@ -98,8 +73,8 @@ def _needs_cot(question: str) -> bool:
 
     return any(re.search(rf"\b{re.escape(kw)}\b", q) for kw in _COT_KEYWORDS)
 
-class SQLGenerator:
 
+class SQLGenerator:
     """
 
     Generates SQL from a natural language question using RAG + SemanticStore + LLM.
@@ -123,19 +98,12 @@ class SQLGenerator:
     """
 
     def __init__(
-
         self,
-
         llm: LLMProvider,
-
         vector_store: VectorStoreAdapter,
-
         settings: Settings,
-
         semantic_store: SemanticStore | None = None,
-
         connector: object | None = None,
-
     ) -> None:
 
         self._llm = llm
@@ -161,37 +129,22 @@ class SQLGenerator:
         use_cot = _needs_cot(question)
 
         prompt = self._assemble_prompt(
-
             question=question,
-
             schema_chunks=schema_chunks,
-
             example_pairs=example_pairs,
-
             enum_block=enum_block,
-
             doc_block=doc_block,
-
             history=history,
-
             use_cot=use_cot,
-
         )
 
         logger.debug(
-
             "generator.calling_llm",
-
             provider=self._llm.name,
-
             use_cot=use_cot,
-
             has_enums=bool(enum_block),
-
             has_docs=bool(doc_block),
-
             question=question[:60],
-
         )
 
         raw = self._llm.complete(prompt, system=SYSTEM_PROMPT, timeout=self._timeout)
@@ -211,23 +164,15 @@ class SQLGenerator:
     def _build_rag_context(self, question: str) -> tuple[str, str]:
 
         schema_hits = self._vs.search(
-
             query=question,
-
             filter_type="ddl",
-
             top_k=self._settings.schema_top_k,
-
         )
 
         example_hits = self._vs.search(
-
             query=question,
-
             filter_type="qa_pair",
-
             top_k=self._settings.examples_top_k,
-
         )
 
         schema_block = "\n\n".join(h.text for h in schema_hits) or "(no schema ingested yet)"
@@ -237,7 +182,6 @@ class SQLGenerator:
         return schema_block, examples_block
 
     def _build_enum_block(self) -> str:
-
         """Always injected — never a retrieval miss."""
 
         if not self._semantic or not self._semantic.has_enums():
@@ -247,7 +191,6 @@ class SQLGenerator:
         return ENUM_BLOCK_TEMPLATE.format(enums=self._semantic.get_enum_block())
 
     def _build_doc_block(self, question: str) -> str:
-
         """Retrieve relevant documentation via RAG."""
 
         if not self._semantic:
@@ -263,57 +206,31 @@ class SQLGenerator:
         return DOC_BLOCK_TEMPLATE.format(docs=docs)
 
     def _assemble_prompt(
-
         self,
-
         question: str,
-
         schema_chunks: str,
-
         example_pairs: str,
-
         enum_block: str,
-
         doc_block: str,
-
         history: list[Turn],
-
         use_cot: bool,
-
     ) -> str:
 
         # T3.4 — removed redundant slice; ContextManager.deque(maxlen=N) already caps history
 
         history_text = (
-
-            "\n".join(
-
-                f"User: {turn['question']}\nSQL: {turn['sql']}"
-
-                for turn in history
-
-            )
-
+            "\n".join(f"User: {turn['question']}\nSQL: {turn['sql']}" for turn in history)
             or "(no prior conversation)"
-
         )
 
         context = CONTEXT_TEMPLATE.format(
-
             dialect=getattr(self._connector, "name", str(self._settings.llm_provider)),
-
             schema_chunks=schema_chunks,
-
             enum_block=enum_block,
-
             doc_block=doc_block,
-
             example_pairs=example_pairs,
-
             history=history_text,
-
             question=question,
-
         )
 
         if use_cot:

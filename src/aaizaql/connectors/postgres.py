@@ -23,6 +23,7 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+
 class PostgreSQLConnector(DatabaseConnector):
 
     name = "postgresql"
@@ -41,11 +42,7 @@ class PostgreSQLConnector(DatabaseConnector):
 
             self._dsn = dsn
 
-            self._pool = pg_pool.ThreadedConnectionPool(
-
-                minconn=1, maxconn=pool_size, dsn=dsn
-
-            )
+            self._pool = pg_pool.ThreadedConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
 
             logger.info("postgres.connected", pool_size=pool_size)
 
@@ -159,7 +156,9 @@ class PostgreSQLConnector(DatabaseConnector):
 
             fk_df = pd.read_sql_query(fk_query, conn)
 
-            pk_set = set(zip(pk_df["table_schema"], pk_df["table_name"], pk_df["column_name"], strict=False))
+            pk_set = set(
+                zip(pk_df["table_schema"], pk_df["table_name"], pk_df["column_name"], strict=False)
+            )
 
             fk_map: dict = {}
 
@@ -198,17 +197,12 @@ class PostgreSQLConnector(DatabaseConnector):
                     col_defs.append(f"  PRIMARY KEY ({', '.join(pk_cols)})")
 
                 for _, row in fk_df[
-
                     (fk_df["table_schema"] == schema) & (fk_df["table_name"] == table)
-
                 ].iterrows():
 
                     col_defs.append(
-
                         f"  FOREIGN KEY ({row['column_name']}) "
-
                         f"REFERENCES {row['foreign_table']}({row['foreign_column']})"
-
                     )
 
                 ddl = f"CREATE TABLE {schema}.{table} (\n" + ",\n".join(col_defs) + "\n);"

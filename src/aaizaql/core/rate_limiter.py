@@ -3,6 +3,7 @@ aaizaql.core.rate_limiter
 ─────────────────────────
 T5.3 — Token bucket rate limiter (per tenant_id).
 """
+
 from __future__ import annotations
 
 import threading
@@ -15,6 +16,7 @@ class _Bucket:
     tokens: float
     last_refill: float = field(default_factory=time.monotonic)
     lock: threading.Lock = field(default_factory=threading.Lock)
+
 
 class RateLimiter:
     """
@@ -46,6 +48,7 @@ class RateLimiter:
             if bucket.tokens < 1:
                 retry_after = int((1 - bucket.tokens) / (self._qpm / 60.0)) + 1
                 from aaizaql.core.exceptions import RateLimitError
+
                 raise RateLimitError(tenant_id, retry_after_seconds=retry_after)
             bucket.tokens -= 1
 

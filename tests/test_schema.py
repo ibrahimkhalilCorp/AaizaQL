@@ -16,6 +16,7 @@ from aaizaql.schema.semantic_store import SemanticStore
 
 # ── SchemaIngester ────────────────────────────────────────────────────────────
 
+
 class TestSchemaIngester:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -81,7 +82,9 @@ CREATE TABLE departments (
         count = ingester.ingest_from_database(sqlite_connector)  # type: ignore[arg-type]
         assert count >= 2  # employees + departments
 
-    @pytest.mark.skip(reason="T2.5: ingest_sql_pair() removed from SchemaIngester — use SemanticStore.train_sql_pair() instead")
+    @pytest.mark.skip(
+        reason="T2.5: ingest_sql_pair() removed from SchemaIngester — use SemanticStore.train_sql_pair() instead"
+    )
     def test_ingest_sql_pair(self, ingester: SchemaIngester, mock_vs: MagicMock) -> None:
         ingester.ingest_sql_pair(
             question="How many employees are there?",
@@ -104,7 +107,9 @@ CREATE TABLE departments (
         )
         assert ingester._extract_table_name('CREATE TABLE "my_table" (x TEXT)') == "my_table"
 
+
 # ── SemanticStore ─────────────────────────────────────────────────────────────
+
 
 class TestSemanticStore:
     @pytest.fixture(autouse=True)

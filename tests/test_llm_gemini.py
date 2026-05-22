@@ -21,6 +21,7 @@ from aaizaql.core.exceptions import LLMError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -35,6 +36,7 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
+
 def _mock_genai_client(content: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics genai.Client with a canned response."""
     resp = MagicMock()
@@ -46,7 +48,9 @@ def _mock_genai_client(content: str | None = "SELECT 1;") -> MagicMock:
     client.models.generate_content.return_value = resp
     return client
 
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
+
 
 class TestGeminiProvider:
     """GeminiProvider tests — patched google.genai client, zero network calls."""
@@ -222,7 +226,9 @@ class TestGeminiProvider:
         call_kwargs = mock_client.models.generate_content.call_args[1]
         assert call_kwargs["model"] == "gemini-2.5-pro"
 
+
 # ── Timeout tests (added for 80% coverage target) ─────────────────────────────
+
 
 class TestGeminiProviderTimeout:
     """Timeout path tests for GeminiProvider."""

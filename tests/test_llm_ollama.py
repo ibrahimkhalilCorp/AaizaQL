@@ -20,6 +20,7 @@ from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -32,6 +33,7 @@ def make_settings(**kwargs) -> Settings:
     )
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
+
 
 def _mock_response(json_body: dict, status_code: int = 200) -> MagicMock:
     """Return a MagicMock that mimics a requests.Response."""
@@ -46,7 +48,9 @@ def _mock_response(json_body: dict, status_code: int = 200) -> MagicMock:
         resp.raise_for_status.return_value = None
     return resp
 
+
 # ── Tests ─────────────────────────────────────────────────────────────────────
+
 
 class TestOllamaProvider:
     """OllamaProvider tests — patched requests.post, zero network calls."""

@@ -21,6 +21,7 @@ import pytest
 
 # ── make_settings factory ─────────────────────────────────────────────────────
 
+
 class TestMakeSettings:
     def test_returns_settings_instance(self) -> None:
         from aaizaql.core.config import Settings, make_settings
@@ -69,7 +70,9 @@ class TestMakeSettings:
         s = make_settings(llm_timeout_seconds=55)
         assert s.llm_timeout_seconds == 55
 
+
 # ── QueryEngine per-instance isolation ───────────────────────────────────────
+
 
 def _make_engine(llm: str = "groq", timeout: int = 30, **extra) -> QueryEngine:  # noqa: F821
     """Build a QueryEngine with all heavy components mocked out."""
@@ -95,6 +98,7 @@ def _make_engine(llm: str = "groq", timeout: int = 30, **extra) -> QueryEngine: 
             llm_timeout_seconds=timeout,
             **extra,
         )
+
 
 class TestQueryEngineSettingsIsolation:
     def test_two_engines_have_independent_settings(self) -> None:
@@ -158,7 +162,9 @@ class TestQueryEngineSettingsIsolation:
         timeouts = [e._settings.llm_timeout_seconds for e in engines]
         assert timeouts == [10, 20, 30, 40, 50]
 
+
 # ── Singleton backwards-compat ────────────────────────────────────────────────
+
 
 class TestSingletonBackwardsCompat:
     def test_singleton_still_importable(self) -> None:

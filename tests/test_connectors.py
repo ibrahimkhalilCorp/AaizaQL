@@ -21,6 +21,7 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 # MySQL
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestMySQLConnector:
     """
     MySQLConnector tests use a patched pymysql — no real MySQL server needed.
@@ -154,9 +155,11 @@ class TestMySQLConnector:
         connector.close()  # no connection — should not raise
         connector.close()
 
+
 # ══════════════════════════════════════════════════════════════════════════════
 # DuckDB
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestDuckDBConnector:
     """
@@ -279,6 +282,7 @@ class TestDuckDBConnector:
     def test_test_connection(self, connector) -> None:
         assert connector.test_connection() is True
 
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Snowflake
 # ══════════════════════════════════════════════════════════════════════════════
@@ -287,6 +291,7 @@ snowflake_connector = pytest.importorskip(
     "snowflake.connector",
     reason="snowflake-connector-python is not installed; skipping Snowflake tests",
 )
+
 
 class TestSnowflakeConnector:
     """

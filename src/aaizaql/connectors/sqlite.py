@@ -24,6 +24,7 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+
 class SQLiteConnector(DatabaseConnector):
 
     name = "sqlite"
@@ -35,7 +36,6 @@ class SQLiteConnector(DatabaseConnector):
         self._path: str = ""
 
     def connect(self, dsn: str) -> None:
-
         """
 
         dsn examples:
@@ -65,7 +65,6 @@ class SQLiteConnector(DatabaseConnector):
             raise ConnectionError("sqlite", dsn[:40], str(exc)) from exc
 
     def _ensure_connection(self, sql: str) -> None:
-
         """T2.1 — Reconnect if the SQLite connection was dropped."""
 
         if self._conn is None:

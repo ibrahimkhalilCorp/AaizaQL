@@ -7,6 +7,7 @@ Mount with FastAPI:
     from aaizaql.api.health import router as health_router
     app.include_router(health_router)
 """
+
 from __future__ import annotations
 
 import time
@@ -15,6 +16,7 @@ from typing import Any
 try:
     from fastapi import APIRouter
     from fastapi.responses import JSONResponse
+
     router = APIRouter()
 
     @router.get("/health")
@@ -26,6 +28,7 @@ try:
 
 except ImportError:
     router = None  # type: ignore[assignment]
+
 
 def run_health_check(engine: Any) -> dict:
     """

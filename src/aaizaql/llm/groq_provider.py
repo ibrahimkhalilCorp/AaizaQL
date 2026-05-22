@@ -33,6 +33,7 @@ except ImportError:
     Groq = None  # type: ignore[assignment,misc]
     _GroqAPITimeoutError = None  # type: ignore[assignment,misc]
 
+
 class GroqProvider(LLMProvider):
     """
     Groq Cloud LLM provider.

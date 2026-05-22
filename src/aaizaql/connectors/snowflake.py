@@ -22,6 +22,7 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+
 class SnowflakeConnector(DatabaseConnector):
     name = "snowflake"
 

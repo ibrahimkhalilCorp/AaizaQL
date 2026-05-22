@@ -16,6 +16,7 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
+
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude via the official SDK."""
 
@@ -41,8 +42,9 @@ class ClaudeProvider(LLMProvider):
         effective_timeout = timeout or self._timeout
         try:
             import httpx
+
             # Set timeout on client
-            if hasattr(self._client, 'timeout'):
+            if hasattr(self._client, "timeout"):
                 self._client.timeout = httpx.Timeout(effective_timeout)
             message = self._client.messages.create(
                 model=self._model,

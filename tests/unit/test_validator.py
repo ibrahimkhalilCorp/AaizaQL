@@ -16,6 +16,7 @@ from aaizaql.security.validator import SQLValidator
 def validator() -> SQLValidator:
     return SQLValidator(Settings())
 
+
 class TestWhitelist:
     def test_select_passes(self, validator):
         validator.validate("SELECT id, name FROM users")
@@ -49,6 +50,7 @@ class TestWhitelist:
         with pytest.raises(SecurityException):
             validator.validate("UPDATE users SET admin = 1")
 
+
 class TestInjectionDetection:
     def test_ignore_previous_instructions(self, validator):
         with pytest.raises(SecurityException):
@@ -71,6 +73,7 @@ class TestInjectionDetection:
         validator.validate(
             "SELECT customer_id, SUM(amount) as total FROM orders GROUP BY customer_id"
         )
+
 
 class TestInjectionDisabled:
     def test_injection_check_skipped_when_disabled(self):

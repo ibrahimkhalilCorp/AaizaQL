@@ -16,6 +16,7 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
+
 class OpenAIProvider(LLMProvider):
     """OpenAI GPT via the official SDK."""
 

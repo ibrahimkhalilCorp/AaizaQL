@@ -16,6 +16,7 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
+
 class OllamaProvider(LLMProvider):
     """Local Ollama server adapter."""
 

@@ -3,6 +3,7 @@ aaizaql.nlp.utils
 ────────────────
 Shared NLP utility functions used by both generator.py and corrector.py.
 """
+
 from __future__ import annotations
 
 import re

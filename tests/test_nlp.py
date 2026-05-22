@@ -20,11 +20,13 @@ from aaizaql.nlp.corrector import SelfCorrector
 def settings() -> Settings:
     return Settings(llm_provider="groq", max_self_correction_retries=2)
 
+
 @pytest.fixture()
 def mock_llm() -> MagicMock:
     llm = MagicMock()
     llm.name = "mock/test"
     return llm
+
 
 class TestSelfCorrector:
     def test_success_on_first_attempt(self, mock_llm: MagicMock, settings: Settings) -> None:
