@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-class SelfCorrector:
 
+class SelfCorrector:
     """
 
     Executes SQL against a connector; on DatabaseError sends the error
@@ -44,17 +44,11 @@ class SelfCorrector:
     """
 
     def __init__(
-
         self,
-
         llm: LLMProvider,
-
         settings: Settings,
-
         validator: SQLValidator | None = None,
-
         vector_store: Any | None = None,  # T2.7 — for schema context on retry
-
     ) -> None:
 
         self._llm = llm
@@ -72,17 +66,11 @@ class SelfCorrector:
         self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
 
     def execute_with_correction(
-
         self,
-
         sql: str,
-
         executor: Any,  # DatabaseConnector — avoid circular import with Any
-
         question: str,
-
     ) -> tuple[pd.DataFrame, bool, int]:
-
         """
 
         Execute SQL with automatic self-correction on failure.
@@ -112,15 +100,10 @@ class SelfCorrector:
                 data = executor.execute(self.last_sql)
 
                 logger.info(
-
                     "corrector.success",
-
                     attempt=attempt,
-
                     rows=len(data),
-
                     was_corrected=was_corrected,
-
                 )
 
                 return data, was_corrected, attempt
@@ -130,23 +113,15 @@ class SelfCorrector:
                 if attempt >= self._max_retries:
 
                     raise MaxRetriesExceeded(
-
                         sql=self.last_sql,
-
                         last_error=str(exc),
-
                         attempts=attempt + 1,
-
                     ) from exc
 
                 logger.warning(
-
                     "corrector.retrying",
-
                     attempt=attempt + 1,
-
                     error=str(exc)[:120],
-
                 )
 
                 # T2.7 — retrieve real schema context for the correction prompt
@@ -158,13 +133,9 @@ class SelfCorrector:
                     try:
 
                         hits = self._vector_store.search(
-
                             query=question,
-
                             filter_type="ddl",
-
                             top_k=self._schema_top_k,
-
                         )
 
                         if hits:
@@ -178,13 +149,9 @@ class SelfCorrector:
                 # Ask LLM to fix the broken SQL
 
                 correction_prompt = SELF_CORRECTION_TEMPLATE.format(
-
                     sql=self.last_sql,
-
                     error=str(exc),
-
                     schema_chunks=schema_chunks,
-
                 )
 
                 corrected = self._llm.complete(correction_prompt, timeout=self._timeout)
@@ -206,19 +173,13 @@ class SelfCorrector:
                     self._validator.validate(self.last_sql)
 
                     logger.debug(
-
                         "corrector.revalidated",
-
                         attempt=attempt + 1,
-
                         sql_preview=self.last_sql[:60],
-
                     )
 
         # Should never reach here
 
         raise MaxRetriesExceeded(
-
             sql=self.last_sql, last_error="unknown", attempts=self._max_retries
-
         )

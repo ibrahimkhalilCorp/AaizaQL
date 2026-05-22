@@ -4,6 +4,7 @@ aaizaql.nlp.decomposer
 T4.6 — QueryDecomposer: split complex questions into sub-queries
 using Leiden community detection on the schema graph.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -27,6 +28,7 @@ Q: Total orders per customer in 2024
 Q: Customer names and IDs
 """
 
+
 class QueryDecomposer:
     """
     Decomposes a complex natural-language question into simpler sub-questions,
@@ -48,9 +50,7 @@ class QueryDecomposer:
         try:
             raw = self._llm.complete(prompt)
             sub_questions = [
-                line[2:].strip()
-                for line in raw.splitlines()
-                if line.strip().startswith("Q:")
+                line[2:].strip() for line in raw.splitlines() if line.strip().startswith("Q:")
             ]
             return sub_questions or [question]
         except Exception as exc:

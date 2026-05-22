@@ -22,8 +22,8 @@ _MODEL_NAME = "all-MiniLM-L6-v2"
 
 _DIM = 384
 
-class EmbeddingService:
 
+class EmbeddingService:
     """
 
     Thread-safe singleton sentence-transformer embedder.
@@ -37,7 +37,6 @@ class EmbeddingService:
     _model: object | None = None
 
     @classmethod
-
     def get_instance(cls) -> EmbeddingService:
 
         if cls._instance is None:
@@ -77,22 +76,20 @@ class EmbeddingService:
         except ImportError as exc:
 
             raise ImportError(
-
-                "sentence-transformers is not installed. "
-
-                "Run: pip install 'aaizaql[rag]'"
-
+                "sentence-transformers is not installed. " "Run: pip install 'aaizaql[rag]'"
             ) from exc
 
     @classmethod
-
     def _fallback_embed(cls, text: str) -> list[float]:
 
         digest = hashlib.sha256(text.encode()).hexdigest()
 
-        values = [int(digest[i:i + 2], 16) / 255.0 for i in range(0, min(len(digest), _DIM * 2), 2)]
+        values = [
+            int(digest[i : i + 2], 16) / 255.0 for i in range(0, min(len(digest), _DIM * 2), 2)
+        ]
 
         return (values + [0.0] * _DIM)[:_DIM]
+
 
 # Convenience alias used by modules that imported _SentenceEmbedder directly
 
