@@ -121,8 +121,9 @@ class BigQueryConnector(DatabaseConnector):
                 table = self._client.get_table(table_ref)
                 fields = []
                 for field in table.schema:
-                    nullable = "" if field.mode == "REQUIRED" else ""
-                    fields.append(f"  {field.name} {field.field_type}{nullable}")
+                    # T3.2 — was: both branches returned empty string (bug)
+                    not_null = " NOT NULL" if field.mode == "REQUIRED" else ""
+                    fields.append(f"  {field.name} {field.field_type}{not_null}")
                 ddl = (
                     f"CREATE TABLE `{self._project}.{self._dataset}.{table.table_id}` (\n"
                     + ",\n".join(fields)

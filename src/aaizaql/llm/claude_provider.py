@@ -38,18 +38,20 @@ class ClaudeProvider(LLMProvider):
         return f"claude/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
+        # T2.2 — reuse self._client instead of opening a new session per call
         effective_timeout = timeout or self._timeout
         try:
-            with anthropic.Anthropic(
-                api_key=self._client.api_key,
-                timeout=effective_timeout,
-            ) as client:
-                message = client.messages.create(
-                    model=self._model,
-                    max_tokens=self._max_tokens,
-                    system=system or SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": prompt}],
-                )
+            import httpx
+            # Set timeout on client
+            if hasattr(self._client, 'timeout'):
+                self._client.timeout = httpx.Timeout(effective_timeout)
+            message = self._client.messages.create(
+                model=self._model,
+                max_tokens=self._max_tokens,
+                system=system or SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=effective_timeout,  # Pass timeout to create call
+            )
             response = str(message.content[0].text)
             logger.debug("llm.complete", provider=self.name, tokens=message.usage.output_tokens)
             return response

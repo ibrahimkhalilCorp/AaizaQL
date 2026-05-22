@@ -17,6 +17,10 @@ class DatabaseConnector(ABC):
 
     # Subclasses set this to their connector name string
     name: str = ""
+    # Set False for connectors that do not speak SQL (e.g. MongoDB)
+    requires_sql_validation: bool = True
+    # Set False for connectors that do not speak SQL (e.g. MongoDB)
+    requires_sql_validation: bool = True
 
     @abstractmethod
     def connect(self, dsn: str) -> None:

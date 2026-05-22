@@ -284,17 +284,16 @@ class TestGeminiTimeout:
         return provider
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
-        import concurrent.futures
-
         provider = self._make_provider(timeout=1)
 
-        def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
-            future: concurrent.futures.Future = concurrent.futures.Future()
-            future.set_exception(concurrent.futures.TimeoutError())
-            return future
+        # Mock the API call to raise a timeout-like exception
+        mock_response = MagicMock()
+        provider._client.models.generate_content.side_effect = Exception("deadline exceeded")
+
+        mock_genai_types = MagicMock()
 
         with (
-            patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit),
+            patch("aaizaql.llm.gemini_provider.genai_types", mock_genai_types),
             pytest.raises(LLMTimeoutError) as exc_info,
         ):
             provider.complete("SELECT 1")
@@ -341,19 +340,12 @@ class TestMistralTimeout:
         return provider
 
     def test_timeout_raises_llm_timeout_error(self) -> None:
-        import concurrent.futures
-
         provider = self._make_provider(timeout=1)
 
-        def patched_submit(self_executor, fn, *args, **kwargs):  # type: ignore[no-untyped-def]
-            future: concurrent.futures.Future = concurrent.futures.Future()
-            future.set_exception(concurrent.futures.TimeoutError())
-            return future
+        # Mock the API call to raise a timeout-like exception
+        provider._client.chat.complete.side_effect = Exception("timeout exceeded")
 
-        with (
-            patch.object(concurrent.futures.ThreadPoolExecutor, "submit", patched_submit),
-            pytest.raises(LLMTimeoutError) as exc_info,
-        ):
+        with pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "mistral"
         assert exc_info.value.timeout == 1
@@ -382,17 +374,12 @@ class TestClaudeTimeout:
 
         provider = self._make_provider(timeout=5)
 
-        mock_client_instance = MagicMock()
-        mock_client_instance.messages.create.side_effect = anthropic.APITimeoutError(
+        # Set the side effect on the already-mocked client
+        provider._client.messages.create.side_effect = anthropic.APITimeoutError(
             request=MagicMock()
         )
-        mock_client_instance.__enter__ = MagicMock(return_value=mock_client_instance)
-        mock_client_instance.__exit__ = MagicMock(return_value=False)
 
-        with (
-            patch("anthropic.Anthropic", return_value=mock_client_instance),
-            pytest.raises(LLMTimeoutError) as exc_info,
-        ):
+        with pytest.raises(LLMTimeoutError) as exc_info:
             provider.complete("SELECT 1")
         assert exc_info.value.provider == "claude"
         assert exc_info.value.timeout == 5

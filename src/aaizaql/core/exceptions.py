@@ -39,6 +39,17 @@ class SQLGenerationError(AAIZAQLError):
         super().__init__(f"Failed to generate SQL for: '{question}'. {detail}".strip())
 
 
+class RateLimitError(AAIZAQLError):
+    """T5.3 — Raised when a tenant exceeds their query rate limit."""
+    def __init__(self, tenant_id: str, retry_after_seconds: int = 60) -> None:
+        self.tenant_id = tenant_id
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(
+            f"Rate limit exceeded for tenant '{tenant_id}'. "
+            f"Retry after {retry_after_seconds}s."
+        )
+
+
 class UnsupportedQueryError(AAIZAQLError):
     """Raised when the question cannot be answered with a SELECT statement."""
 

@@ -13,6 +13,8 @@ import sqlite3
 import pandas as pd
 import structlog
 
+from aaizaql.connectors._limit import inject_limit
+from aaizaql.connectors._limit import inject_limit
 from aaizaql.connectors.base import DatabaseConnector
 from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
@@ -42,9 +44,19 @@ class SQLiteConnector(DatabaseConnector):
         except sqlite3.Error as exc:
             raise ConnectionError("sqlite", dsn[:40], str(exc)) from exc
 
-    def execute(self, sql: str) -> pd.DataFrame:
+    def _ensure_connection(self, sql: str) -> None:
+        """T2.1 — Reconnect if the SQLite connection was dropped."""
         if self._conn is None:
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="sqlite")
+        try:
+            self._conn.execute("SELECT 1")
+        except Exception:
+            logger.warning("sqlite.reconnecting", path=self._path)
+            self._conn = sqlite3.connect(self._path, check_same_thread=False)
+
+    def execute(self, sql: str, _max_rows: int = 10000) -> pd.DataFrame:
+        self._ensure_connection(sql)
+        sql, _ = inject_limit(sql, _max_rows, dialect="sqlite")  # T1.4
         try:
             return pd.read_sql_query(sql, self._conn)
         except TypeError:

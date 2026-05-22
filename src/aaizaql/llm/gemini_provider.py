@@ -77,21 +77,20 @@ class GeminiProvider(LLMProvider):
         return f"gemini/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """Send prompt to Gemini and return the SQL response."""
-        import concurrent.futures
-
+        """T3.5 — Send prompt to Gemini using native timeout (no thread leak)."""
+        if genai_types is None:
+            raise LLMError("gemini", "google-genai package not installed")
+        
         effective_timeout = timeout or self._timeout
-
-        def _call() -> str:
-            from google.genai import types as _genai_types
-
+        try:
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=prompt,
-                config=_genai_types.GenerateContentConfig(
+                config=genai_types.GenerateContentConfig(
                     system_instruction=system or SYSTEM_PROMPT,
                     max_output_tokens=self._max_tokens,
                     temperature=self._temperature,
+                    timeout=float(effective_timeout),  # T3.5 native timeout
                 ),
             )
             text = response.text or ""
@@ -102,15 +101,7 @@ class GeminiProvider(LLMProvider):
                 output_tokens=response.usage_metadata.candidates_token_count,
             )
             return text
-
-        try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(_call)
-                try:
-                    return future.result(timeout=effective_timeout)
-                except concurrent.futures.TimeoutError as exc:
-                    raise LLMTimeoutError("gemini", effective_timeout) from exc
-        except LLMTimeoutError:
-            raise
         except Exception as exc:
+            if "timeout" in str(exc).lower() or "deadline" in str(exc).lower():
+                raise LLMTimeoutError("gemini", effective_timeout) from exc
             raise LLMError("gemini", str(exc)) from exc

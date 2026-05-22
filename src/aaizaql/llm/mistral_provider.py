@@ -79,16 +79,14 @@ class MistralProvider(LLMProvider):
         return f"mistral/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """Send prompt to Mistral and return the SQL response."""
-        import concurrent.futures
-
+        """T3.5 — Send prompt to Mistral using native timeout_ms (no thread leak)."""
         effective_timeout = timeout or self._timeout
-
-        def _call() -> str:
+        try:
             response = self._client.chat.complete(
                 model=self._model,
                 max_tokens=self._max_tokens,
                 temperature=self._temperature,
+                timeout_ms=int(effective_timeout * 1000),  # T3.5 native timeout
                 messages=[
                     {"role": "system", "content": system or SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
@@ -102,15 +100,7 @@ class MistralProvider(LLMProvider):
                 output_tokens=response.usage.completion_tokens,
             )
             return text
-
-        try:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(_call)
-                try:
-                    return future.result(timeout=effective_timeout)
-                except concurrent.futures.TimeoutError as exc:
-                    raise LLMTimeoutError("mistral", effective_timeout) from exc
-        except LLMTimeoutError:
-            raise
         except Exception as exc:
+            if "timeout" in str(exc).lower():
+                raise LLMTimeoutError("mistral", effective_timeout) from exc
             raise LLMError("mistral", str(exc)) from exc

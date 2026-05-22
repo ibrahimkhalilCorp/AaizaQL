@@ -154,6 +154,30 @@ class Settings(BaseSettings):
         description="Number of Q→SQL pair examples to retrieve per query.",
     )
 
+    # ── Connection Pool ───────────────────────────────────────────────────────
+    db_pool_size: int = Field(
+        default=5,
+        description="T2.1 — Max DB connections per pool (PostgreSQL, MySQL).",
+    )
+
+    # ── Connection Pool ───────────────────────────────────────────────────────
+    db_pool_size: int = Field(
+        default=5,
+        description="T2.1 — Max DB connections per pool (PostgreSQL, MySQL).",
+    )
+
+    # ── Query Safety ─────────────────────────────────────────────────────────
+    max_result_rows: int = Field(
+        default=10000,
+        description="T1.4 — Maximum rows returned per query. Prevents RAM exhaustion.",
+    )
+
+    # ── Query Safety ─────────────────────────────────────────────────────────
+    max_result_rows: int = Field(
+        default=10000,
+        description="T1.4 — Maximum rows returned per query. Prevents RAM exhaustion.",
+    )
+
     # ── Self-Correction ──────────────────────────────────────────────────────
     max_self_correction_retries: int = Field(
         default=3,
@@ -176,6 +200,18 @@ class Settings(BaseSettings):
     session_history_limit: int = Field(
         default=10,
         description="Max number of previous Q&A turns to include in context.",
+    )
+
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    rate_limit_qpm: int = Field(
+        default=60,
+        description="T5.3 — Max queries per minute per tenant_id (0 = disabled).",
+    )
+
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    rate_limit_qpm: int = Field(
+        default=60,
+        description="T5.3 — Max queries per minute per tenant_id (0 = disabled).",
     )
 
     # ── Logging ──────────────────────────────────────────────────────────────

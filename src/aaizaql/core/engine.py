@@ -37,6 +37,8 @@ from aaizaql.nlp.generator import SQLGenerator
 from aaizaql.schema.ingestion import SchemaIngester
 from aaizaql.schema.semantic_store import SemanticStore
 from aaizaql.security.validator import SQLValidator
+from aaizaql.core.rate_limiter import RateLimiter
+from aaizaql.core.rate_limiter import RateLimiter
 from aaizaql.visualization.renderer import ResultRenderer
 from aaizaql.visualization.summarizer import NLSummarizer
 
@@ -56,6 +58,8 @@ class QueryResult:
     session_id: str = ""
     was_corrected: bool = False
     correction_attempts: int = 0
+    truncated: bool = False  # T1.4 — True if result was LIMIT-truncated
+    truncated: bool = False  # T1.4 — True if result was LIMIT-truncated
 
 
 class QueryEngine:
@@ -109,12 +113,23 @@ class QueryEngine:
         # Pipeline components
         self._context = ContextManager(limit=self._settings.session_history_limit)
         self._generator = SQLGenerator(
-            self._llm, self._vector_store, self._settings, self._semantic
+            self._llm, self._vector_store, self._settings, self._semantic,
+            connector=self._connector,  # T1.1 dialect fix
         )
         self._validator = SQLValidator(self._settings)
-        self._corrector = SelfCorrector(self._llm, self._settings, validator=self._validator)
+        self._corrector = SelfCorrector(
+            self._llm, self._settings,
+            validator=self._validator,
+            vector_store=self._vector_store,  # T2.7
+        )
         self._renderer = ResultRenderer()
         self._summarizer = NLSummarizer(self._llm)
+
+        # T5.3 — rate limiter
+        self._rate_limiter = RateLimiter(qpm=self._settings.rate_limit_qpm)
+
+        # T5.3 — rate limiter
+        self._rate_limiter = RateLimiter(qpm=self._settings.rate_limit_qpm)
 
         logger.info("engine.ready", llm=llm, database=database)
 
@@ -245,6 +260,12 @@ class QueryEngine:
 
         logger.info("query.start", session_id=sid, question=question[:80])
 
+        # T5.3 — rate limiting check
+        self._rate_limiter.check(sid)
+
+        # T5.3 — rate limiting check
+        self._rate_limiter.check(sid)
+
         # Security: scan for prompt injection BEFORE any LLM call
         self._validator.check_question(question)
 
@@ -256,7 +277,9 @@ class QueryEngine:
         if not sql:
             raise SQLGenerationError(question, "LLM returned an empty response.")
 
-        self._validator.validate(sql)
+        # T1.2 — skip SQL validation for connectors that don't speak SQL
+        if self._connector.requires_sql_validation:
+            self._validator.validate(sql)
 
         data, was_corrected, attempts = self._corrector.execute_with_correction(
             sql=sql,
@@ -294,6 +317,16 @@ class QueryEngine:
     # ─────────────────────────────────────────────────────────────────────────
     # Helpers
     # ─────────────────────────────────────────────────────────────────────────
+
+    def health_check(self) -> dict:
+        """T5.1 — Run health checks on all subsystems."""
+        from aaizaql.api.health import run_health_check
+        return run_health_check(self)
+
+    def health_check(self) -> dict:
+        """T5.1 — Run health checks on all subsystems."""
+        from aaizaql.api.health import run_health_check
+        return run_health_check(self)
 
     def reset_session(self, session_id: str) -> None:
         """Clear conversation memory for a session."""

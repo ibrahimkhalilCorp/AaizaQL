@@ -40,7 +40,8 @@ class SchemaIngester:
 
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
         self._vs = vector_store
-        self._embedder = _SentenceEmbedder()
+        from aaizaql.schema.embedder import EmbeddingService  # T2.4 singleton
+        self._embedder = EmbeddingService.get_instance()
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -76,6 +77,13 @@ class SchemaIngester:
             logger.warning("schema.no_chunks", ddl_length=len(ddl))
             return 0
 
+        # T2.3 — compute new IDs and delete stale ones before upserting
+        new_ids = {f"ddl_{self._fingerprint(c)}" for c in chunks}
+        old_ids = self._vs.list_ids(filter_type="ddl")
+        for stale_id in old_ids - new_ids:
+            self._vs.delete(stale_id)
+            logger.debug("schema.stale_deleted", doc_id=stale_id)
+
         for chunk in chunks:
             table_name = self._extract_table_name(chunk)
             doc_id = f"ddl_{self._fingerprint(chunk)}"
@@ -87,25 +95,20 @@ class SchemaIngester:
                 metadata={"type": "ddl", "table": table_name},
             )
 
-        logger.info("schema.ingested", tables=len(chunks))
+        # T5.5 — store schema version hash for drift detection
+        import hashlib
+        version_hash = hashlib.sha256(ddl.encode()).hexdigest()[:16]
+        self._vs.upsert(
+            doc_id="schema_version",
+            text=version_hash,
+            embedding=[0.0] * 384,  # sentinel; not used for search
+            metadata={"type": "schema_version", "hash": version_hash},
+        )
+        logger.info("schema.ingested", tables=len(chunks), stale_removed=len(old_ids - new_ids),
+                    schema_version=version_hash)
         return len(chunks)
 
-    def ingest_sql_pair(self, question: str, sql: str) -> None:
-        """
-        Store a verified (question, SQL) pair for future few-shot retrieval.
-        The embedding is computed on the *question* so retrieval is similarity-
-        based on intent, not SQL syntax.
-        """
-        text = f"Question: {question}\nSQL: {sql}"
-        doc_id = f"pair_{self._fingerprint(question)}"
-        embedding = self._embedder.embed(question)
-        self._vs.upsert(
-            doc_id=doc_id,
-            text=text,
-            embedding=embedding,
-            metadata={"type": "qa_pair"},
-        )
-        logger.debug("schema.pair_ingested", question=question[:60])
+    # T2.5 — ingest_sql_pair() removed (dead code; use SemanticStore.train_sql_pair() instead)
 
     # ── Private ───────────────────────────────────────────────────────────────
 
@@ -138,7 +141,7 @@ class SchemaIngester:
     @staticmethod
     def _fingerprint(text: str) -> str:
         """Stable 12-char hex fingerprint of a string."""
-        return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()[:12]
+        return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16
 
 
 # ── Embedding helper ──────────────────────────────────────────────────────────

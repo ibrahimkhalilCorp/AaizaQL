@@ -15,6 +15,8 @@ from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import DatabaseError, MaxRetriesExceeded
 from aaizaql.llm.base import LLMProvider
 from aaizaql.nlp.prompts import SELF_CORRECTION_TEMPLATE
+from aaizaql.nlp.utils import parse_sql_response
+from aaizaql.nlp.utils import parse_sql_response
 
 if TYPE_CHECKING:
     from aaizaql.security.validator import SQLValidator
@@ -37,10 +39,13 @@ class SelfCorrector:
         llm: LLMProvider,
         settings: Settings,
         validator: SQLValidator | None = None,
+        vector_store: object | None = None,  # T2.7 — for schema context on retry
     ) -> None:
         self._llm = llm
         self._max_retries = settings.max_self_correction_retries
         self._validator = validator
+        self._vector_store = vector_store  # T2.7
+        self._schema_top_k = settings.schema_top_k
         self._timeout = settings.llm_timeout_seconds
         self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
 
@@ -89,14 +94,28 @@ class SelfCorrector:
                     error=str(exc)[:120],
                 )
 
+                # T2.7 — retrieve real schema context for the correction prompt
+                schema_chunks = "(schema context unavailable)"
+                if self._vector_store is not None:
+                    try:
+                        hits = self._vector_store.search(
+                            query=question,
+                            filter_type="ddl",
+                            top_k=self._schema_top_k,
+                        )
+                        if hits:
+                            schema_chunks = "\n\n".join(h.text for h in hits)
+                    except Exception:
+                        pass
+
                 # Ask LLM to fix the broken SQL
                 correction_prompt = SELF_CORRECTION_TEMPLATE.format(
                     sql=self.last_sql,
                     error=str(exc),
-                    schema_chunks="(see previously provided schema)",
+                    schema_chunks=schema_chunks,
                 )
                 corrected = self._llm.complete(correction_prompt, timeout=self._timeout)
-                self.last_sql = corrected.strip().strip("`").strip()
+                self.last_sql = parse_sql_response(corrected)  # T1.3
                 was_corrected = True
 
                 # Re-validate the corrected SQL through the security layer

@@ -57,6 +57,8 @@ class MongoDBConnector(DatabaseConnector):
     """
 
     name = "mongodb"
+    requires_sql_validation = False  # T1.2 — MongoDB uses JSON descriptors, not SQL
+    requires_sql_validation = False  # T1.2 — MongoDB uses JSON descriptors, not SQL
 
     def __init__(self) -> None:
         self._client: Any = None
@@ -141,6 +143,12 @@ class MongoDBConnector(DatabaseConnector):
                 connector="mongodb",
             ) from exc
 
+        # T1.2 — block dangerous $ operators in untrusted filter values
+        self._sanitise_filter(spec.get("filter", {}), query_json)
+
+        # T1.2 — block dangerous $ operators in untrusted filter values
+        self._sanitise_filter(spec.get("filter", {}), query_json)
+
         collection_name: str = spec.get("collection", "")
         if not collection_name:
             raise DatabaseError(
@@ -213,6 +221,34 @@ class MongoDBConnector(DatabaseConnector):
             return ""
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _sanitise_filter(doc: dict, raw: str) -> None:
+        """T1.2 — Reject $ operators in filter documents to prevent injection."""
+        for key, val in doc.items():
+            if key.startswith("$") and key in ("$where", "$function", "$accumulator"):
+                from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
+                raise DatabaseError(
+                    f"Blocked dangerous operator '{key}' in MongoDB filter.",
+                    sql=raw,
+                    connector="mongodb",
+                )
+            if isinstance(val, dict):
+                MongoDBConnector._sanitise_filter(val, raw)
+
+    @staticmethod
+    def _sanitise_filter(doc: dict, raw: str) -> None:
+        """T1.2 — Reject $ operators in filter documents to prevent injection."""
+        for key, val in doc.items():
+            if key.startswith("$") and key in ("$where", "$function", "$accumulator"):
+                from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
+                raise DatabaseError(
+                    f"Blocked dangerous operator '{key}' in MongoDB filter.",
+                    sql=raw,
+                    connector="mongodb",
+                )
+            if isinstance(val, dict):
+                MongoDBConnector._sanitise_filter(val, raw)
 
     def test_connection(self) -> bool:
         try:

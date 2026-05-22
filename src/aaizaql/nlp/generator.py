@@ -16,6 +16,8 @@ from aaizaql.core.exceptions import SQLGenerationError
 from aaizaql.llm.base import LLMProvider
 from aaizaql.memory.context import Turn
 from aaizaql.memory.vector_store import VectorStoreAdapter
+from aaizaql.nlp.utils import parse_sql_response
+from aaizaql.nlp.utils import parse_sql_response
 from aaizaql.nlp.prompts import (
     CONTEXT_TEMPLATE,
     COT_PROMPT_PREFIX,
@@ -31,13 +33,13 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 _COT_KEYWORDS = {
+    # T3.1 — removed "per" (false-positive: expenses, temperature, department…)
     "join",
     "joining",
     "combine",
     "merge",
     "group by",
     "grouped",
-    "per",
     "by month",
     "by year",
     "by week",
@@ -60,8 +62,9 @@ _COT_KEYWORDS = {
 
 
 def _needs_cot(question: str) -> bool:
+    # T3.1 — word-boundary match to prevent "expenses" → COT on "per"
     q = question.lower()
-    return any(kw in q for kw in _COT_KEYWORDS)
+    return any(re.search(rf"\b{re.escape(kw)}\b", q) for kw in _COT_KEYWORDS)
 
 
 class SQLGenerator:
@@ -84,11 +87,13 @@ class SQLGenerator:
         vector_store: VectorStoreAdapter,
         settings: Settings,
         semantic_store: SemanticStore | None = None,
+        connector: object | None = None,
     ) -> None:
         self._llm = llm
         self._vs = vector_store
         self._settings = settings
         self._semantic = semantic_store
+        self._connector = connector  # used for dialect label (T1.1)
         self._timeout = settings.llm_timeout_seconds
 
     def generate(self, question: str, history: list[Turn]) -> str:
@@ -167,16 +172,17 @@ class SQLGenerator:
         history: list[Turn],
         use_cot: bool,
     ) -> str:
+        # T3.4 — removed redundant slice; ContextManager.deque(maxlen=N) already caps history
         history_text = (
             "\n".join(
                 f"User: {turn['question']}\nSQL: {turn['sql']}"
-                for turn in history[-self._settings.session_history_limit :]
+                for turn in history
             )
             or "(no prior conversation)"
         )
 
         context = CONTEXT_TEMPLATE.format(
-            dialect=str(self._settings.llm_provider),
+            dialect=getattr(self._connector, "name", str(self._settings.llm_provider)),
             schema_chunks=schema_chunks,
             enum_block=enum_block,
             doc_block=doc_block,
@@ -190,7 +196,5 @@ class SQLGenerator:
         return context
 
     def _parse_response(self, raw: str, use_cot: bool) -> str:
-        if use_cot and "[SQL]" in raw:
-            raw = raw.split("[SQL]", 1)[1]
-        raw = re.sub(r"```(?:sql)?", "", raw, flags=re.IGNORECASE).strip()
-        return raw.strip("`").strip()
+        # T1.3 — delegate to shared utility
+        return parse_sql_response(raw, use_cot=use_cot)

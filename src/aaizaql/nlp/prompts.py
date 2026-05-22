@@ -93,23 +93,7 @@ DATABASE SCHEMA (for reference):
 Output ONLY the corrected SQL — no explanation, no markdown.\
 """
 
-# ── Query Decomposition ───────────────────────────────────────────────────────
-
-DECOMPOSE_TEMPLATE = """\
-The following question is complex and may require multiple sub-queries.
-Break it into 2–4 simpler questions, each of which can be answered with a single SQL SELECT.
-
-ORIGINAL QUESTION:
-{question}
-
-DATABASE SCHEMA:
-{schema_chunks}
-
-Output each sub-question on a new line, prefixed with "Q:".
-Example:
-Q: Total orders per customer in 2024
-Q: Customer names and IDs
-"""
+# ── Query Decomposition (T3.7: removed until QueryDecomposer is implemented in T4.6) ──
 
 # ── NL Summary Template ───────────────────────────────────────────────────────
 

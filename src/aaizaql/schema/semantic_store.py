@@ -185,18 +185,13 @@ class SemanticStore:
     # ── Private ───────────────────────────────────────────────────────────────
 
     def _embed(self, text: str) -> list[float]:
-        """Delegate embedding to the vector store's internal embedder."""
-        # We reuse the schema ingester's embedder approach via a local import
-        # to keep SemanticStore free of heavy dependencies.
+        """T2.4 — Delegate to the singleton EmbeddingService (one model load)."""
         try:
-            from aaizaql.schema.ingestion import _SentenceEmbedder
-
-            if not hasattr(self, "_embedder"):
-                self._embedder = _SentenceEmbedder()  # type: ignore[attr-defined]
-            return self._embedder.embed(text)  # type: ignore[attr-defined]
+            from aaizaql.schema.embedder import EmbeddingService
+            return EmbeddingService.get_instance().embed(text)
         except Exception:
             return [0.0] * 384  # safe fallback
 
     @staticmethod
     def _fingerprint(text: str) -> str:
-        return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()[:12]
+        return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16

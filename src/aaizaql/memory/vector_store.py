@@ -65,23 +65,12 @@ class VectorStoreAdapter:
             ) from exc
 
     def _init_qdrant(self) -> None:
-        try:
-            from qdrant_client import QdrantClient
-
-            api_key = (
-                self._settings.qdrant_api_key.get_secret_value()
-                if self._settings.qdrant_api_key
-                else None
-            )
-            self._client = QdrantClient(
-                url=self._settings.qdrant_url,
-                api_key=api_key,
-            )
-            logger.info("vector_store.qdrant.ready", url=self._settings.qdrant_url)
-        except ImportError as exc:
-            raise VectorStoreError(
-                "qdrant-client is not installed. Run: pip install qdrant-client"
-            ) from exc
+        # T2.6 — Raise ConfigurationError at init time so the user gets a clear
+        # message rather than a confusing NotImplementedError on the first query.
+        raise VectorStoreError(
+            "Qdrant vector search is not yet fully implemented. "
+            "Use the default ChromaDB backend: AAIZAQL_VECTOR_STORE=chroma"
+        )
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -172,3 +161,49 @@ class VectorStoreAdapter:
         if self._backend == VectorStoreBackend.CHROMA:
             return int(self._collection.count())
         raise NotImplementedError("Qdrant count() is not yet implemented. Use ChromaDB backend.")
+
+    def delete(self, doc_id: str) -> None:
+        """T2.3 — Delete a document by ID."""
+        if self._backend == VectorStoreBackend.CHROMA:
+            try:
+                self._collection.delete(ids=[doc_id])
+            except Exception as exc:
+                logger.warning("vector_store.delete_failed", doc_id=doc_id, detail=str(exc)[:80])
+        else:
+            raise NotImplementedError("Qdrant delete() is not yet implemented.")
+
+    def list_ids(self, filter_type: str | None = None, namespace: str | None = None) -> set[str]:
+        """T2.3 — Return all doc IDs, optionally filtered by metadata type."""
+        if self._backend == VectorStoreBackend.CHROMA:
+            where = {}
+            if filter_type:
+                where["type"] = filter_type
+            try:
+                results = self._collection.get(where=where or None, include=[])
+                return set(results["ids"])
+            except Exception:
+                return set()
+        raise NotImplementedError("Qdrant list_ids() is not yet implemented.")
+
+    def delete(self, doc_id: str) -> None:
+        """T2.3 — Delete a document by ID."""
+        if self._backend == VectorStoreBackend.CHROMA:
+            try:
+                self._collection.delete(ids=[doc_id])
+            except Exception as exc:
+                logger.warning("vector_store.delete_failed", doc_id=doc_id, detail=str(exc)[:80])
+        else:
+            raise NotImplementedError("Qdrant delete() is not yet implemented.")
+
+    def list_ids(self, filter_type: str | None = None, namespace: str | None = None) -> set[str]:
+        """T2.3 — Return all doc IDs, optionally filtered by metadata type."""
+        if self._backend == VectorStoreBackend.CHROMA:
+            where = {}
+            if filter_type:
+                where["type"] = filter_type
+            try:
+                results = self._collection.get(where=where or None, include=[])
+                return set(results["ids"])
+            except Exception:
+                return set()
+        raise NotImplementedError("Qdrant list_ids() is not yet implemented.")
