@@ -34,7 +34,6 @@ def _make_engine(sqlite_db: str, mock_llm: MagicMock, tmp_path: Path) -> QueryEn
         )
     return engine
 
-
 def _make_mock_vs() -> MagicMock:
     """Mock vector store that returns empty search results."""
     vs = MagicMock()
@@ -42,7 +41,6 @@ def _make_mock_vs() -> MagicMock:
     vs.upsert.return_value = None
     vs.count.return_value = 0
     return vs
-
 
 class TestQueryEngine:
     def test_simple_query_returns_dataframe(

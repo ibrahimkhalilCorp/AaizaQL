@@ -33,7 +33,6 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
-
 class MongoDBConnector(DatabaseConnector):
     """
     MongoDB adapter via pymongo.
@@ -57,7 +56,6 @@ class MongoDBConnector(DatabaseConnector):
     """
 
     name = "mongodb"
-    requires_sql_validation = False  # T1.2 — MongoDB uses JSON descriptors, not SQL
     requires_sql_validation = False  # T1.2 — MongoDB uses JSON descriptors, not SQL
 
     def __init__(self) -> None:
@@ -142,9 +140,6 @@ class MongoDBConnector(DatabaseConnector):
                 sql=query_json,
                 connector="mongodb",
             ) from exc
-
-        # T1.2 — block dangerous $ operators in untrusted filter values
-        self._sanitise_filter(spec.get("filter", {}), query_json)
 
         # T1.2 — block dangerous $ operators in untrusted filter values
         self._sanitise_filter(spec.get("filter", {}), query_json)

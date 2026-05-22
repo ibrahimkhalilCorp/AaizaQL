@@ -52,7 +52,6 @@ def create_sample_db(path: str) -> None:
     conn.commit()
     conn.close()
 
-
 def main() -> None:
     # ── Setup ────────────────────────────────────────────────────────────────
     tmp = tempfile.mkdtemp()
@@ -114,17 +113,16 @@ def main() -> None:
     session = "demo-session"
 
     r1 = engine.query("Show me all employees", session_id=session)
-    print(f"Q1: Show me all employees")
+    print("Q1: Show me all employees")
     print(f"    → {len(r1.data)} rows returned\n")
 
     r2 = engine.query("Now filter to only Engineering", session_id=session)
-    print(f"Q2: Now filter to only Engineering  (remembers previous context)")
+    print("Q2: Now filter to only Engineering  (remembers previous context)")
     print(f"    SQL: {r2.sql}")
     print(f"    → {len(r2.data)} rows returned\n")
 
     engine.close()
     print("Done! ✓")
-
 
 if __name__ == "__main__":
     main()

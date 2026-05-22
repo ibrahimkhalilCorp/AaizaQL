@@ -21,12 +21,12 @@ Then run:
 """
 
 import os
-import sys
 import sqlite3
+import sys
 import time
 
 # ── Check API key early ───────────────────────────────────────────────────────
-api_key = os.environ.get("aaizaql_GROQ_API_KEY") or os.environ.get("aaizaql_GROQ_API_KEY", "YOUR_GROQ_API_KEY")
+api_key = os.environ.get("AAIZAQL_GROQ_API_KEY") or os.environ.get("AAIZAQL_GROQ_API_KEY", "YOUR_GROQ_API_KEY")
 if not api_key:
     print("❌ Groq API key not found!")
     print()
@@ -37,7 +37,7 @@ if not api_key:
     sys.exit(1)
 
 # Set the env var with the prefix the library expects
-os.environ["aaizaql_GROQ_API_KEY"] = api_key
+os.environ["AAIZAQL_GROQ_API_KEY"] = api_key
 
 # ── Import aaizaql ──────────────────────────────────────────────────────────────
 try:
@@ -297,7 +297,7 @@ print("=" * 60)
 print(f"  ✅ Passed : {passed}")
 print(f"  ❌ Failed : {failed}")
 print(f"  📦 DB     : {DB_PATH}")
-print(f"  🤖 LLM    : groq/llama-3.3-70b-versatile")
+print("  🤖 LLM    : groq/llama-3.3-70b-versatile")
 print("=" * 60)
 
 engine.close()

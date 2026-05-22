@@ -1,4 +1,7 @@
-# T5.6 — aaizaql CI/CD quality gate
+# aaizaql — CI quality gate
+# Runs on every push and pull_request to main.
+# Blocks merge if lint, type-check, or tests fail.
+
 name: CI
 
 on:
@@ -7,23 +10,35 @@ on:
   pull_request:
     branches: ["main"]
 
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+
 jobs:
   quality:
+    name: Quality Gate · Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
+          cache: pip
 
       - name: Install dependencies
-        run: |
-          pip install -e ".[rag,dev]"
+        run: pip install -e ".[dev,duckdb,mysql,postgres]" --quiet
 
       - name: Lint (ruff)
         run: ruff check .
+
+      - name: Format check (black)
+        run: black --check src/ tests/
 
       - name: Type-check (mypy)
         run: mypy src/aaizaql/
@@ -31,5 +46,8 @@ jobs:
       - name: Unit tests
         run: pytest tests/unit/ -x -q
 
-      - name: Integration tests
-        run: pytest tests/integration/ -x -q --timeout=60
+      - name: Integration tests (SQLite + DuckDB only — no containers)
+        run: |
+          pytest tests/integration/ \
+            -k "SQLite or DuckDB" \
+            -x -q --timeout=60

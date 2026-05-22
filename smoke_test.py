@@ -1,8 +1,8 @@
 # smoke_test.py  — put it in E:\my_work\aaizaql\
-from aaizaql.connectors.sqlite import SQLiteConnector
 from aaizaql.connectors._limit import inject_limit
-from aaizaql.nlp.utils import parse_sql_response
+from aaizaql.connectors.sqlite import SQLiteConnector
 from aaizaql.core.rate_limiter import RateLimiter
+from aaizaql.nlp.utils import parse_sql_response
 from aaizaql.schema.graph_store import GraphStore
 
 # T1.3 — fence stripping

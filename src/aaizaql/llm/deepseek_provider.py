@@ -32,7 +32,6 @@ except ImportError:
     openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
-
 class DeepSeekProvider(LLMProvider):
     """
     DeepSeek LLM provider.

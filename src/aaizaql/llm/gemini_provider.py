@@ -26,11 +26,8 @@ DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 try:
     from google import genai
-    from google.genai import types as genai_types
 except ImportError:
     genai = None  # type: ignore[assignment]
-    genai_types = None  # type: ignore[assignment]
-
 
 class GeminiProvider(LLMProvider):
     """
@@ -78,15 +75,14 @@ class GeminiProvider(LLMProvider):
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         """T3.5 — Send prompt to Gemini using native timeout (no thread leak)."""
-        if genai_types is None:
-            raise LLMError("gemini", "google-genai package not installed")
-        
+        # Note: genai_types availability is guaranteed by __init__ which raises
+        # LLMError if genai is None, so no redundant check needed here.
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=prompt,
-                config=genai_types.GenerateContentConfig(
+                config=genai.types.GenerateContentConfig(
                     system_instruction=system or SYSTEM_PROMPT,
                     max_output_tokens=self._max_tokens,
                     temperature=self._temperature,
@@ -102,6 +98,10 @@ class GeminiProvider(LLMProvider):
             )
             return text
         except Exception as exc:
-            if "timeout" in str(exc).lower() or "deadline" in str(exc).lower():
+            if (
+                "timeout" in str(exc).lower()
+                or "deadline" in str(exc).lower()
+                or isinstance(exc, TimeoutError)
+            ):
                 raise LLMTimeoutError("gemini", effective_timeout) from exc
             raise LLMError("gemini", str(exc)) from exc

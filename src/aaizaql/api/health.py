@@ -27,7 +27,6 @@ try:
 except ImportError:
     router = None  # type: ignore[assignment]
 
-
 def run_health_check(engine: Any) -> dict:
     """
     Standalone health check callable — usable without FastAPI.

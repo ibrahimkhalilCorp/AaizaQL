@@ -22,7 +22,6 @@ import pytest
 
 # ── pyproject.toml structure ──────────────────────────────────────────────────
 
-
 class TestPyprojectToml:
     def _load_toml(self) -> dict:
         import tomllib
@@ -90,9 +89,7 @@ class TestPyprojectToml:
         dev_deps = data["project"]["optional-dependencies"]["dev"]
         assert any("sentence-transformers" in dep for dep in dev_deps)
 
-
 # ── VectorStoreAdapter missing chromadb ───────────────────────────────────────
-
 
 class TestVectorStoreAdapterMissingChromadb:
     def test_raises_vector_store_error_not_import_error(self) -> None:
@@ -142,9 +139,7 @@ class TestVectorStoreAdapterMissingChromadb:
 
         assert "chromadb" in str(exc_info.value)
 
-
 # ── _SentenceEmbedder missing sentence-transformers ───────────────────────────
-
 
 class TestSentenceEmbedderMissingSentenceTransformers:
     def _make_embedder(self) -> _SentenceEmbedder:  # noqa: F821

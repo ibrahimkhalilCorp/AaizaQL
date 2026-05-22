@@ -22,7 +22,6 @@ EXPECTED_PROVIDERS = frozenset(
     {"claude", "openai", "ollama", "groq", "deepseek", "perplexity", "gemini", "mistral"}
 )
 
-
 class TestRegistry:
     def test_registry_contains_all_eight_providers(self) -> None:
         assert REGISTRY == EXPECTED_PROVIDERS
@@ -33,7 +32,6 @@ class TestRegistry:
     def test_registry_names_are_lowercase(self) -> None:
         for name in REGISTRY:
             assert name == name.lower(), f"Provider name '{name}' is not lowercase"
-
 
 class TestLLMProviderNotFound:
     def test_unknown_name_raises(self) -> None:

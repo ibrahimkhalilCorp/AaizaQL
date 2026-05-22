@@ -16,7 +16,6 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-
 class AuditLogger:
     """
     Append-only structured audit log.

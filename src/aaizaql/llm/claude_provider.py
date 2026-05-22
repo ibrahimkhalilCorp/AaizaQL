@@ -16,7 +16,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude via the official SDK."""
 

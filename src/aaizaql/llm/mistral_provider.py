@@ -30,7 +30,6 @@ try:
 except ImportError:
     Mistral = None  # type: ignore[assignment,misc]
 
-
 class MistralProvider(LLMProvider):
     """
     Mistral AI LLM provider.
@@ -101,6 +100,6 @@ class MistralProvider(LLMProvider):
             )
             return text
         except Exception as exc:
-            if "timeout" in str(exc).lower():
+            if "timeout" in str(exc).lower() or isinstance(exc, TimeoutError):
                 raise LLMTimeoutError("mistral", effective_timeout) from exc
             raise LLMError("mistral", str(exc)) from exc

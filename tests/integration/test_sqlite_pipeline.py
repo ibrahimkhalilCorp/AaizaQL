@@ -19,7 +19,6 @@ from aaizaql.security.validator import SQLValidator
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-
 @pytest.fixture
 def db_conn():
     """Create a fresh in-memory SQLite DB with sample data."""
@@ -48,16 +47,13 @@ def db_conn():
     yield conn
     conn.close()
 
-
 @pytest.fixture
 def connector(db_conn):
     c = SQLiteConnector()
     c._conn = db_conn  # inject pre-built connection
     return c
 
-
 # ── Connector tests ────────────────────────────────────────────────────────
-
 
 class TestSQLiteConnector:
     def test_execute_returns_dataframe(self, connector):
@@ -96,9 +92,7 @@ class TestSQLiteConnector:
         df = connector.execute("SELECT COUNT(*) as cnt FROM orders")
         assert df["cnt"].iloc[0] == 4
 
-
 # ── Validator pipeline tests ───────────────────────────────────────────────
-
 
 class TestValidatorWithRealSQL:
     @pytest.fixture
@@ -119,9 +113,7 @@ class TestValidatorWithRealSQL:
         df = connector.execute("SELECT COUNT(*) as cnt FROM customers")
         assert df["cnt"].iloc[0] == 3
 
-
 # ── Context memory integration ─────────────────────────────────────────────
-
 
 class TestContextMemory:
     def test_multi_turn_history_accumulated(self):

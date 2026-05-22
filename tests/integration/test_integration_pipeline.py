@@ -50,7 +50,6 @@ from aaizaql.visualization.summarizer import NLSummarizer
 # Shared fixtures & helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
-
 def make_settings(**kwargs) -> Settings:
     """Hermetic Settings via model_construct — reads no env vars or .env file."""
     defaults = dict(
@@ -71,7 +70,6 @@ def make_settings(**kwargs) -> Settings:
     )
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
-
 
 class FakeLLM:
     """
@@ -97,7 +95,6 @@ class FakeLLM:
             result = self._default
         self._call_count += 1
         return result
-
 
 @pytest.fixture()
 def db_conn():
@@ -138,7 +135,6 @@ def db_conn():
     yield conn
     conn.close()
 
-
 @pytest.fixture()
 def connector(db_conn):
     """SQLiteConnector with an injected pre-built connection."""
@@ -146,21 +142,17 @@ def connector(db_conn):
     c._conn = db_conn
     return c
 
-
 @pytest.fixture()
 def settings():
     return make_settings()
-
 
 @pytest.fixture()
 def validator(settings):
     return SQLValidator(settings)
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 1 — Full pipeline per provider (generate → validate → execute)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestProviderPipelineEndToEnd:
     """
@@ -282,11 +274,9 @@ class TestProviderPipelineEndToEnd:
         assert isinstance(summary, str)
         assert len(summary) > 0
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 2 — Self-correction pipeline
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestSelfCorrectionPipeline:
     """
@@ -367,11 +357,9 @@ class TestSelfCorrectionPipeline:
         assert len(llm.calls) == 1  # one correction call
         assert "ghost_table" in llm.calls[0] or "no such table" in llm.calls[0].lower()
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 3 — Security gate blocks bad SQL before any DB execution
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestSecurityGatePipeline:
     """
@@ -436,11 +424,9 @@ class TestSecurityGatePipeline:
         df = connector.execute(safe_sql)
         assert isinstance(df, pd.DataFrame)
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 4 — Multi-turn session memory
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestMultiTurnSession:
     """
@@ -533,11 +519,9 @@ class TestMultiTurnSession:
         assert len(ctx.get_history(sid_b)) == 1
         assert ctx.get_history(sid_b)[0]["question"] == "Bob's question"
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 5 — Provider bootstrap: missing API key raises at construction
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestProviderBootstrap:
     """
@@ -607,11 +591,9 @@ class TestProviderBootstrap:
             p = PerplexityProvider(s)
         assert p.name.startswith("perplexity/")
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Suite 6 — Summarizer integration
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestSummarizerIntegration:
     """NLSummarizer receives real DataFrames and handles edge cases cleanly."""

@@ -34,7 +34,6 @@ except ImportError:
     openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
-
 class PerplexityProvider(LLMProvider):
     """
     Perplexity AI LLM provider.

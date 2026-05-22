@@ -21,7 +21,6 @@ from aaizaql.memory.vector_store import VectorStoreAdapter
 
 # ── Settings ─────────────────────────────────────────────────────────────────
 
-
 @pytest.fixture()
 def settings(tmp_path: Path) -> Settings:
     """Settings wired to a temporary ChromaDB directory."""
@@ -34,9 +33,7 @@ def settings(tmp_path: Path) -> Settings:
         enable_injection_detection=True,
     )
 
-
 # ── SQLite database ───────────────────────────────────────────────────────────
-
 
 @pytest.fixture()
 def sqlite_db(tmp_path: Path) -> Generator[str, None, None]:
@@ -74,7 +71,6 @@ def sqlite_db(tmp_path: Path) -> Generator[str, None, None]:
     conn.close()
     yield f"sqlite:///{db_path}"
 
-
 @pytest.fixture()
 def sqlite_connector(sqlite_db: str) -> Generator[SQLiteConnector, None, None]:
     """A connected SQLiteConnector pointing at the test database."""
@@ -83,9 +79,7 @@ def sqlite_connector(sqlite_db: str) -> Generator[SQLiteConnector, None, None]:
     yield conn
     conn.close()
 
-
 # ── Mock LLM ──────────────────────────────────────────────────────────────────
-
 
 @pytest.fixture()
 def mock_llm() -> MagicMock:
@@ -98,9 +92,7 @@ def mock_llm() -> MagicMock:
     llm.complete.return_value = "SELECT * FROM employees"
     return llm
 
-
 # ── Vector store ──────────────────────────────────────────────────────────────
-
 
 @pytest.fixture()
 def vector_store(settings: Settings) -> VectorStoreAdapter:
@@ -109,7 +101,6 @@ def vector_store(settings: Settings) -> VectorStoreAdapter:
         return VectorStoreAdapter(settings)
     except Exception:
         pytest.skip("ChromaDB not available in this environment")
-
 
 def pytest_collection_modifyitems(config, items):
     if os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY"):

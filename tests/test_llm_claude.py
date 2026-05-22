@@ -20,7 +20,6 @@ from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -35,7 +34,6 @@ def make_settings(**kwargs) -> Settings:
     )
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
-
 
 def _mock_anthropic_client(text: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics anthropic.Anthropic with a canned response."""
@@ -53,9 +51,7 @@ def _mock_anthropic_client(text: str | None = "SELECT 1;") -> MagicMock:
     client.__exit__ = MagicMock(return_value=False)
     return client
 
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
-
 
 class TestClaudeProvider:
     """ClaudeProvider tests — patched Anthropic client, zero network calls."""

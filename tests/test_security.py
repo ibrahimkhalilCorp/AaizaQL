@@ -24,9 +24,7 @@ def validator() -> SQLValidator:
         )
     )
 
-
 # ── Allowed queries ───────────────────────────────────────────────────────────
-
 
 class TestAllowedSQL:
     def test_simple_select(self, validator: SQLValidator) -> None:
@@ -62,9 +60,7 @@ class TestAllowedSQL:
             "SELECT * FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)"
         )
 
-
 # ── Blocked queries ───────────────────────────────────────────────────────────
-
 
 class TestBlockedSQL:
     @pytest.mark.parametrize(
@@ -100,9 +96,7 @@ class TestBlockedSQL:
         with pytest.raises(SecurityException):
             validator.validate("SELECT 1 /* DROP TABLE employees */; DROP TABLE x")
 
-
 # ── Prompt injection detection ────────────────────────────────────────────────
-
 
 class TestInjectionDetection:
     @pytest.mark.parametrize(

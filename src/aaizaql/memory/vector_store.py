@@ -1,7 +1,11 @@
 """
+
 aaizaql.memory.vector_store
+
 ──────────────────────────
+
 VectorStoreAdapter: thin abstraction over ChromaDB (dev) and Qdrant (prod).
+
 """
 
 from __future__ import annotations
@@ -16,194 +20,300 @@ from aaizaql.core.exceptions import VectorStoreError
 
 logger = structlog.get_logger(__name__)
 
-
 @dataclass
+
 class SearchHit:
+
     """A single result from a vector store search."""
 
     id: str
+
     text: str
+
     score: float
+
     metadata: dict[str, Any]
 
-
 class VectorStoreAdapter:
+
     """
+
     Unified interface over ChromaDB and Qdrant.
+
     Swap backends by changing AAIZAQL_VECTOR_STORE env var.
+
     """
 
     def __init__(self, settings: Settings) -> None:
+
         self._settings = settings
+
         self._namespace = settings.vector_store_namespace
+
         self._backend = settings.vector_store
+
         self._client: Any = None
+
         self._collection: Any = None
+
         self._init_backend()
 
     def _init_backend(self) -> None:
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             self._init_chroma()
+
         elif self._backend == VectorStoreBackend.QDRANT:
+
             self._init_qdrant()
 
     def _init_chroma(self) -> None:
+
         try:
+
             import chromadb
 
             self._client = chromadb.PersistentClient(path=self._settings.chroma_persist_dir)
+
             self._collection = self._client.get_or_create_collection(
+
                 name=f"AAIZAQL_{self._namespace}",
+
                 metadata={"hnsw:space": "cosine"},
+
             )
+
             logger.info("vector_store.chroma.ready", namespace=self._namespace)
+
         except ImportError as exc:
+
             raise VectorStoreError(
+
                 "chromadb is not installed. "
+
                 "Run: pip install 'aaizaql[rag]'  "
+
                 "(or: pip install chromadb sentence-transformers)"
+
             ) from exc
 
     def _init_qdrant(self) -> None:
+
         # T2.6 — Raise ConfigurationError at init time so the user gets a clear
+
         # message rather than a confusing NotImplementedError on the first query.
+
         raise VectorStoreError(
+
             "Qdrant vector search is not yet fully implemented. "
+
             "Use the default ChromaDB backend: AAIZAQL_VECTOR_STORE=chroma"
+
         )
 
     # ── Public API ────────────────────────────────────────────────────────────
 
     def upsert(
+
         self,
+
         doc_id: str,
+
         text: str,
+
         embedding: list[float],
+
         metadata: dict[str, Any] | None = None,
+
     ) -> None:
+
         """Insert or update a document in the vector store."""
+
         meta = metadata or {}
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             self._collection.upsert(
+
                 ids=[doc_id],
+
                 documents=[text],
+
                 embeddings=[embedding],
+
                 metadatas=[meta],
+
             )
+
         elif self._backend == VectorStoreBackend.QDRANT:
+
             from qdrant_client.models import PointStruct  # noqa: PLC0415
 
             self._client.upsert(
+
                 collection_name=f"AAIZAQL_{self._namespace}",
+
                 points=[
+
                     PointStruct(
+
                         id=abs(hash(id)) % (2**63), vector=embedding, payload={"text": text, **meta}
+
                     )
+
                 ],
+
             )
 
     def search(
+
         self,
+
         query: str,
+
         filter_type: str | None = None,
+
         top_k: int = 5,
+
         query_embedding: list[float] | None = None,
+
     ) -> list[SearchHit]:
+
         """
+
         Semantic search over the vector store.
 
         Parameters
+
         ----------
+
         query          : str            Natural language query string.
+
         filter_type    : str | None     Filter by metadata 'type' field (e.g. "ddl", "qa_pair").
+
         top_k          : int            Maximum results to return.
+
         query_embedding: list | None    Pre-computed embedding (computed here if None).
+
         """
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             return self._search_chroma(query, filter_type, top_k)
+
         raise NotImplementedError(
+
             "Qdrant vector search is not yet implemented. "
+
             "Use the default ChromaDB backend (AAIZAQL_VECTOR_STORE=chroma) "
+
             "or follow https://github.com/ibrahimkhalilCorp/AaizaQL for Qdrant support."
+
         )
 
     def _search_chroma(
+
         self,
+
         query: str,
+
         filter_type: str | None,
+
         top_k: int,
+
     ) -> list[SearchHit]:
+
         where = {"type": filter_type} if filter_type else None
+
         try:
+
             results = self._collection.query(
+
                 query_texts=[query],
+
                 n_results=min(top_k, max(1, self._collection.count())),
+
                 where=where,
+
                 include=["documents", "metadatas", "distances"],
+
             )
+
         except Exception as exc:
+
             logger.warning("vector_store.search_failed", detail=str(exc)[:80])
+
             return []
 
         hits: list[SearchHit] = []
+
         for doc, meta, dist, id_ in zip(
+
             results["documents"][0],
+
             results["metadatas"][0],
+
             results["distances"][0],
+
             results["ids"][0],
+
             strict=True,
+
         ):
+
             hits.append(SearchHit(id=id_, text=doc, score=1 - dist, metadata=meta))
+
         return hits
 
     def count(self) -> int:
+
         """Return the total number of documents in the store."""
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             return int(self._collection.count())
+
         raise NotImplementedError("Qdrant count() is not yet implemented. Use ChromaDB backend.")
 
     def delete(self, doc_id: str) -> None:
+
         """T2.3 — Delete a document by ID."""
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             try:
+
                 self._collection.delete(ids=[doc_id])
+
             except Exception as exc:
+
                 logger.warning("vector_store.delete_failed", doc_id=doc_id, detail=str(exc)[:80])
+
         else:
+
             raise NotImplementedError("Qdrant delete() is not yet implemented.")
 
     def list_ids(self, filter_type: str | None = None, namespace: str | None = None) -> set[str]:
-        """T2.3 — Return all doc IDs, optionally filtered by metadata type."""
-        if self._backend == VectorStoreBackend.CHROMA:
-            where = {}
-            if filter_type:
-                where["type"] = filter_type
-            try:
-                results = self._collection.get(where=where or None, include=[])
-                return set(results["ids"])
-            except Exception:
-                return set()
-        raise NotImplementedError("Qdrant list_ids() is not yet implemented.")
 
-    def delete(self, doc_id: str) -> None:
-        """T2.3 — Delete a document by ID."""
-        if self._backend == VectorStoreBackend.CHROMA:
-            try:
-                self._collection.delete(ids=[doc_id])
-            except Exception as exc:
-                logger.warning("vector_store.delete_failed", doc_id=doc_id, detail=str(exc)[:80])
-        else:
-            raise NotImplementedError("Qdrant delete() is not yet implemented.")
-
-    def list_ids(self, filter_type: str | None = None, namespace: str | None = None) -> set[str]:
         """T2.3 — Return all doc IDs, optionally filtered by metadata type."""
+
         if self._backend == VectorStoreBackend.CHROMA:
+
             where = {}
+
             if filter_type:
+
                 where["type"] = filter_type
+
             try:
+
                 results = self._collection.get(where=where or None, include=[])
+
                 return set(results["ids"])
+
             except Exception:
+
                 return set()
+
         raise NotImplementedError("Qdrant list_ids() is not yet implemented.")

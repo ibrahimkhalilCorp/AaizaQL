@@ -43,7 +43,7 @@ class MySQLConnector(DatabaseConnector):
                 user=parsed["user"],
                 password=parsed["password"],
                 database=parsed["database"],
-                cursorclass=pymysql.cursors.DictCursor,
+                cursorclass=pymysql.cursors.Cursor,
                 autocommit=True,
                 charset="utf8mb4",
             )
@@ -55,15 +55,7 @@ class MySQLConnector(DatabaseConnector):
         if self._conn is None:
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="mysql")
         try:
-            import pymysql
-
-            # Use a plain (non-Dict) cursor so pandas receives raw tuples
-            # and constructs column names from the cursor description itself.
-            with self._conn.cursor(pymysql.cursors.Cursor) as cur:
-                cur.execute(sql)
-                rows = cur.fetchall()
-                columns = [d[0] for d in cur.description] if cur.description else []
-            return pd.DataFrame(rows, columns=columns)
+            return pd.read_sql_query(sql, self._conn)
         except DatabaseError:
             raise
         except Exception as exc:
@@ -94,12 +86,8 @@ class MySQLConnector(DatabaseConnector):
             ORDER BY TABLE_NAME;
         """
         try:
-            import pymysql
-
-            with self._conn.cursor(pymysql.cursors.Cursor) as cur:
-                cur.execute(query)
-                rows = cur.fetchall()
-            return "\n\n".join(row[0] for row in rows if row[0])
+            df = pd.read_sql_query(query, self._conn)
+            return "\n\n".join(df["ddl"].dropna())
         except Exception:
             return ""
 

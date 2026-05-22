@@ -12,12 +12,12 @@ Run:
 """
 
 import os
-import sys
 import sqlite3
+import sys
 import time
 
 # ── API key check ─────────────────────────────────────────────────────────────
-if not os.environ.get("aaizaql_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
+if not os.environ.get("AAIZAQL_GROQ_API_KEY","YOUR_GROQ_API_KEY"):
     print("❌  Set your key first:")
     print('    $env:aaizaql_GROQ_API_KEY = "gsk_your_key_here"')
     sys.exit(1)
@@ -290,7 +290,7 @@ for category, question in test_queries:
         print(f"  🔧 {result.sql[:100]}...")
         print(f"  📊 {len(result.data)} rows  ⏱ {ms}ms", end="")
         if result.was_corrected:
-            print(f"  (corrected)", end="")
+            print("  (corrected)", end="")
         print()
         if not result.data.empty:
             print(f"     {result.data.head(3).to_string(index=False)}")

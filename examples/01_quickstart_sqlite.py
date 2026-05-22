@@ -9,8 +9,9 @@ Prerequisites:
   ollama pull llama3    # https://ollama.ai
 """
 
-import sqlite3
 import os
+import sqlite3
+
 from aaizaql import QueryEngine
 
 # ── Step 1: Create a sample SQLite database ──────────────────────────────────
@@ -75,7 +76,7 @@ print("✅ Database created: sample_store.db")
 # ── Step 2: Create the QueryEngine ───────────────────────────────────────────
 
 # Using Ollama (local, free) — switch to "claude" or "openai" with an API key
-LLM = os.environ.get("aaizaql_LLM", "ollama")
+LLM = os.environ.get("AAIZAQL_LLM", "ollama")
 
 engine = QueryEngine(
     llm=LLM,

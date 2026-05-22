@@ -13,7 +13,6 @@ from aaizaql.schema.graph_store import GraphStore
 
 logger = structlog.get_logger(__name__)
 
-
 class GraphIngestion:
     def __init__(self, graph_store: GraphStore) -> None:
         self._gs = graph_store

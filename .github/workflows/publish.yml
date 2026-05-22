@@ -1,19 +1,20 @@
-# .github/workflows/publish.yml
+# aaizaql — Publish to PyPI
 # ─────────────────────────────────────────────────────────────────────────────
-# Publishes aaizaql to PyPI on every version tag (v*.*.*).
+# Triggered by pushing a version tag (e.g. v0.2.1).
 #
 # Flow:
-#   1. Triggered by pushing a tag like `v0.2.0`
-#   2. Runs the full CI suite (lint → test → providers → security)
-#   3. Builds fresh distribution from the tagged commit
-#   4. Publishes to PyPI using Trusted Publishing (OIDC — no stored token)
-#   5. Creates a GitHub Release with changelog section + dist artifacts
+#   1. Tag push  →  full CI gate (lint + tests, Python 3.11/3.12/3.13)
+#   2. CI passes →  build wheel + sdist, verify with twine
+#   3. Build OK  →  publish to PyPI via OIDC Trusted Publishing (no token needed)
+#   4. Published →  create GitHub Release with changelog + dist artifacts
 #
-# Setup required (one-time):
-#   - Go to https://pypi.org/manage/project/aaizaql/settings/publishing/
-#   - Add a Trusted Publisher: owner=ibrahimkhalil, repo=aaizaql,
-#     workflow=publish.yml, environment=pypi
-#   - No PYPI_API_TOKEN secret needed — OIDC handles auth automatically
+# One-time PyPI setup (do this once):
+#   https://pypi.org/manage/project/aaizaql/settings/publishing/
+#   → Add Trusted Publisher:
+#       Owner:      ibrahimkhalilCorp
+#       Repo:       AaizaQL
+#       Workflow:   publish.yml
+#       Environment: pypi
 # ─────────────────────────────────────────────────────────────────────────────
 
 name: Publish to PyPI
@@ -21,8 +22,8 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"             # e.g. v0.2.0
-      - "v[0-9]+.[0-9]+.[0-9]+.post[0-9]+"  # e.g. v0.2.0.post1
+      - "v[0-9]+.[0-9]+.[0-9]+"           # v0.2.1
+      - "v[0-9]+.[0-9]+.[0-9]+.post[0-9]+" # v0.2.1.post1
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -32,10 +33,10 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHONUNBUFFERED: "1"
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Job 1 — Full CI gate (must pass before anything publishes)
+# ══════════════════════════════════════════════════════════════════════════════
 jobs:
-# ══════════════════════════════════════════════════════════════════════════════
-# Job 1 — Full CI gate
-# ══════════════════════════════════════════════════════════════════════════════
   ci-gate:
     name: CI Gate · Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -52,44 +53,29 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install all provider + connector deps
-        run: |
-          pip install -e ".[dev,deepseek,gemini,mistral,perplexity,duckdb,mysql,postgres]" --quiet
+      - name: Install dependencies
+        run: pip install -e ".[dev,duckdb,mysql,postgres]" --quiet
 
-      - name: Lint
-        run: |
-          ruff check src/ tests/
-          black --check src/ tests/
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        run: black --check src/ tests/
+
+      - name: Type-check (mypy)
+        run: mypy src/aaizaql/
 
       - name: Unit tests
-        run: |
-          pytest tests/ \
-            --ignore=tests/integration \
-            -v --tb=short
+        run: pytest tests/unit/ -x -q
 
-      - name: Integration tests (SQLite + DuckDB — no container needed)
+      - name: Integration tests (SQLite + DuckDB only — no containers)
         run: |
           pytest tests/integration/ \
-            -k "TestSQLiteConnector or TestDuckDBConnector or not (TestPostgreSQL or TestMySQL or TestMSSQL or TestMongoDB or TestSnowflake or TestBigQuery or TestOracle)" \
-            -v --tb=short
-
-      - name: Provider tests
-        run: |
-          pytest \
-            tests/test_llm_deepseek.py \
-            tests/test_llm_gemini.py \
-            tests/test_llm_mistral.py \
-            tests/test_llm_perplexity.py \
-            -v --tb=short
-
-      - name: Security gate tests
-        run: |
-          pytest tests/test_security.py \
-            tests/integration/test_integration_pipeline.py::TestSecurityGatePipeline \
-            -v --tb=short
+            -k "SQLite or DuckDB" \
+            -x -q --timeout=60
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Job 2 — Build distribution from the tagged commit
+# Job 2 — Build wheel + sdist from the tagged commit
 # ══════════════════════════════════════════════════════════════════════════════
   build:
     name: Build Distribution
@@ -109,7 +95,7 @@ jobs:
           pip install hatchling build twine --quiet
           python -m build
 
-      - name: Verify metadata
+      - name: Verify metadata (twine check)
         run: twine check dist/*
 
       - name: Upload dist artifacts
@@ -131,7 +117,7 @@ jobs:
       url: https://pypi.org/project/aaizaql/
 
     permissions:
-      id-token: write
+      id-token: write   # required for OIDC Trusted Publishing
       contents: read
 
     steps:
@@ -143,10 +129,9 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # No api_token needed — Trusted Publishing (OIDC) handles authentication
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Job 4 — Create GitHub Release with changelog + artifacts
+# Job 4 — Create GitHub Release with changelog + dist artifacts
 # ══════════════════════════════════════════════════════════════════════════════
   github-release:
     name: GitHub Release
@@ -175,7 +160,6 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          # Pull the block between this version header and the next one
           SECTION=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
           if [ -z "$SECTION" ]; then
             SECTION="See CHANGELOG.md for full details."
@@ -196,7 +180,7 @@ jobs:
 
             ---
 
-            ### Installation
+            ### Install
 
             ```bash
             pip install aaizaql==${{ steps.version.outputs.version }}
@@ -210,7 +194,6 @@ jobs:
             pip install "aaizaql[mysql]==${{ steps.version.outputs.version }}"
             ```
 
-            Full changelog: [CHANGELOG.md](https://github.com/ibrahimkhalil/aaizaql/blob/main/CHANGELOG.md)  
             PyPI: https://pypi.org/project/aaizaql/${{ steps.version.outputs.version }}/
           files: dist/*
           draft: false

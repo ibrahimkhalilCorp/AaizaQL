@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-
 class SchemaIngester:
     """
     Reads database schema and stores it in the vector store.
@@ -143,9 +142,7 @@ class SchemaIngester:
         """Stable 12-char hex fingerprint of a string."""
         return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16
 
-
 # ── Embedding helper ──────────────────────────────────────────────────────────
-
 
 class _SentenceEmbedder:
     """

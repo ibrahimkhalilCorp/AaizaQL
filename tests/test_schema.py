@@ -16,7 +16,6 @@ from aaizaql.schema.semantic_store import SemanticStore
 
 # ── SchemaIngester ────────────────────────────────────────────────────────────
 
-
 class TestSchemaIngester:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -53,14 +52,16 @@ CREATE TABLE departments (
         """
         count = ingester.ingest_ddl(ddl)
         assert count == 2
-        assert mock_vs.upsert.call_count == 2
+        # 2 DDL table upserts + 1 schema_version sentinel upsert (T5.5)
+        assert mock_vs.upsert.call_count == 3
 
     def test_ingest_ddl_extracts_table_name(
         self, ingester: SchemaIngester, mock_vs: MagicMock
     ) -> None:
         ddl = "CREATE TABLE orders (id INTEGER, amount REAL);"
         ingester.ingest_ddl(ddl)
-        call_kwargs = mock_vs.upsert.call_args[1]
+        # call_args_list[0] is the DDL table upsert; [-1] would be the schema_version sentinel
+        call_kwargs = mock_vs.upsert.call_args_list[0][1]
         assert call_kwargs["metadata"]["table"] == "orders"
         assert call_kwargs["metadata"]["type"] == "ddl"
 
@@ -80,6 +81,7 @@ CREATE TABLE departments (
         count = ingester.ingest_from_database(sqlite_connector)  # type: ignore[arg-type]
         assert count >= 2  # employees + departments
 
+    @pytest.mark.skip(reason="T2.5: ingest_sql_pair() removed from SchemaIngester — use SemanticStore.train_sql_pair() instead")
     def test_ingest_sql_pair(self, ingester: SchemaIngester, mock_vs: MagicMock) -> None:
         ingester.ingest_sql_pair(
             question="How many employees are there?",
@@ -102,9 +104,7 @@ CREATE TABLE departments (
         )
         assert ingester._extract_table_name('CREATE TABLE "my_table" (x TEXT)') == "my_table"
 
-
 # ── SemanticStore ─────────────────────────────────────────────────────────────
-
 
 class TestSemanticStore:
     @pytest.fixture(autouse=True)

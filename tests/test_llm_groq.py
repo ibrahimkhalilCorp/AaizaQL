@@ -20,7 +20,6 @@ from aaizaql.core.exceptions import LLMError, LLMTimeoutError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -36,7 +35,6 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
-
 def _mock_groq_client(content: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics groq.Groq with a canned response."""
     resp = MagicMock()
@@ -49,9 +47,7 @@ def _mock_groq_client(content: str | None = "SELECT 1;") -> MagicMock:
     client.chat.completions.create.return_value = resp
     return client
 
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
-
 
 class TestGroqProvider:
     """GroqProvider tests — patched Groq client, zero network calls."""

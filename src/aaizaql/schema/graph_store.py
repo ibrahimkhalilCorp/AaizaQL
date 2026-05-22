@@ -21,7 +21,6 @@ try:
 except ImportError:
     nx = None  # type: ignore[assignment]
 
-
 class GraphStore:
     """
     In-memory schema graph persisted to graph.json.
@@ -130,8 +129,8 @@ class GraphStore:
         ]
         subgraph = self._G.subgraph(subgraph_nodes).to_undirected()
         try:
-            import leidenalg  # type: ignore[import]
             import igraph as ig  # type: ignore[import]
+            import leidenalg  # type: ignore[import]
             ig_graph = ig.Graph.from_networkx(subgraph)
             partition = leidenalg.find_partition(ig_graph, leidenalg.ModularityVertexPartition)
             return [

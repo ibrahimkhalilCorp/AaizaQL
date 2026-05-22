@@ -80,19 +80,15 @@ _SEED_EMPLOYEES = [
     (4, "Dave", "HR", 68000.00),
 ]
 
-
 # ── Shared assertion helpers ──────────────────────────────────────────────────
-
 
 def _assert_select_all(df: pd.DataFrame) -> None:
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 4
 
-
 def _assert_filter(df: pd.DataFrame) -> None:
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 2  # Alice and Carol
-
 
 def _assert_aggregate(df: pd.DataFrame) -> None:
     assert isinstance(df, pd.DataFrame)
@@ -100,16 +96,13 @@ def _assert_aggregate(df: pd.DataFrame) -> None:
     # Use positional access — column may be named 'COUNT(*)' or 'n' depending on dialect
     assert int(df.iloc[0, 0]) == 4
 
-
 def _assert_schema_nonempty(schema: str) -> None:
     assert isinstance(schema, str)
     assert len(schema) > 0
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. SQLite  (no container — always runs)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestSQLiteConnector:
     """Full connector test suite for SQLite (in-memory)."""
@@ -158,11 +151,9 @@ class TestSQLiteConnector:
         connector.close()
         connector.close()  # second close must not raise
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 2. DuckDB  (no container — always runs)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 class TestDuckDBConnector:
     """Full connector test suite for DuckDB (in-memory)."""
@@ -216,13 +207,11 @@ class TestDuckDBConnector:
         with pytest.raises(DatabaseError):
             connector.execute("SELECT * FROM nonexistent_xyz")
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. PostgreSQL  (Docker container in CI)
 # ══════════════════════════════════════════════════════════════════════════════
 
 pytestmark_pg = pytest.mark.integration_pg
-
 
 @pytest.mark.integration_pg
 class TestPostgreSQLConnector:
@@ -285,11 +274,9 @@ class TestPostgreSQLConnector:
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
         assert df["name"].iloc[0] == "Carol"
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 4. MySQL  (Docker container in CI)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.integration_mysql
 class TestMySQLConnector:
@@ -352,11 +339,9 @@ class TestMySQLConnector:
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
         assert df["name"].iloc[0] == "Carol"
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 5. MSSQL  (Docker container in CI — SQL Server 2022 Developer Edition)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.integration_mssql
 class TestMSSQLConnector:
@@ -423,11 +408,9 @@ class TestMSSQLConnector:
         df = connector.execute("SELECT name, salary FROM employees ORDER BY salary DESC")
         assert df["name"].iloc[0] == "Carol"
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 6. MongoDB  (Docker container in CI)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.integration_mongodb
 class TestMongoDBConnector:
@@ -486,11 +469,9 @@ class TestMongoDBConnector:
                 '{"collection": "__nonexistent_xyz__", "filter": {}, "raise_if_empty": true}'
             )
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 7. Snowflake  (skipped unless SNOWFLAKE_DSN env var is set)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.skipif(
     not SNOWFLAKE_DSN,
@@ -521,11 +502,9 @@ class TestSnowflakeConnector:
         df = connector.execute("SELECT 1 AS n")
         assert int(df["N"].iloc[0]) == 1
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 8. BigQuery  (skipped unless BIGQUERY_DSN env var is set)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.skipif(
     not BIGQUERY_DSN,
@@ -554,11 +533,9 @@ class TestBigQueryConnector:
         df = connector.execute("SELECT 1 AS n")
         assert int(df["n"].iloc[0]) == 1
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 # 9. Oracle  (skipped unless ORACLE_DSN env var is set)
 # ══════════════════════════════════════════════════════════════════════════════
-
 
 @pytest.mark.skipif(
     not ORACLE_DSN,

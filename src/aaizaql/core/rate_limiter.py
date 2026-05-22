@@ -16,7 +16,6 @@ class _Bucket:
     last_refill: float = field(default_factory=time.monotonic)
     lock: threading.Lock = field(default_factory=threading.Lock)
 
-
 class RateLimiter:
     """
     Token bucket: each tenant gets `qpm` tokens per minute.

@@ -23,7 +23,6 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
-
 class OracleConnector(DatabaseConnector):
     """
     Oracle Database adapter via python-oracledb (thin mode).

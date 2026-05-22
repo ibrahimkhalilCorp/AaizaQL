@@ -32,12 +32,10 @@ def _require(pkg: str, install: str) -> None:
         print(f"        Install with:  pip install {install}")
         sys.exit(1)
 
-
 def cmd_version(_args: object) -> None:
     from aaizaql import __version__
 
     print(f"aaizaql {__version__}")
-
 
 def cmd_ingest(args: object) -> None:
     """Ingest the schema of the connected database into the vector store."""
@@ -52,7 +50,6 @@ def cmd_ingest(args: object) -> None:
     count = engine.ingest_schema()
     print(f"[aaizaql] Schema ingested: {count} table chunk(s) stored.")
     engine.close()
-
 
 def cmd_query(args: object) -> None:
     """Run a natural language query (interactive REPL or single question)."""
@@ -98,7 +95,6 @@ def cmd_query(args: object) -> None:
 
     engine.close()
 
-
 def _run_once(engine: object, question: str) -> None:
     from aaizaql import AAIZAQLError, QueryEngine
 
@@ -112,7 +108,6 @@ def _run_once(engine: object, question: str) -> None:
         print(f"\n  ({len(result.data)} rows, {result.execution_time_ms} ms)")
     except AAIZAQLError as exc:
         print(f"\n  [error] {exc}")
-
 
 def main() -> None:
     """Entry point registered in pyproject.toml."""
@@ -153,7 +148,6 @@ def main() -> None:
     else:
         parser.print_help()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

@@ -21,7 +21,6 @@ from aaizaql.core.exceptions import LLMError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def make_settings(**kwargs) -> Settings:
     """
     Build a Settings instance with all env-var sources disabled so tests are
@@ -39,9 +38,7 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
-
 
 class TestDeepSeekProvider:
     """DeepSeekProvider tests — patched OpenAI client, zero network calls."""
@@ -201,9 +198,7 @@ class TestDeepSeekProvider:
         assert call_kwargs["base_url"] == DEEPSEEK_BASE_URL
         assert call_kwargs["base_url"] == "https://api.deepseek.com"
 
-
 # ── Timeout tests (added for 80% coverage target) ─────────────────────────────
-
 
 class TestDeepSeekProviderTimeout:
     """Timeout path tests for DeepSeekProvider."""

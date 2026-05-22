@@ -24,7 +24,6 @@ from aaizaql.security.validator import SQLValidator
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def _settings(retries: int = 2) -> Settings:
     return Settings(
         llm_provider="groq",
@@ -32,13 +31,11 @@ def _settings(retries: int = 2) -> Settings:
         enable_injection_detection=True,
     )
 
-
 def _make_corrector(llm: MagicMock, retries: int = 2) -> tuple[SelfCorrector, SQLValidator]:
     settings = _settings(retries)
     validator = SQLValidator(settings)
     corrector = SelfCorrector(llm, settings, validator=validator)
     return corrector, validator
-
 
 def _executor_that_fails_once(good_sql: str) -> MagicMock:
     """
@@ -52,9 +49,7 @@ def _executor_that_fails_once(good_sql: str) -> MagicMock:
     ]
     return executor
 
-
 # ── Core behaviour tests ──────────────────────────────────────────────────────
-
 
 class TestCorrectorRevalidation:
     def test_dangerous_correction_is_blocked(self) -> None:
@@ -230,9 +225,7 @@ class TestCorrectorRevalidation:
         dangerous_calls = [c for c in executor.execute.call_args_list if "DROP" in str(c)]
         assert dangerous_calls == [], "DROP TABLE must never reach the executor"
 
-
 # ── Integration: engine wires validator into corrector ────────────────────────
-
 
 class TestEngineWiresValidatorIntoCorrectorIntegration:
     """

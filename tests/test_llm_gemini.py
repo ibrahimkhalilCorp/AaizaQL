@@ -21,7 +21,6 @@ from aaizaql.core.exceptions import LLMError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -36,7 +35,6 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
-
 def _mock_genai_client(content: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics genai.Client with a canned response."""
     resp = MagicMock()
@@ -48,9 +46,7 @@ def _mock_genai_client(content: str | None = "SELECT 1;") -> MagicMock:
     client.models.generate_content.return_value = resp
     return client
 
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
-
 
 class TestGeminiProvider:
     """GeminiProvider tests — patched google.genai client, zero network calls."""
@@ -146,8 +142,8 @@ class TestGeminiProvider:
             provider = GeminiProvider(settings)
             provider.complete("Simple query")
 
-        call_kwargs = mock_client.models.generate_content.call_args[1]
-        assert call_kwargs["config"].system_instruction  # non-empty
+        config_kwargs = mock_genai.types.GenerateContentConfig.call_args[1]
+        assert config_kwargs["system_instruction"]  # non-empty
 
     def test_complete_handles_none_text(self) -> None:
         """None text from the API should be normalised to an empty string."""
@@ -189,9 +185,9 @@ class TestGeminiProvider:
             provider = GeminiProvider(settings)
             provider.complete("test")
 
-        call_kwargs = mock_client.models.generate_content.call_args[1]
-        assert call_kwargs["config"].temperature == 0.9
-        assert call_kwargs["config"].max_output_tokens == 2000
+        config_kwargs = mock_genai.types.GenerateContentConfig.call_args[1]
+        assert config_kwargs["temperature"] == 0.9
+        assert config_kwargs["max_output_tokens"] == 2000
 
     def test_complete_passes_custom_system_instruction(self) -> None:
         """A custom system string should reach the GenerateContentConfig."""
@@ -205,8 +201,8 @@ class TestGeminiProvider:
             provider = GeminiProvider(settings)
             provider.complete("test", system="Custom system message")
 
-        call_kwargs = mock_client.models.generate_content.call_args[1]
-        assert call_kwargs["config"].system_instruction == "Custom system message"
+        config_kwargs = mock_genai.types.GenerateContentConfig.call_args[1]
+        assert config_kwargs["system_instruction"] == "Custom system message"
 
     def test_complete_with_gemini_pro_model(self) -> None:
         """Should work correctly when gemini-2.5-pro is selected."""
@@ -226,9 +222,7 @@ class TestGeminiProvider:
         call_kwargs = mock_client.models.generate_content.call_args[1]
         assert call_kwargs["model"] == "gemini-2.5-pro"
 
-
 # ── Timeout tests (added for 80% coverage target) ─────────────────────────────
-
 
 class TestGeminiProviderTimeout:
     """Timeout path tests for GeminiProvider."""
@@ -246,12 +240,10 @@ class TestGeminiProviderTimeout:
         with patch("aaizaql.llm.gemini_provider.genai") as mock_genai:
             mock_genai.Client.return_value = mock_client
             provider = GeminiProvider(settings)
+            mock_client.models.generate_content.side_effect = concurrent.futures.TimeoutError
 
-        with (
-            patch("concurrent.futures.Future.result", side_effect=concurrent.futures.TimeoutError),
-            pytest.raises(LLMTimeoutError),
-        ):
-            provider.complete("test", timeout=1)
+            with pytest.raises(LLMTimeoutError):
+                provider.complete("test", timeout=1)
 
     def test_complete_api_error_raises_llm_error(self) -> None:
         """Any non-timeout exception should be re-raised as LLMError."""

@@ -21,7 +21,6 @@ from aaizaql.core.exceptions import LLMError
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-
 def make_settings(**kwargs) -> Settings:
     """
     Build a hermetic Settings instance via model_construct (no env-var reads).
@@ -36,7 +35,6 @@ def make_settings(**kwargs) -> Settings:
     defaults.update(kwargs)
     return Settings.model_construct(**defaults)
 
-
 def _mock_openai_client(content: str | None = "SELECT 1;") -> MagicMock:
     """Return a MagicMock that mimics the OpenAI-compat client with a canned response."""
     resp = MagicMock()
@@ -49,9 +47,7 @@ def _mock_openai_client(content: str | None = "SELECT 1;") -> MagicMock:
     client.chat.completions.create.return_value = resp
     return client
 
-
 # ── Tests ─────────────────────────────────────────────────────────────────────
-
 
 class TestPerplexityProvider:
     """PerplexityProvider tests — patched OpenAI-compat client, zero network calls."""
@@ -214,9 +210,7 @@ class TestPerplexityProvider:
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "sonar-pro"
 
-
 # ── Timeout tests (added for 80% coverage target) ─────────────────────────────
-
 
 class TestPerplexityProviderTimeout:
     """Timeout path tests for PerplexityProvider."""
