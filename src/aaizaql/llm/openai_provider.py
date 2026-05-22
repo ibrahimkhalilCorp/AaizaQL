@@ -16,7 +16,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-
 class OpenAIProvider(LLMProvider):
     """OpenAI GPT via the official SDK."""
 
@@ -52,7 +51,7 @@ class OpenAIProvider(LLMProvider):
             )
             text = response.choices[0].message.content or ""
             logger.debug(
-                "llm.complete", provider=self.name, tokens=response.usage.completion_tokens
+                "llm.complete", provider=self.name, tokens=response.usage.completion_tokens if response.usage else None
             )
             return text
         except openai.APITimeoutError as exc:

@@ -16,7 +16,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-
 class ClaudeProvider(LLMProvider):
     """Anthropic Claude via the official SDK."""
 
@@ -42,9 +41,8 @@ class ClaudeProvider(LLMProvider):
         effective_timeout = timeout or self._timeout
         try:
             import httpx
-
             # Set timeout on client
-            if hasattr(self._client, "timeout"):
+            if hasattr(self._client, 'timeout'):
                 self._client.timeout = httpx.Timeout(effective_timeout)
             message = self._client.messages.create(
                 model=self._model,
@@ -53,7 +51,9 @@ class ClaudeProvider(LLMProvider):
                 messages=[{"role": "user", "content": prompt}],
                 timeout=effective_timeout,  # Pass timeout to create call
             )
-            response = str(message.content[0].text)
+            from anthropic.types import TextBlock
+            text_blocks = [b for b in message.content if isinstance(b, TextBlock)]
+            response = text_blocks[0].text if text_blocks else ""
             logger.debug("llm.complete", provider=self.name, tokens=message.usage.output_tokens)
             return response
         except anthropic.APITimeoutError as exc:

@@ -24,11 +24,9 @@ class LLMProvider(StrEnum):
     GEMINI = "gemini"
     MISTRAL = "mistral"
 
-
 class VectorStoreBackend(StrEnum):
     CHROMA = "chroma"
     QDRANT = "qdrant"
-
 
 class Settings(BaseSettings):
     """
@@ -160,18 +158,6 @@ class Settings(BaseSettings):
         description="T2.1 — Max DB connections per pool (PostgreSQL, MySQL).",
     )
 
-    # ── Connection Pool ───────────────────────────────────────────────────────
-    db_pool_size: int = Field(
-        default=5,
-        description="T2.1 — Max DB connections per pool (PostgreSQL, MySQL).",
-    )
-
-    # ── Query Safety ─────────────────────────────────────────────────────────
-    max_result_rows: int = Field(
-        default=10000,
-        description="T1.4 — Maximum rows returned per query. Prevents RAM exhaustion.",
-    )
-
     # ── Query Safety ─────────────────────────────────────────────────────────
     max_result_rows: int = Field(
         default=10000,
@@ -208,12 +194,6 @@ class Settings(BaseSettings):
         description="T5.3 — Max queries per minute per tenant_id (0 = disabled).",
     )
 
-    # ── Rate Limiting ────────────────────────────────────────────────────────
-    rate_limit_qpm: int = Field(
-        default=60,
-        description="T5.3 — Max queries per minute per tenant_id (0 = disabled).",
-    )
-
     # ── Logging ──────────────────────────────────────────────────────────────
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(default="INFO")
     audit_log_file: str | None = Field(
@@ -228,7 +208,6 @@ class Settings(BaseSettings):
     @classmethod
     def uppercase_ops(cls, v: list[str]) -> list[str]:
         return [op.upper() for op in v]
-
 
 def make_settings(**overrides: object) -> Settings:
     """
@@ -247,7 +226,6 @@ def make_settings(**overrides: object) -> Settings:
         engine = QueryEngine(settings=s)
     """
     return Settings(**overrides)  # type: ignore[arg-type]
-
 
 # ---------------------------------------------------------------------------
 # Backwards-compatible module-level singleton.

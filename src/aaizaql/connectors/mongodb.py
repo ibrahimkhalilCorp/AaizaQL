@@ -33,7 +33,6 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
-
 class MongoDBConnector(DatabaseConnector):
     """
     MongoDB adapter via pymongo.
@@ -224,22 +223,6 @@ class MongoDBConnector(DatabaseConnector):
         for key, val in doc.items():
             if key.startswith("$") and key in ("$where", "$function", "$accumulator"):
                 from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
-
-                raise DatabaseError(
-                    f"Blocked dangerous operator '{key}' in MongoDB filter.",
-                    sql=raw,
-                    connector="mongodb",
-                )
-            if isinstance(val, dict):
-                MongoDBConnector._sanitise_filter(val, raw)
-
-    @staticmethod
-    def _sanitise_filter(doc: dict, raw: str) -> None:
-        """T1.2 — Reject $ operators in filter documents to prevent injection."""
-        for key, val in doc.items():
-            if key.startswith("$") and key in ("$where", "$function", "$accumulator"):
-                from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
-
                 raise DatabaseError(
                     f"Blocked dangerous operator '{key}' in MongoDB filter.",
                     sql=raw,

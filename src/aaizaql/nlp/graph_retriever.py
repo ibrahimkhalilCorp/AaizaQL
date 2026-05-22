@@ -13,13 +13,14 @@ T4.4 — Used by both SQLGenerator (initial context) and SelfCorrector (retry).
 from __future__ import annotations
 
 import re
+from typing import Any
 
 import structlog
 
 logger = structlog.get_logger(__name__)
 
-
 class GraphRetriever:
+
     """
 
     1. Vector search → top-k DDL chunks → extract seed table names
@@ -30,7 +31,7 @@ class GraphRetriever:
 
     """
 
-    def __init__(self, vector_store: object, graph_store: object, top_k: int = 5) -> None:
+    def __init__(self, vector_store: Any, graph_store: Any, top_k: int = 5) -> None:
 
         self._vs = vector_store
 
@@ -39,6 +40,7 @@ class GraphRetriever:
         self._top_k = top_k
 
     def get_context(self, query: str, tenant_id: str) -> str:
+
         """Return enriched schema context string for the given query."""
 
         # Step 1 — vector seed
@@ -77,7 +79,11 @@ class GraphRetriever:
 
             for table in related:
 
-                extra = self._vs.search(query=table, filter_type="ddl", top_k=2)
+                extra = self._vs.search(
+
+                    query=table, filter_type="ddl", top_k=2
+
+                )
 
                 for h in extra:
 
@@ -86,21 +92,29 @@ class GraphRetriever:
                         context_chunks.append(h.text)
 
         logger.debug(
+
             "graph_retriever.context_built",
+
             seed_tables=seed_tables,
+
             fk_expanded=list(related),
+
             chunks=len(context_chunks),
+
         )
 
         return "\n\n".join(context_chunks)
 
     @staticmethod
+
     def _extract_table_name(ddl_chunk: str) -> str:
 
         m = re.search(
+
             r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"\[]?(\w+)[`\"\]]?",
-            ddl_chunk,
-            re.IGNORECASE,
+
+            ddl_chunk, re.IGNORECASE,
+
         )
 
         return m.group(1) if m else ""

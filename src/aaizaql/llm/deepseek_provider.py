@@ -32,7 +32,6 @@ except ImportError:
     openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
-
 class DeepSeekProvider(LLMProvider):
     """
     DeepSeek LLM provider.
@@ -98,8 +97,8 @@ class DeepSeekProvider(LLMProvider):
             logger.debug(
                 "deepseek.complete",
                 model=self._model,
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+                input_tokens=response.usage.prompt_tokens if response.usage else None,
+                output_tokens=response.usage.completion_tokens if response.usage else None,
             )
             return text
 

@@ -34,7 +34,6 @@ except ImportError:
     openai = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment,misc]
 
-
 class PerplexityProvider(LLMProvider):
     """
     Perplexity AI LLM provider.
@@ -100,8 +99,8 @@ class PerplexityProvider(LLMProvider):
             logger.debug(
                 "perplexity.complete",
                 model=self._model,
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+                input_tokens=response.usage.prompt_tokens if response.usage else None,
+                output_tokens=response.usage.completion_tokens if response.usage else None,
             )
             return text
 

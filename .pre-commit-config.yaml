@@ -37,3 +37,9 @@ repos:
           - pydantic>=2.0
           - pydantic-settings>=2.0
         args: ["--ignore-missing-imports"]
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3.13

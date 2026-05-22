@@ -33,7 +33,6 @@ except ImportError:
     Groq = None  # type: ignore[assignment,misc]
     _GroqAPITimeoutError = None  # type: ignore[assignment,misc]
 
-
 class GroqProvider(LLMProvider):
     """
     Groq Cloud LLM provider.
@@ -73,7 +72,7 @@ class GroqProvider(LLMProvider):
         api_key = (
             settings.groq_api_key.get_secret_value()
             if hasattr(settings.groq_api_key, "get_secret_value")
-            else settings.groq_api_key
+            else str(settings.groq_api_key)
         )
         self._client = Groq(api_key=api_key)
         self._model = settings.groq_model
@@ -107,8 +106,8 @@ class GroqProvider(LLMProvider):
             logger.debug(
                 "groq.complete",
                 model=self._model,
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+                input_tokens=response.usage.prompt_tokens if response.usage else None,
+                output_tokens=response.usage.completion_tokens if response.usage else None,
             )
             return text
 
