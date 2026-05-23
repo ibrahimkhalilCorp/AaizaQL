@@ -18,7 +18,6 @@ from unittest.mock import MagicMock, patch
 
 from aaizaql.schema.embedder import EmbeddingService
 
-
 # ── Singleton identity ────────────────────────────────────────────────────────
 
 

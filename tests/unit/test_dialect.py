@@ -16,7 +16,6 @@ import pytest
 from aaizaql.core.config import Settings
 from aaizaql.nlp.generator import SQLGenerator
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 

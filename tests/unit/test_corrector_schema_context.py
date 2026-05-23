@@ -21,7 +21,6 @@ from aaizaql.core.config import Settings
 from aaizaql.core.exceptions import DatabaseError
 from aaizaql.nlp.corrector import SelfCorrector
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 

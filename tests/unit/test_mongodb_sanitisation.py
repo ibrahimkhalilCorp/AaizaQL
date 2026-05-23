@@ -22,7 +22,6 @@ import pytest
 from aaizaql.connectors.mongodb import MongoDBConnector
 from aaizaql.core.exceptions import DatabaseError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 RAW = '{"collection": "test", "filter": {}}'

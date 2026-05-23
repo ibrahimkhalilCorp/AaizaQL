@@ -23,7 +23,6 @@ from unittest.mock import MagicMock, patch
 
 from aaizaql.schema.ingestion import SchemaIngester
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 DDL_USERS = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL);"
