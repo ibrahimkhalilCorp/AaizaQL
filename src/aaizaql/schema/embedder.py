@@ -89,8 +89,3 @@ class EmbeddingService:
         ]
 
         return (values + [0.0] * _DIM)[:_DIM]
-
-
-# Convenience alias used by modules that imported _SentenceEmbedder directly
-
-_SentenceEmbedder = EmbeddingService

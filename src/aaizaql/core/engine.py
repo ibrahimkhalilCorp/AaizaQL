@@ -86,9 +86,11 @@ class QueryEngine:
 
     ----------
 
-    llm      : str   Provider: "groq" | "claude" | "openai" | "ollama" | "deepseek" | "perplexity" | "gemini" | "mistral"
+    llm      : str   Provider: "groq" | "claude" | "openai" | "ollama"
+                               "deepseek" | "perplexity" | "gemini" | "mistral"
 
-    database : str   Connector: "sqlite" | "postgresql" | "mysql" | "snowflake" | "duckdb" | "mssql" | "oracle" | "mongodb" | "bigquery"
+    database : str   Connector: "sqlite" | "postgresql" | "mysql" | "snowflake"
+                               "duckdb" | "mssql" | "oracle" | "mongodb" | "bigquery"
 
     dsn      : str   Connection string.
 
@@ -168,6 +170,8 @@ class QueryEngine:
             self._settings,
             validator=self._validator,
             vector_store=self._vector_store,  # T2.7
+            semantic_store=self._semantic,  # enum + doc context on retry
+            dialect=self._connector.name,   # dialect label for correction prompt
         )
 
         self._renderer = ResultRenderer()

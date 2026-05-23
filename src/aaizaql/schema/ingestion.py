@@ -23,6 +23,7 @@ import structlog
 
 from aaizaql.core.exceptions import SchemaIngestionError
 from aaizaql.memory.vector_store import VectorStoreAdapter
+from aaizaql.schema.embedder import EmbeddingService
 
 if TYPE_CHECKING:
     from aaizaql.connectors.base import DatabaseConnector
@@ -40,8 +41,6 @@ class SchemaIngester:
 
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
         self._vs = vector_store
-        from aaizaql.schema.embedder import EmbeddingService  # T2.4 singleton
-
         self._embedder = EmbeddingService.get_instance()
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -69,9 +68,20 @@ class SchemaIngester:
         """
         Parse and ingest a raw DDL string.
 
+        On each call the ingester reconciles the vector store against the
+        current schema:
+          - Tables present in the new DDL are upserted (added or updated).
+          - Tables that existed in the vector store but are absent from the
+            new DDL are deleted (stale vectors removed).
+          - A ``schema_version`` sentinel document is upserted so callers can
+            detect schema drift without re-reading the database.
+
+        Safe to call multiple times — re-ingesting an identical schema is a
+        no-op on the store (upsert is idempotent, zero stale deletions).
+
         Returns
         -------
-        int  Number of table chunks ingested.
+        int  Number of table chunks ingested (added or updated).
         """
         chunks = self._chunk_by_table(ddl)
         if not chunks:
@@ -148,66 +158,3 @@ class SchemaIngester:
     def _fingerprint(text: str) -> str:
         """Stable 12-char hex fingerprint of a string."""
         return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16
-
-
-# ── Embedding helper ──────────────────────────────────────────────────────────
-
-
-class _SentenceEmbedder:
-    """
-    Thin wrapper around sentence-transformers.
-    Lazy-loads the model on first use to keep import time fast.
-
-    Raises
-    ------
-    ImportError
-        If sentence-transformers is not installed. Install with:
-        ``pip install 'aaizaql[rag]'``
-    """
-
-    _MODEL_NAME = "all-MiniLM-L6-v2"
-    _DIM = 384
-
-    def __init__(self) -> None:
-        self._model: object | None = None
-
-    def embed(self, text: str) -> list[float]:
-        """Return a normalised embedding vector for text."""
-        if self._model is None:
-            self._load()
-        try:
-            vec = self._model.encode(text, normalize_embeddings=True)  # type: ignore[union-attr]
-            return vec.tolist()
-        except Exception as exc:
-            logger.warning("embedder.failed", detail=str(exc)[:80])
-            return self._fallback_embed(text)
-
-    def _load(self) -> None:
-        try:
-            from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
-
-            self._model = SentenceTransformer(self._MODEL_NAME)
-            logger.info("embedder.loaded", model=self._MODEL_NAME)
-        except ImportError as exc:
-            raise ImportError(
-                "sentence-transformers is not installed but is required for schema ingestion "
-                "and semantic search.\n"
-                "Install the RAG extras:  pip install 'aaizaql[rag]'\n"
-                "Or install directly:     pip install sentence-transformers"
-            ) from exc
-
-    @classmethod
-    def _fallback_embed(cls, text: str) -> list[float]:
-        """
-        Hash-based pseudo-embedding used only when encode() raises at runtime
-        (e.g. GPU OOM, corrupted model).  Not semantically meaningful — for
-        offline unit-testing use a mock instead of relying on this path.
-        One float per 4-char slice of the sha256 hex digest, normalised.
-        """
-        digest = hashlib.sha256(text.encode()).hexdigest()
-        values = [
-            int(digest[i : i + 2], 16) / 255.0 for i in range(0, min(len(digest), cls._DIM * 2), 2)
-        ]
-        # Pad or truncate to DIM
-        values = (values + [0.0] * cls._DIM)[: cls._DIM]
-        return values

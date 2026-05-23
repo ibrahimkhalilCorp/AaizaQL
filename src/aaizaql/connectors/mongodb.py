@@ -142,13 +142,23 @@ class MongoDBConnector(DatabaseConnector):
                 connector="mongodb",
             ) from exc
 
-        # T1.2 — block dangerous $ operators in untrusted filter values
-        self._sanitise_filter(spec.get("filter", {}), query_json)
+        # fix — sanitise every untrusted document in the query spec, not just filter.
+        # projection keys can also carry operators; sort items are validated separately.
+        self._sanitise_doc(spec.get("filter", {}), query_json, context="filter")
+        if spec.get("projection") is not None:
+            self._sanitise_doc(spec["projection"], query_json, context="projection")
 
         collection_name: str = spec.get("collection", "")
         if not collection_name:
             raise DatabaseError(
                 "Query descriptor must include a 'collection' key.",
+                sql=query_json,
+                connector="mongodb",
+            )
+        # fix — reject collection names that could reference internal namespaces.
+        if collection_name.startswith("system.") or "$" in collection_name:
+            raise DatabaseError(
+                f"Collection name '{collection_name}' is not allowed.",
                 sql=query_json,
                 connector="mongodb",
             )
@@ -218,20 +228,46 @@ class MongoDBConnector(DatabaseConnector):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
+    # Operators that execute arbitrary server-side code or allow full-scan
+    # injection.  $expr is included because it can embed $function/$where
+    # inside an aggregation expression.
+    _BLOCKED_OPERATORS: frozenset[str] = frozenset(
+        {
+            "$where",
+            "$function",
+            "$accumulator",
+            "$expr",
+        }
+    )
+
+    @staticmethod
+    def _sanitise_doc(doc: object, raw: str, context: str = "filter") -> None:
+        """
+        Recursively reject dangerous $ operators anywhere in a query document.
+
+        Walks dicts and lists so operators nested inside ``$or``/``$and``
+        arrays are also caught.  Call this for every untrusted document that
+        reaches the database (filter, projection, sort items, etc.).
+        """
+        from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
+
+        if isinstance(doc, dict):
+            for key, val in doc.items():
+                if key in MongoDBConnector._BLOCKED_OPERATORS:
+                    raise DatabaseError(
+                        f"Blocked dangerous operator '{key}' in MongoDB {context}.",
+                        sql=raw,
+                        connector="mongodb",
+                    )
+                MongoDBConnector._sanitise_doc(val, raw, context)
+        elif isinstance(doc, list):
+            for item in doc:
+                MongoDBConnector._sanitise_doc(item, raw, context)
+
     @staticmethod
     def _sanitise_filter(doc: dict, raw: str) -> None:
-        """T1.2 — Reject $ operators in filter documents to prevent injection."""
-        for key, val in doc.items():
-            if key.startswith("$") and key in ("$where", "$function", "$accumulator"):
-                from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
-
-                raise DatabaseError(
-                    f"Blocked dangerous operator '{key}' in MongoDB filter.",
-                    sql=raw,
-                    connector="mongodb",
-                )
-            if isinstance(val, dict):
-                MongoDBConnector._sanitise_filter(val, raw)
+        """Backward-compatible shim — delegates to _sanitise_doc."""
+        MongoDBConnector._sanitise_doc(doc, raw, context="filter")
 
     def test_connection(self) -> bool:
         try:

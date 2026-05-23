@@ -118,6 +118,21 @@ class SQLGenerator:
 
         self._timeout = settings.llm_timeout_seconds
 
+        # T1.1 — Validate at construction time so dialect errors surface
+        # immediately, not silently at query time.
+        if connector is None:
+            raise ValueError(
+                "SQLGenerator requires a connector instance. "
+                "Pass connector=<DatabaseConnector> so the correct SQL dialect "
+                "is used in prompts. Do not leave this as None."
+            )
+        if not getattr(connector, "name", ""):
+            raise ValueError(
+                f"Connector {type(connector).__name__!r} has an empty or missing "
+                "'name' attribute. Every DatabaseConnector subclass must set "
+                "name = '<dialect>' (e.g. 'sqlite', 'postgresql')."
+            )
+
     def generate(self, question: str, history: list[Turn]) -> str:
 
         schema_chunks, example_pairs = self._build_rag_context(question)
@@ -224,7 +239,7 @@ class SQLGenerator:
         )
 
         context = CONTEXT_TEMPLATE.format(
-            dialect=getattr(self._connector, "name", str(self._settings.llm_provider)),
+            dialect=self._connector.name,  # T1.1 — always connector.name, never llm_provider
             schema_chunks=schema_chunks,
             enum_block=enum_block,
             doc_block=doc_block,

@@ -18,10 +18,7 @@ pytestmark = pytest.mark.usefixtures("mock_embed")
 @pytest.fixture(autouse=True)
 def mock_embed():
     """Patch _embed so sentence-transformers is never loaded."""
-    with (
-        patch.object(SemanticStore, "_embed", return_value=[0.1] * 384),
-        patch("aaizaql.schema.ingestion._SentenceEmbedder.embed", return_value=[0.1] * 384),
-    ):
+    with patch.object(SemanticStore, "_embed", return_value=[0.1] * 384):
         yield
 
 

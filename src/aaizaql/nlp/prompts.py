@@ -79,7 +79,9 @@ COT_PROMPT_SUFFIX = "\n\n[SQL]\n"
 # ── Self-Correction Template ─────────────────────────────────────────────────
 
 SELF_CORRECTION_TEMPLATE = """\
-The following SQL query failed with an error. Fix it.
+The following SQL query failed with an error. Fix it and return ONLY the corrected SQL.
+
+DIALECT: {dialect}
 
 ORIGINAL SQL:
 {sql}
@@ -89,7 +91,7 @@ ERROR MESSAGE:
 
 DATABASE SCHEMA (for reference):
 {schema_chunks}
-
+{enum_block}{doc_block}
 Output ONLY the corrected SQL — no explanation, no markdown.\
 """
 

@@ -23,6 +23,7 @@ from aaizaql.nlp.utils import parse_sql_response
 
 if TYPE_CHECKING:
 
+    from aaizaql.schema.semantic_store import SemanticStore
     from aaizaql.security.validator import SQLValidator
 
 logger = structlog.get_logger(__name__)
@@ -41,14 +42,27 @@ class SelfCorrector:
 
     statements (e.g. DROP TABLE) from slipping through on a correction pass.
 
+    Parameters
+    ----------
+    semantic_store:
+        Optional SemanticStore reference.  When provided, enum mappings and
+        relevant documentation are appended to every correction prompt — the
+        same enrichment the initial generator receives — so the LLM has full
+        business context when it rewrites the query.
+    dialect:
+        Database dialect label (e.g. ``"sqlite"``, ``"postgresql"``).  Passed
+        straight into ``SELF_CORRECTION_TEMPLATE`` so the LLM knows which SQL
+        flavour to target.  Defaults to the empty string (backward-compatible).
     """
 
     def __init__(
         self,
         llm: LLMProvider,
         settings: Settings,
-        validator: SQLValidator | None = None,
+        validator: "SQLValidator | None" = None,
         vector_store: Any | None = None,  # T2.7 — for schema context on retry
+        semantic_store: "SemanticStore | None" = None,  # fix: enum + doc context on retry
+        dialect: str = "",  # fix: dialect label for correction prompt
     ) -> None:
 
         self._llm = llm
@@ -58,6 +72,10 @@ class SelfCorrector:
         self._validator = validator
 
         self._vector_store = vector_store  # T2.7
+
+        self._semantic_store = semantic_store  # fix: for enum/doc blocks in retry prompt
+
+        self._dialect = dialect  # fix: e.g. "sqlite", "postgresql"
 
         self._schema_top_k = settings.schema_top_k
 
@@ -146,12 +164,35 @@ class SelfCorrector:
 
                         pass
 
+                # fix: inject enum mappings — same data the generator always sends,
+                # so the corrected query uses the right integer codes.
+                enum_block = ""
+                if self._semantic_store is not None and self._semantic_store.has_enums():
+                    enum_block = (
+                        "\n--- COLUMN CODE MAPPINGS ---\n"
+                        + self._semantic_store.get_enum_block()
+                        + "\n"
+                    )
+
+                # fix: inject relevant documentation retrieved for this question.
+                doc_block = ""
+                if self._semantic_store is not None:
+                    try:
+                        docs = self._semantic_store.search_documentation(question, top_k=3)
+                        if docs:
+                            doc_block = "\n--- BUSINESS CONTEXT ---\n" + docs + "\n"
+                    except Exception:
+                        pass
+
                 # Ask LLM to fix the broken SQL
 
                 correction_prompt = SELF_CORRECTION_TEMPLATE.format(
                     sql=self.last_sql,
                     error=str(exc),
                     schema_chunks=schema_chunks,
+                    dialect=self._dialect or "unknown",
+                    enum_block=enum_block,
+                    doc_block=doc_block,
                 )
 
                 corrected = self._llm.complete(correction_prompt, timeout=self._timeout)
