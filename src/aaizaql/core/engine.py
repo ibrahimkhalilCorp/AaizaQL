@@ -171,7 +171,7 @@ class QueryEngine:
             validator=self._validator,
             vector_store=self._vector_store,  # T2.7
             semantic_store=self._semantic,  # enum + doc context on retry
-            dialect=self._connector.name,   # dialect label for correction prompt
+            dialect=self._connector.name,  # dialect label for correction prompt
         )
 
         self._renderer = ResultRenderer()
