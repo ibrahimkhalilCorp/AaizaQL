@@ -33,8 +33,8 @@ class MySQLConnector(DatabaseConnector):
         """
         self._dsn = dsn
         try:
-            import pymysql
-            import pymysql.cursors
+            import pymysql  # type: ignore[import-untyped]
+            import pymysql.cursors  # type: ignore[import-untyped]
 
             parsed = self._parse_dsn(dsn)
             self._conn = pymysql.connect(

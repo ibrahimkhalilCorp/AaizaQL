@@ -59,10 +59,10 @@ class SelfCorrector:
         self,
         llm: LLMProvider,
         settings: Settings,
-        validator: "SQLValidator | None" = None,
+        validator: SQLValidator | None = None,
         vector_store: Any | None = None,  # T2.7 — for schema context on retry
-        semantic_store: "SemanticStore | None" = None,  # fix: enum + doc context on retry
-        dialect: str = "",  # fix: dialect label for correction prompt
+        semantic_store: SemanticStore | None = None,  # enum + doc context on retry
+        dialect: str = "",  # dialect label for correction prompt
     ) -> None:
 
         self._llm = llm

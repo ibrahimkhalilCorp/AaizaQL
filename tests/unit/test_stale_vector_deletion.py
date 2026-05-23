@@ -19,9 +19,7 @@ No database, LLM, or sentence-transformers required — all mocked.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from aaizaql.schema.ingestion import SchemaIngester
 

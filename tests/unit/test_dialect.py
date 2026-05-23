@@ -9,7 +9,7 @@ No database or live LLM connection required.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -21,7 +21,7 @@ from aaizaql.nlp.generator import SQLGenerator
 
 
 def _settings() -> Settings:
-    return Settings(llm_provider="groq")
+    return Settings(llm_provider="groq")  # type: ignore[arg-type]
 
 
 def _mock_connector(name: str = "sqlite") -> MagicMock:
@@ -118,7 +118,7 @@ class TestDialectInPrompt:
     def test_prompt_contains_connector_dialect_not_llm_provider(
         self, connector_name: str, llm_provider: str
     ) -> None:
-        settings = Settings(llm_provider=llm_provider)
+        settings = Settings(llm_provider=llm_provider)  # type: ignore[arg-type]
         connector = _mock_connector(connector_name)
         llm = _mock_llm("SELECT 1")
 
@@ -131,7 +131,7 @@ class TestDialectInPrompt:
         gen.generate("show all rows", history=[])
 
         # The prompt passed to llm.complete must contain the connector dialect
-        call_args = llm.complete.call_args
+        call_args = llm.complete.call_args  # type: ignore[attr-defined]
         prompt: str = call_args[0][0] if call_args[0] else call_args[1]["prompt"]
 
         assert f"dialect: {connector_name}" in prompt, (
@@ -151,13 +151,13 @@ class TestDialectInPrompt:
 
         gen.generate("how many users?", history=[])
 
-        prompt = llm.complete.call_args[0][0]
+        prompt = llm.complete.call_args[0][0]  # type: ignore[attr-defined]
         assert "dialect: sqlite" in prompt
         assert "dialect: groq" not in prompt
 
     def test_postgresql_dialect_not_confused_with_claude(self) -> None:
         """Regression: postgresql connector with claude LLM must show 'postgresql'."""
-        settings = Settings(llm_provider="claude")
+        settings = Settings(llm_provider="claude")  # type: ignore[arg-type]
         llm = _mock_llm("SELECT COUNT(*) FROM users")
         gen = SQLGenerator(
             llm=llm,
@@ -167,6 +167,6 @@ class TestDialectInPrompt:
         )
         gen.generate("count users", history=[])
 
-        prompt = llm.complete.call_args[0][0]
+        prompt = llm.complete.call_args[0][0]  # type: ignore[attr-defined]
         assert "dialect: postgresql" in prompt
         assert "dialect: claude" not in prompt

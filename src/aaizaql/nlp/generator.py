@@ -239,7 +239,7 @@ class SQLGenerator:
         )
 
         context = CONTEXT_TEMPLATE.format(
-            dialect=self._connector.name,  # T1.1 — always connector.name, never llm_provider
+            dialect=self._connector.name,  # type: ignore[union-attr]  # T1.1
             schema_chunks=schema_chunks,
             enum_block=enum_block,
             doc_block=doc_block,

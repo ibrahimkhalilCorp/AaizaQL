@@ -13,11 +13,8 @@ No database or live LLM connection required.
 
 from __future__ import annotations
 
-import importlib
 import inspect
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from aaizaql.schema.embedder import EmbeddingService
 
@@ -126,8 +123,8 @@ class TestSharedModelAcrossComponents:
         from aaizaql.schema.ingestion import SchemaIngester
         from aaizaql.schema.semantic_store import SemanticStore
 
-        ingester = SchemaIngester(mock_vs)
-        store = SemanticStore(mock_vs)
+        SchemaIngester(mock_vs)  # instantiation must not raise
+        SemanticStore(mock_vs)  # instantiation must not raise
 
         # Both must reach the exact same EmbeddingService instance
         ingester_svc = EmbeddingService.get_instance()
