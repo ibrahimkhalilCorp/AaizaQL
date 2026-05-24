@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """
 tests/unit/test_llm_timeout.py
 ───────────────────────────────
@@ -391,8 +392,11 @@ class TestGeneratorForwardsTimeout:
         mock_semantic.has_enums.return_value = False
         mock_semantic.search_documentation.return_value = ""
 
+        mock_connector = MagicMock()
+        mock_connector.name = "sqlite"
+
         settings = Settings(llm_timeout_seconds=42)
-        gen = SQLGenerator(mock_llm, mock_vs, settings, mock_semantic)
+        gen = SQLGenerator(mock_llm, mock_vs, settings, mock_semantic, connector=mock_connector)
         gen.generate("show all users", history=[])
 
         call_kwargs = mock_llm.complete.call_args[1]
