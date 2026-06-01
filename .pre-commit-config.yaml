@@ -27,6 +27,18 @@ repos:
           - "--extend-ignore=E203,W503"
           - "--exclude=.git,__pycache__,.venv,build,dist"
 
+  - repo: local
+    hooks:
+      - id: check-test-imports
+        name: Validate test imports against source
+        language: python
+        entry: python scripts/check_test_imports.py
+        pass_filenames: false
+        always_run: true
+        additional_dependencies:
+          - pydantic>=2.0
+          - pydantic-settings>=2.0
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.9.0
     hooks:

@@ -248,3 +248,73 @@ Email the maintainer directly (see the `authors` field in `pyproject.toml`).
 ---
 
 MIT License — by contributing you agree your work will be released under the same license.
+---
+
+## Checklist: removing or renaming a class/function
+
+> This checklist exists because of a real incident in v0.2.2: `_SentenceEmbedder`
+> was removed from `ingestion.py` but `test_rag_optional.py` still imported it.
+> The tests passed in CI only because that specific test file was not being exercised
+> in the failing path. Follow these steps every time you remove or rename any symbol.
+
+### When you remove a symbol from source
+
+1. **Search tests immediately:**
+   ```bash
+   grep -r "SymbolName" tests/
+   ```
+   Update or remove every match before opening a PR.
+
+2. **Run the import validator:**
+   ```bash
+   python scripts/check_test_imports.py
+   ```
+   This must exit 0 before you commit. The pre-commit hook runs it automatically,
+   but run it manually after any rename/removal to catch issues early.
+
+3. **Check `__init__.py`:**
+   If the symbol was exported from `aaizaql.__init__` or any sub-package
+   `__init__.py`, remove it from there too (and from `__all__`).
+
+4. **Run the public API test:**
+   ```bash
+   pytest tests/unit/test_public_api.py -v
+   ```
+   This catches any `__all__` entries that no longer exist in source.
+
+5. **Update `CHANGELOG.md`:**
+   Add a `### Removed` entry so downstream users know what broke and why.
+
+6. **Add a migration note** if the symbol was part of the public API (`__all__`):
+   ```markdown
+   ### Removed
+   - `OldName` — replaced by `NewName`. Update: `from aaizaql import NewName`.
+   ```
+
+### When you rename a symbol
+
+Follow all the steps above, and additionally:
+
+- Add a deprecation alias in the **old location** for one minor version before removal:
+  ```python
+  # Deprecated in 0.3.0 — remove in 0.4.0
+  OldName = NewName
+  ```
+- Add a `DeprecationWarning` so users see it at runtime:
+  ```python
+  import warnings
+  def OldName(*args, **kwargs):
+      warnings.warn("OldName is deprecated, use NewName", DeprecationWarning, stacklevel=2)
+      return NewName(*args, **kwargs)
+  ```
+
+### Pre-commit hook
+
+The `check-test-imports` pre-commit hook runs `scripts/check_test_imports.py`
+automatically before every commit. Install it once with:
+
+```bash
+pre-commit install
+```
+
+If it fails, fix the broken imports before the commit goes through.

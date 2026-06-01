@@ -43,6 +43,9 @@ jobs:
       - name: Type-check (mypy)
         run: mypy src/aaizaql/
 
+      - name: Validate test imports (T1.1)
+        run: python scripts/check_test_imports.py
+
       - name: Unit tests
         run: pytest tests/unit/ -x -q
 
