@@ -31,10 +31,6 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 
-# Alias used by tests and external callers that expect the private name.
-_SentenceEmbedder = EmbeddingService
-
-
 class SchemaIngester:
     """
     Reads database schema and stores it in the vector store.
