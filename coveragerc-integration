@@ -1,0 +1,30 @@
+# .coveragerc-integration
+# ─────────────────────────────────────────────────────────────────────────────
+# T1.2 — Coverage config for the full suite (unit + integration, live containers).
+#
+# Usage:
+#   pytest tests/ --cov=src/aaizaql --cov-config=.coveragerc-integration \
+#          --cov-report=term-missing --cov-report=html
+#
+# Threshold: 82 %.
+# All connectors are included here because the integration suite exercises
+# them against real database containers (see the integration CI job).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[run]
+source = src/aaizaql
+omit =
+    */tests/*
+    */__pycache__/*
+    src/aaizaql/cli.py
+    src/aaizaql/security/audit.py
+    src/aaizaql/federation/__init__.py
+
+[report]
+show_missing = true
+skip_covered  = false
+fail_under    = 82
+
+[html]
+directory = htmlcov/integration
+title     = AAIZAQL — Integration Coverage

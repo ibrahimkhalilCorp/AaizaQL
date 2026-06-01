@@ -24,7 +24,6 @@ classifiers = [
 ]
 
 # ── Core dependencies ──────────────────────────────────────────────────────
-# Every dep listed here is required for `pip install AAIZAQL` to work.
 dependencies = [
   "pandas>=2.0",
   "pydantic>=2.0",
@@ -37,24 +36,19 @@ dependencies = [
 # ── Optional dependency groups ─────────────────────────────────────────────
 [project.optional-dependencies]
 
-# LLM providers (install the one(s) you use)
 claude     = ["anthropic>=0.20"]
 openai     = ["openai>=1.10"]
 groq       = ["groq>=0.4"]
-deepseek   = ["openai>=1.10"]           # DeepSeek uses the OpenAI-compatible SDK
-perplexity = ["openai>=1.10"]           # Perplexity uses the OpenAI-compatible SDK
+deepseek   = ["openai>=1.10"]
+perplexity = ["openai>=1.10"]
 gemini     = ["google-genai>=1.0"]
 mistral    = ["mistralai>=1.0"]
 
-# RAG / local embeddings — ChromaDB vector store + sentence-transformers embedder
-# Required for ingest_schema() and query() with the default ChromaDB backend.
-# pip install aaizaql[rag]
 rag = [
   "chromadb>=0.4",
   "sentence-transformers>=2.2",
 ]
 
-# Database connectors (install the one(s) you use)
 postgres  = ["psycopg2-binary>=2.9"]
 mysql     = ["pymysql>=1.1"]
 snowflake = ["snowflake-connector-python>=3.0"]
@@ -64,13 +58,9 @@ oracle    = ["oracledb>=1.4"]
 mongodb   = ["pymongo>=4.0"]
 bigquery  = ["google-cloud-bigquery>=3.0", "db-dtypes>=1.0"]
 
-# Visualization
 charts = ["plotly>=5.0"]
-
-# Vector store alternatives
 qdrant = ["qdrant-client>=1.7"]
 
-# Install everything (useful for development)
 all = [
   "anthropic>=0.20",
   "openai>=1.10",
@@ -91,7 +81,6 @@ all = [
   "qdrant-client>=1.7",
 ]
 
-# Development tools (NOT needed by library users)
 dev = [
   "pytest>=7.4",
   "pytest-cov>=4.1",
@@ -101,7 +90,6 @@ dev = [
   "ruff>=0.1",
   "mypy>=1.5",
   "pre-commit>=3.5",
-  # Include runtime deps for dev so tests work
   "anthropic>=0.20",
   "openai>=1.10",
   "groq>=0.4",
@@ -134,7 +122,7 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]   # line length handled by formatter
+ignore = ["E501"]
 
 # ── Black formatter ──────────────────────────────────────────────────────────
 [tool.black]
@@ -160,6 +148,14 @@ markers = [
   "integration_mongodb: requires a live MongoDB instance (set MONGODB_TEST_DSN)",
 ]
 
+# ── Coverage ─────────────────────────────────────────────────────────────────
+# T1.2 — Two thresholds enforced via separate coveragerc files:
+#   .coveragerc-unit        → fail_under = 70  (unit suite, no containers)
+#   .coveragerc-integration → fail_under = 82  (full suite, live containers)
+#
+# The [tool.coverage.*] sections below define shared defaults only.
+# CI passes --cov-config= explicitly (see .github/workflows/ci.yml).
+
 [tool.coverage.run]
 source = ["src/aaizaql"]
 omit = [
@@ -170,15 +166,16 @@ omit = [
   "src/aaizaql/federation/__init__.py",
 ]
 
-[[tool.mypy.overrides]]
-module = "tests.unit.test_llm_timeout"
-ignore_errors = true
-
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-# 80% is enforced by the integration suite (all connectors exercised with
-# live containers). The unit suite alone reaches ~66% because connector
-# modules that require real databases (BigQuery, DuckDB, MongoDB, MSSQL,
-# MySQL, Oracle, Postgres, Snowflake) cannot be covered without containers.
-fail_under = 66
+# fail_under is NOT set here — it is set in .coveragerc-unit / .coveragerc-integration.
+# Setting it here would silently override the per-suite configs.
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "AAIZAQL Coverage Report"
+
+[[tool.mypy.overrides]]
+module = "tests.unit.test_llm_timeout"
+ignore_errors = true

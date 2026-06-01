@@ -46,11 +46,113 @@ jobs:
       - name: Validate test imports (T1.1)
         run: python scripts/check_test_imports.py
 
-      - name: Unit tests
-        run: pytest tests/unit/ -x -q
+      # ── Unit tests + coverage (T1.2) ──────────────────────────────────────
+      - name: Unit tests with coverage
+        run: |
+          pytest tests/unit/ \
+            -x -q \
+            --cov=src/aaizaql \
+            --cov-config=.coveragerc-unit \
+            --cov-report=term-missing \
+            --cov-report=html:htmlcov/unit \
+            --cov-report=xml:coverage-unit.xml
 
+      # ── Upload HTML coverage report as a downloadable CI artifact ─────────
+      - name: Upload unit coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit-html-py${{ matrix.python-version }}
+          path: htmlcov/unit/
+          retention-days: 14
+
+      # ── Upload XML to Codecov (badge + PR annotations) ────────────────────
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'   # upload once, not 3×
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage-unit.xml
+          flags: unit
+          fail_ci_if_error: false             # badge outage ≠ broken build
+
+      # ── Integration tests (SQLite + DuckDB only — no containers) ──────────
       - name: Integration tests (SQLite + DuckDB only — no containers)
         run: |
           pytest tests/integration/ \
             -k "SQLite or DuckDB" \
             -x -q --timeout=60
+
+  # ── Full integration suite (runs only on main branch with live services) ───
+  integration-full:
+    name: Full Integration · Python 3.11
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: testdb
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mongodb:
+        image: mongo:7
+        ports: ["27017:27017"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[dev,duckdb,mysql,postgres,mongodb]" --quiet
+
+      - name: Full test suite with integration coverage
+        env:
+          POSTGRES_TEST_DSN: "postgresql://postgres:testpass@localhost:5432/testdb"
+          MYSQL_TEST_DSN: "mysql+pymysql://root:testpass@127.0.0.1:3306/testdb"
+          MONGODB_TEST_DSN: "mongodb://localhost:27017"
+        run: |
+          pytest tests/ \
+            -q --timeout=120 \
+            --cov=src/aaizaql \
+            --cov-config=.coveragerc-integration \
+            --cov-report=term-missing \
+            --cov-report=html:htmlcov/integration \
+            --cov-report=xml:coverage-integration.xml
+
+      - name: Upload integration coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration-html
+          path: htmlcov/integration/
+          retention-days: 30
+
+      - name: Upload integration coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage-integration.xml
+          flags: integration
+          fail_ci_if_error: false

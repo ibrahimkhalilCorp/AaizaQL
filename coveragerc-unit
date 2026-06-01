@@ -1,20 +1,41 @@
+# .coveragerc-unit
+# ─────────────────────────────────────────────────────────────────────────────
+# T1.2 — Coverage config for the unit-only suite (no live containers).
+#
+# Usage:
+#   pytest tests/unit/ --cov=src/aaizaql --cov-config=.coveragerc-unit \
+#          --cov-report=term-missing --cov-report=html
+#
+# Threshold: 70 %.
+# Connector modules that require live databases (BigQuery, DuckDB, MongoDB,
+# MSSQL, MySQL, Oracle, Postgres, Snowflake) are excluded from unit
+# measurement because they cannot be exercised without real containers.
+# ─────────────────────────────────────────────────────────────────────────────
+
 [run]
 source = src/aaizaql
 omit =
     */tests/*
     */__pycache__/*
-    src/aaizaql/llm/claude_provider.py
-    src/aaizaql/llm/openai_provider.py
-    src/aaizaql/llm/ollama_provider.py
-    src/aaizaql/llm/groq_provider.py
-    src/aaizaql/llm/deepseek_provider.py
-    src/aaizaql/llm/gemini_provider.py
-    src/aaizaql/llm/mistral_provider.py
-    src/aaizaql/llm/perplexity_provider.py
+    # Excluded from unit threshold (require live infra):
     src/aaizaql/cli.py
     src/aaizaql/security/audit.py
     src/aaizaql/federation/__init__.py
+    src/aaizaql/connectors/bigquery.py
+    src/aaizaql/connectors/duckdb.py
+    src/aaizaql/connectors/mongodb.py
+    src/aaizaql/connectors/mssql.py
+    src/aaizaql/connectors/mysql.py
+    src/aaizaql/connectors/oracle.py
+    src/aaizaql/connectors/postgres.py
+    src/aaizaql/connectors/snowflake.py
+    src/aaizaql/connectors/sqlite.py
 
 [report]
 show_missing = true
-fail_under = 60
+skip_covered  = false
+fail_under    = 70
+
+[html]
+directory = htmlcov/unit
+title     = AAIZAQL — Unit Coverage
