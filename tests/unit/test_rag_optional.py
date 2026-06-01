@@ -7,7 +7,7 @@ Verifies:
 - chromadb and sentence-transformers are NOT in core dependencies
 - VectorStoreAdapter raises VectorStoreError (not ImportError) with a clear
   message referencing aaizaql[rag] when chromadb is missing
-- _SentenceEmbedder._load() raises ImportError with aaizaql[rag] hint
+- EmbeddingService._load() raises ImportError with aaizaql[rag] hint
   when sentence-transformers is missing (no silent fallback)
 - pyproject.toml declares a [rag] optional group containing both packages
 No API keys or network calls required.
@@ -143,14 +143,20 @@ class TestVectorStoreAdapterMissingChromadb:
         assert "chromadb" in str(exc_info.value)
 
 
-# ── _SentenceEmbedder missing sentence-transformers ───────────────────────────
+# ── EmbeddingService missing sentence-transformers ───────────────────────────
 
 
 class TestSentenceEmbedderMissingSentenceTransformers:
-    def _make_embedder(self) -> _SentenceEmbedder:  # noqa: F821
-        from aaizaql.schema.ingestion import _SentenceEmbedder
+    def setup_method(self) -> None:
+        from aaizaql.schema.embedder import EmbeddingService
 
-        return _SentenceEmbedder()
+        EmbeddingService._instance = None
+        EmbeddingService._model = None
+
+    def _make_embedder(self):
+        from aaizaql.schema.embedder import EmbeddingService
+
+        return EmbeddingService.get_instance()
 
     def test_raises_import_error_when_missing(self) -> None:
         embedder = self._make_embedder()
@@ -183,15 +189,17 @@ class TestSentenceEmbedderMissingSentenceTransformers:
 
     def test_fallback_embed_still_works_for_runtime_errors(self) -> None:
         """_fallback_embed() itself must still produce a vector (used for encode() failures)."""
-        from aaizaql.schema.ingestion import _SentenceEmbedder
+        from aaizaql.schema.embedder import EmbeddingService, _DIM
 
-        vec = _SentenceEmbedder._fallback_embed("some text")
+        vec = EmbeddingService._fallback_embed("some text")
         assert isinstance(vec, list)
-        assert len(vec) == _SentenceEmbedder._DIM
+        assert len(vec) == _DIM
         assert all(isinstance(v, float) for v in vec)
 
     def test_embed_falls_back_when_encode_raises_at_runtime(self) -> None:
         """If the model is loaded but encode() fails (e.g. OOM), fallback is used."""
+        from aaizaql.schema.embedder import _DIM
+
         embedder = self._make_embedder()
         mock_model = MagicMock()
         mock_model.encode.side_effect = RuntimeError("out of memory")
@@ -199,4 +207,4 @@ class TestSentenceEmbedderMissingSentenceTransformers:
 
         result = embedder.embed("test text")
         assert isinstance(result, list)
-        assert len(result) == embedder._DIM
+        assert len(result) == _DIM
