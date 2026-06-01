@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aaizaql"
-version = "0.2.2"
+version = "0.2.3"
 description = "Natural Language to SQL — open-source library with RAG, self-correction, and federation"
 readme = "README.md"
 license = { text = "MIT" }
