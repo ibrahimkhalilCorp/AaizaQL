@@ -189,7 +189,7 @@ class TestSentenceEmbedderMissingSentenceTransformers:
 
     def test_fallback_embed_still_works_for_runtime_errors(self) -> None:
         """_fallback_embed() itself must still produce a vector (used for encode() failures)."""
-        from aaizaql.schema.embedder import EmbeddingService, _DIM
+        from aaizaql.schema.embedder import _DIM, EmbeddingService
 
         vec = EmbeddingService._fallback_embed("some text")
         assert isinstance(vec, list)
