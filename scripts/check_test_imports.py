@@ -39,10 +39,13 @@ def collect_aaizaql_imports(test_root: Path) -> list[tuple[Path, int, str, list[
         except SyntaxError:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                if node.module and node.module.startswith("aaizaql"):
-                    names = [alias.name for alias in node.names]
-                    results.append((py_file, node.lineno, node.module, names))
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and node.module.startswith("aaizaql")
+            ):
+                names = [alias.name for alias in node.names]
+                results.append((py_file, node.lineno, node.module, names))
     return results
 
 
