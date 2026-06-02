@@ -21,11 +21,11 @@ class TestSchemaIngester:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Prevent sentence-transformers from downloading models during tests."""
-        from aaizaql.schema import ingestion as ing_mod
+        from aaizaql.schema.embedder import EmbeddingService
 
-        monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
+        monkeypatch.setattr(EmbeddingService, "_load", lambda self: None)
         monkeypatch.setattr(
-            ing_mod._SentenceEmbedder,
+            EmbeddingService,
             "embed",
             lambda self, text: [0.0] * 384,
         )
@@ -83,10 +83,13 @@ CREATE TABLE departments (
         assert count >= 2  # employees + departments
 
     @pytest.mark.skip(
-        reason="T2.5: ingest_sql_pair() removed from SchemaIngester — use SemanticStore.train_sql_pair() instead"
+        reason=(
+            "T2.5: ingest_sql_pair() removed from SchemaIngester"
+            " — use SemanticStore.train_sql_pair() instead"
+        )
     )
     def test_ingest_sql_pair(self, ingester: SchemaIngester, mock_vs: MagicMock) -> None:
-        ingester.ingest_sql_pair(
+        ingester.ingest_sql_pair(  # type: ignore[attr-defined]
             question="How many employees are there?",
             sql="SELECT COUNT(*) FROM employees",
         )
@@ -114,11 +117,11 @@ CREATE TABLE departments (
 class TestSemanticStore:
     @pytest.fixture(autouse=True)
     def patch_embedder(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from aaizaql.schema import ingestion as ing_mod
+        from aaizaql.schema.embedder import EmbeddingService
 
-        monkeypatch.setattr(ing_mod._SentenceEmbedder, "_load", lambda self: None)
+        monkeypatch.setattr(EmbeddingService, "_load", lambda self: None)
         monkeypatch.setattr(
-            ing_mod._SentenceEmbedder,
+            EmbeddingService,
             "embed",
             lambda self, text: [0.0] * 384,
         )
