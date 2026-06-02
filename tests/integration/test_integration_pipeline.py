@@ -40,6 +40,7 @@ from aaizaql.core.exceptions import (
     PromptInjectionDetected,
     SecurityException,
 )
+from aaizaql.llm.base import LLMProvider
 from aaizaql.memory.context import ContextManager
 from aaizaql.nlp.corrector import SelfCorrector
 from aaizaql.nlp.generator import SQLGenerator
@@ -70,10 +71,10 @@ def make_settings(**kwargs) -> Settings:
         groq_api_key=SecretStr("gsk_fake_groq"),
     )
     defaults.update(kwargs)
-    return Settings.model_construct(**defaults)
+    return Settings.model_construct(**defaults)  # type: ignore[arg-type]
 
 
-class FakeLLM:
+class FakeLLM(LLMProvider):
     """
     Deterministic LLM stub for pipeline tests.
 
@@ -83,11 +84,14 @@ class FakeLLM:
     """
 
     def __init__(self, default_sql: str = "SELECT 1;", responses: list[str] | None = None):
-        self.name = "fake/test"
         self._responses = responses or []
         self._default = default_sql
         self._call_count = 0
         self.calls: list[str] = []  # captured prompts for assertion
+
+    @property
+    def name(self) -> str:
+        return "fake/test"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
         self.calls.append(prompt)
@@ -103,7 +107,8 @@ class FakeLLM:
 def db_conn():
     """In-memory SQLite database with a realistic schema and seed data."""
     conn = sqlite3.connect(":memory:")
-    conn.executescript("""
+    conn.executescript(
+        """
         CREATE TABLE employees (
             id       INTEGER PRIMARY KEY,
             name     TEXT    NOT NULL,
@@ -134,7 +139,8 @@ def db_conn():
         INSERT INTO sales VALUES (3, 2, 8100,  '2025-06-20');
         INSERT INTO sales VALUES (4, 3, 1500,  '2025-07-01');
         INSERT INTO sales VALUES (5, 4, 4400,  '2025-07-10');
-    """)
+    """
+    )
     yield conn
     conn.close()
 
@@ -172,7 +178,15 @@ class TestProviderPipelineEndToEnd:
         """Wire up a SQLGenerator with a no-op vector store."""
         mock_vs = MagicMock()
         mock_vs.search.return_value = []
-        return SQLGenerator(llm=llm, vector_store=mock_vs, settings=settings, semantic_store=None)
+        mock_connector = MagicMock()
+        mock_connector.name = "sqlite"
+        return SQLGenerator(
+            llm=llm,
+            vector_store=mock_vs,
+            settings=settings,
+            semantic_store=None,
+            connector=mock_connector,
+        )
 
     @pytest.mark.parametrize("provider_name", ["deepseek", "gemini", "mistral", "perplexity"])
     def test_simple_select_reaches_database(self, provider_name, connector, settings):
@@ -193,7 +207,10 @@ class TestProviderPipelineEndToEnd:
     @pytest.mark.parametrize("provider_name", ["deepseek", "gemini", "mistral", "perplexity"])
     def test_aggregation_query_end_to_end(self, provider_name, connector, settings):
         """Aggregation SQL produced by FakeLLM executes and returns correct numbers."""
-        sql = "SELECT dept, COUNT(*) as cnt, AVG(salary) as avg_sal FROM employees GROUP BY dept ORDER BY dept"
+        sql = (
+            "SELECT dept, COUNT(*) as cnt, AVG(salary) as avg_sal "
+            "FROM employees GROUP BY dept ORDER BY dept"
+        )
         llm = FakeLLM(default_sql=sql)
         gen = self._make_generator(llm, settings)
         validator = SQLValidator(settings)
@@ -496,7 +513,15 @@ class TestMultiTurnSession:
         mock_vs = MagicMock()
         mock_vs.search.return_value = []
         llm = FakeLLM(default_sql="SELECT 1;")
-        gen = SQLGenerator(llm=llm, vector_store=mock_vs, settings=settings, semantic_store=None)
+        mock_connector = MagicMock()
+        mock_connector.name = "sqlite"
+        gen = SQLGenerator(
+            llm=llm,
+            vector_store=mock_vs,
+            settings=settings,
+            semantic_store=None,
+            connector=mock_connector,
+        )
 
         history = [
             {

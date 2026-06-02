@@ -93,7 +93,7 @@ class MongoDBConnector(DatabaseConnector):
             self._client.admin.command("ping")
             # Derive database name from DSN path
             parsed = urlparse(dsn)
-            db_name = parsed.path.lstrip("/").split("?")[0] or "test"
+            db_name = parsed.path.lstrip("/").split("?")[0] or "aaizaql_test"
             self._db_name = db_name
             self._db = self._client[db_name]
             logger.info("mongodb.connected", db=db_name, dsn_hint=dsn[:40])

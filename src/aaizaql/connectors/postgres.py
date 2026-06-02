@@ -34,6 +34,8 @@ class PostgreSQLConnector(DatabaseConnector):
 
         self._dsn: str = ""
 
+        self._dedicated_conn: Any = None
+
     def connect(self, dsn: str, pool_size: int = 5) -> None:
 
         try:
@@ -228,3 +230,12 @@ class PostgreSQLConnector(DatabaseConnector):
             self._pool = None
 
             logger.info("postgres.closed")
+
+    @property
+    def _conn(self) -> Any:
+        """Return a dedicated connection from the pool for DDL use (test compatibility)."""
+        if self._pool is None:
+            raise DatabaseError("Not connected.", sql="", connector="postgresql")
+        if self._dedicated_conn is None:
+            self._dedicated_conn = self._pool.getconn()
+        return self._dedicated_conn

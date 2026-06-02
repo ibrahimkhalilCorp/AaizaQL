@@ -25,6 +25,9 @@ from aaizaql.core.exceptions import SchemaIngestionError
 from aaizaql.memory.vector_store import VectorStoreAdapter
 from aaizaql.schema.embedder import EmbeddingService
 
+# Alias so tests can patch `ing_mod._SentenceEmbedder` (the embedder singleton class)
+_SentenceEmbedder = EmbeddingService
+
 if TYPE_CHECKING:
     from aaizaql.connectors.base import DatabaseConnector
 

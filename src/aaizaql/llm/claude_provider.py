@@ -53,9 +53,7 @@ class ClaudeProvider(LLMProvider):
                 messages=[{"role": "user", "content": prompt}],
                 timeout=effective_timeout,  # Pass timeout to create call
             )
-            from anthropic.types import TextBlock
-
-            text_blocks = [b for b in message.content if isinstance(b, TextBlock)]
+            text_blocks = [b for b in message.content if hasattr(b, "text") and b.text is not None]
             response = text_blocks[0].text if text_blocks else ""
             logger.debug("llm.complete", provider=self.name, tokens=message.usage.output_tokens)
             return response
