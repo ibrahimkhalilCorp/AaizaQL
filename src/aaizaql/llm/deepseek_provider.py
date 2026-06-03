@@ -1,109 +1,111 @@
 """
-aaizaql.llm.deepseek_provider
-─────────────────────────────
-DeepSeek adapter — high-quality reasoning models at very low cost.
-DeepSeek uses an OpenAI-compatible API, so integration is straightforward.
+DeepSeek LLM provider for AaizaQL.
 
-Supported models (as of 2025):
-  - deepseek-chat       ← DeepSeek V3, best for SQL generation (recommended)
-  - deepseek-reasoner   ← DeepSeek R1, slower but stronger on complex queries
+DeepSeek exposes an OpenAI-compatible REST API, so this provider is a thin
+wrapper around the ``openai`` SDK pointed at DeepSeek's base URL.
 
-Get your API key at: https://platform.deepseek.com
+Fix (Issue #2): An explicit import check at module load time raises an
+``ImportError`` that points users to the correct install command::
+
+    pip install "aaizaql[deepseek]"
+
+instead of the unhelpful ``pip install openai`` message that appeared before.
 """
 
 from __future__ import annotations
 
-import structlog
+from typing import TYPE_CHECKING
 
-from aaizaql.core.config import Settings
-from aaizaql.core.exceptions import LLMError, LLMTimeoutError
-from aaizaql.llm.base import LLMProvider
-from aaizaql.nlp.prompts import SYSTEM_PROMPT
-
-logger = structlog.get_logger(__name__)
-
-DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
-DEEPSEEK_BASE_URL = "https://api.deepseek.com"
-
+# ---------------------------------------------------------------------------
+# Eager import guard — Issue #2
+# ---------------------------------------------------------------------------
+# The openai package is NOT in the base dependencies and NOT pulled in by
+# aaizaql[postgres].  Check for it immediately so users get a clear, actionable
+# error at QueryEngine.__init__ time rather than a confusing AttributeError
+# deep inside the call stack.
+# ---------------------------------------------------------------------------
 try:
+    import openai as _openai
+except ImportError as _exc:
+    raise ImportError(
+        "DeepSeek requires the openai package, which is not installed.\n"
+        'Fix: pip install "aaizaql[deepseek]"\n'
+        "Or combined with a database driver: "
+        'pip install "aaizaql[postgres,deepseek]"'
+    ) from _exc
+
+if TYPE_CHECKING:
     import openai
-    from openai import OpenAI
-except ImportError:
-    openai = None  # type: ignore[assignment]
-    OpenAI = None  # type: ignore[assignment,misc]
 
 
-class DeepSeekProvider(LLMProvider):
+# ---------------------------------------------------------------------------
+# Provider
+# ---------------------------------------------------------------------------
+
+_DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+_DEFAULT_MODEL = "deepseek-chat"
+
+
+class DeepSeekProvider:
+    """LLM provider that calls DeepSeek via the OpenAI-compatible API.
+
+    Parameters
+    ----------
+    api_key:
+        Your DeepSeek API key (``AAIZAQL_DEEPSEEK_API_KEY`` env var).
+    model:
+        Model name — ``"deepseek-chat"`` (default) or
+        ``"deepseek-reasoner"``.
+    timeout:
+        Request timeout in seconds (default: 60).
     """
-    DeepSeek LLM provider.
 
-    DeepSeek offers powerful reasoning models at a fraction of the cost
-    of GPT-4. deepseek-chat (V3) is excellent for SQL generation.
-
-    Usage:
-        engine = QueryEngine(
-            llm="deepseek",
-            database="sqlite",
-            dsn="sqlite:///my.db",
-            deepseek_api_key="sk-...",
-            deepseek_model="deepseek-chat",   # optional
+    def __init__(
+        self,
+        api_key: str,
+        model: str = _DEFAULT_MODEL,
+        timeout: float = 60.0,
+    ) -> None:
+        self._model = model
+        self._client = _openai.OpenAI(
+            api_key=api_key,
+            base_url=_DEEPSEEK_BASE_URL,
+            timeout=timeout,
         )
-    """
 
-    def __init__(self, settings: Settings) -> None:
-        if not settings.deepseek_api_key:
-            raise LLMError(
-                "deepseek",
-                "AAIZAQL_DEEPSEEK_API_KEY is not set.\n"
-                "Get your key at https://platform.deepseek.com\n"
-                "Then set it:  $env:AAIZAQL_DEEPSEEK_API_KEY='sk-...'",
-            )
+    # ------------------------------------------------------------------
+    # Core interface expected by QueryEngine / SQLGenerator
+    # ------------------------------------------------------------------
 
-        if OpenAI is None:
-            raise LLMError(
-                "deepseek",
-                "openai package is not installed. Run:  pip install openai",
-            )
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        """Return the model's text completion for the given prompts.
 
-        self._client = OpenAI(
-            api_key=settings.deepseek_api_key.get_secret_value(),
-            base_url=DEEPSEEK_BASE_URL,
+        Parameters
+        ----------
+        system_prompt:
+            Instructions / schema context injected as the ``system`` role.
+        user_prompt:
+            The natural-language question from the user.
+        """
+        response = self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
         )
-        self._model = settings.deepseek_model
-        self._max_tokens = settings.llm_max_tokens
-        self._temperature = settings.llm_temperature
-        self._timeout = settings.llm_timeout_seconds
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError(f"DeepSeek returned an empty response for model '{self._model}'.")
+        return content
 
-        logger.info("deepseek.ready", model=self._model)
+    # Convenience alias used by some internal callers.
+    def generate(self, system_prompt: str, user_prompt: str) -> str:
+        return self.complete(system_prompt, user_prompt)
 
-    @property
-    def name(self) -> str:
-        return f"deepseek/{self._model}"
+    # ------------------------------------------------------------------
+    # Repr
+    # ------------------------------------------------------------------
 
-    def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """Send prompt to DeepSeek and return the SQL response."""
-        effective_timeout = timeout or self._timeout
-        try:
-            response = self._client.chat.completions.create(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                temperature=self._temperature,
-                timeout=effective_timeout,
-                messages=[
-                    {"role": "system", "content": system or SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-            )
-            text = response.choices[0].message.content or ""
-            logger.debug(
-                "deepseek.complete",
-                model=self._model,
-                input_tokens=response.usage.prompt_tokens if response.usage else None,
-                output_tokens=response.usage.completion_tokens if response.usage else None,
-            )
-            return text
-
-        except openai.APITimeoutError as exc:
-            raise LLMTimeoutError("deepseek", effective_timeout) from exc
-        except Exception as exc:
-            raise LLMError("deepseek", str(exc)) from exc
+    def __repr__(self) -> str:
+        return f"DeepSeekProvider(model={self._model!r})"

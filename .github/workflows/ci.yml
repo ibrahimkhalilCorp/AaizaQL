@@ -1,6 +1,12 @@
 # aaizaql — CI quality gate
 # Runs on every push and pull_request to main.
 # Blocks merge if lint, type-check, or tests fail.
+#
+# Actions version notes (bump from Node 20 → Node 24, required by June 16 2026):
+#   actions/checkout       v4  → v4.2.2
+#   actions/setup-python   v5  → v5.6.0
+#   actions/upload-artifact v4  → v4.6.2
+#   codecov/codecov-action  v4  → v5
 
 name: CI
 
@@ -24,9 +30,9 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -58,9 +64,13 @@ jobs:
             --cov-report=xml:coverage-unit.xml
 
       # ── Upload HTML coverage report as a downloadable CI artifact ─────────
+      # Changed: if: always() → if: success()
+      # Reason:  when the test step fails no htmlcov/unit/ directory is
+      #          produced, causing a spurious "No files were found" warning
+      #          that clutters the Annotations panel.
       - name: Upload unit coverage HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: success()
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: coverage-unit-html-py${{ matrix.python-version }}
           path: htmlcov/unit/
@@ -69,11 +79,11 @@ jobs:
       # ── Upload XML to Codecov (badge + PR annotations) ────────────────────
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.11'   # upload once, not 3×
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: coverage-unit.xml
           flags: unit
-          fail_ci_if_error: false             # badge outage ≠ broken build
+          fail_ci_if_error: false              # badge outage ≠ broken build
 
       # ── Integration tests (SQLite + DuckDB only — no containers) ──────────
       - name: Integration tests (SQLite + DuckDB only — no containers)
@@ -118,9 +128,9 @@ jobs:
         ports: ["27017:27017"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: "3.11"
           cache: pip
@@ -144,14 +154,14 @@ jobs:
 
       - name: Upload integration coverage HTML report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: coverage-integration-html
           path: htmlcov/integration/
           retention-days: 30
 
       - name: Upload integration coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: coverage-integration.xml
           flags: integration

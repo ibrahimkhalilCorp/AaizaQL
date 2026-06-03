@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aaizaql"
-version = "0.2.3"
+version = "0.2.4"
 description = "Natural Language to SQL — open-source library with RAG, self-correction, and federation"
 readme = "README.md"
 license = { text = "MIT" }
@@ -24,6 +24,9 @@ classifiers = [
 ]
 
 # ── Core dependencies ──────────────────────────────────────────────────────
+# chromadb and sentence-transformers are promoted from the optional [rag]
+# extra to core dependencies because QueryEngine.__init__ unconditionally
+# initialises VectorStoreAdapter (Issue #3).  Every user needs them.
 dependencies = [
   "pandas>=2.0",
   "pydantic>=2.0",
@@ -31,23 +34,23 @@ dependencies = [
   "sqlglot>=20.0",
   "structlog>=23.0",
   "requests>=2.28",
+  "chromadb>=0.4",              # required for VectorStoreAdapter (Issue #3)
+  "sentence-transformers>=2.2", # required for EmbeddingService  (Issue #3)
 ]
 
 # ── Optional dependency groups ─────────────────────────────────────────────
 [project.optional-dependencies]
+claude      = ["anthropic>=0.20"]
+openai      = ["openai>=1.10"]
+groq        = ["groq>=0.4"]
+deepseek    = ["openai>=1.10"]   # DeepSeek uses the OpenAI-compatible SDK (Issue #2)
+perplexity  = ["openai>=1.10"]
+gemini      = ["google-genai>=1.0"]
+mistral     = ["mistralai>=1.0"]
 
-claude     = ["anthropic>=0.20"]
-openai     = ["openai>=1.10"]
-groq       = ["groq>=0.4"]
-deepseek   = ["openai>=1.10"]
-perplexity = ["openai>=1.10"]
-gemini     = ["google-genai>=1.0"]
-mistral    = ["mistralai>=1.0"]
-
-rag = [
-  "chromadb>=0.4",
-  "sentence-transformers>=2.2",
-]
+# rag is kept for backwards compatibility but is now a no-op extra because
+# chromadb and sentence-transformers are in core deps (Issue #3).
+rag = []
 
 postgres  = ["psycopg2-binary>=2.9"]
 mysql     = ["pymysql>=1.1"]
@@ -67,8 +70,6 @@ all = [
   "groq>=0.4",
   "google-genai>=1.0",
   "mistralai>=1.0",
-  "chromadb>=0.4",
-  "sentence-transformers>=2.2",
   "psycopg2-binary>=2.9",
   "pymysql>=1.1",
   "duckdb>=0.10",
@@ -96,8 +97,6 @@ dev = [
   "psycopg2-binary>=2.9",
   "duckdb>=0.10",
   "plotly>=5.0",
-  "chromadb>=0.4",
-  "sentence-transformers>=2.2",
 ]
 
 # ── Entry points ────────────────────────────────────────────────────────────
@@ -106,9 +105,9 @@ aaizaql = "aaizaql.cli:main"
 
 # ── Project URLs ─────────────────────────────────────────────────────────────
 [project.urls]
-Homepage      = "https://github.com/ibrahimkhalil/aaizaql"
+Homepage     = "https://github.com/ibrahimkhalilCorp/aaizaql"
 Documentation = "https://aaizaql.readthedocs.io"
-"Bug Tracker" = "https://github.com/ibrahimkhalil/aaizaql/issues"
+"Bug Tracker" = "https://github.com/ibrahimkhalilCorp/aaizaql/issues"
 
 # ── Hatch build settings ────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
@@ -116,9 +115,9 @@ packages = ["src/aaizaql"]
 
 # ── Ruff linter ─────────────────────────────────────────────────────────────
 [tool.ruff]
-line-length = 100
+line-length    = 100
 target-version = "py311"
-src = ["src"]
+src            = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -126,39 +125,32 @@ ignore = ["E501"]
 
 # ── Black formatter ──────────────────────────────────────────────────────────
 [tool.black]
-line-length = 100
+line-length    = 100
 target-version = ["py311"]
 
 # ── Mypy ─────────────────────────────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.11"
-strict = false
+python_version      = "3.11"
+strict              = false
 ignore_missing_imports = true
-warn_return_any = false
+warn_return_any     = false
 
 # ── Pytest ────────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths  = ["tests"]
 asyncio_mode = "auto"
-addopts = "-v --tb=short"
-markers = [
-  "integration_pg: requires a live PostgreSQL instance (set POSTGRES_TEST_DSN)",
-  "integration_mysql: requires a live MySQL instance (set MYSQL_TEST_DSN)",
-  "integration_mssql: requires a live MSSQL instance (set MSSQL_TEST_DSN)",
+addopts    = "-v --tb=short"
+markers    = [
+  "integration_pg:      requires a live PostgreSQL instance (set POSTGRES_TEST_DSN)",
+  "integration_mysql:   requires a live MySQL instance (set MYSQL_TEST_DSN)",
+  "integration_mssql:   requires a live MSSQL instance (set MSSQL_TEST_DSN)",
   "integration_mongodb: requires a live MongoDB instance (set MONGODB_TEST_DSN)",
 ]
 
 # ── Coverage ─────────────────────────────────────────────────────────────────
-# T1.2 — Two thresholds enforced via separate coveragerc files:
-#   .coveragerc-unit        → fail_under = 70  (unit suite, no containers)
-#   .coveragerc-integration → fail_under = 82  (full suite, live containers)
-#
-# The [tool.coverage.*] sections below define shared defaults only.
-# CI passes --cov-config= explicitly (see .github/workflows/ci.yml).
-
 [tool.coverage.run]
 source = ["src/aaizaql"]
-omit = [
+omit   = [
   "*/tests/*",
   "*/__pycache__/*",
   "src/aaizaql/cli.py",
@@ -169,13 +161,11 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-# fail_under is NOT set here — it is set in .coveragerc-unit / .coveragerc-integration.
-# Setting it here would silently override the per-suite configs.
 
 [tool.coverage.html]
 directory = "htmlcov"
-title = "AAIZAQL Coverage Report"
+title     = "AAIZAQL Coverage Report"
 
 [[tool.mypy.overrides]]
-module = "tests.unit.test_llm_timeout"
+module       = "tests.unit.test_llm_timeout"
 ignore_errors = true

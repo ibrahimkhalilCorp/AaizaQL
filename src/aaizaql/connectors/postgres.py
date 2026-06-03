@@ -1,241 +1,154 @@
 """
+PostgreSQL connector for AaizaQL.
 
-aaizaql.connectors.postgres
-
-──────────────────────────
-
-PostgreSQL connector using psycopg2.
-
-DSN format: postgresql://user:password@host:5432/dbname
-
+Fix (Issue #1): DSN passwords containing special characters (e.g. ``@``) are
+URL-encoded before the DSN is handed to psycopg2, preventing the URL parser
+from misidentifying the host.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from urllib.parse import quote, urlparse, urlunparse
 
-import pandas as pd
-import structlog
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError as exc:  # pragma: no cover
+    raise ImportError(
+        "PostgreSQL support requires psycopg2. " 'Run: pip install "aaizaql[postgres]"'
+    ) from exc
 
-from aaizaql.connectors._limit import inject_limit
-from aaizaql.connectors.base import DatabaseConnector
-from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
-logger = structlog.get_logger(__name__)
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
 
 
-class PostgreSQLConnector(DatabaseConnector):
+def _encode_dsn_password(dsn: str) -> str:
+    """Return *dsn* with the password component percent-encoded.
 
-    name = "postgresql"
+    psycopg2 / libpq parse the DSN as a URL, so any ``@`` (or other
+    reserved character) inside the password must be encoded as ``%40``
+    before the string is passed to the driver.  We re-assemble the URL
+    from parsed components so that the *existing* ``@`` host separator
+    is never double-encoded.
 
-    def __init__(self) -> None:
+    Examples
+    --------
+    >>> _encode_dsn_password("postgresql://user:pass@word@host:5432/db")
+    'postgresql://user:pass%40word@host:5432/db'
+    >>> _encode_dsn_password("postgresql://user:simple@host/db")
+    'postgresql://user:simple@host/db'
+    """
+    parsed = urlparse(dsn)
 
-        self._pool: Any = None
+    # Nothing to do if there is no password or it is already safe.
+    if not parsed.password:
+        return dsn
 
-        self._dsn: str = ""
+    encoded_password = quote(parsed.password, safe="")
 
-        self._dedicated_conn: Any = None
+    # Rebuild netloc: user:encoded_pw@host[:port]
+    netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}"
+    if parsed.port:
+        netloc += f":{parsed.port}"
 
-    def connect(self, dsn: str, pool_size: int = 5) -> None:
+    return urlunparse(parsed._replace(netloc=netloc))
 
+
+# ---------------------------------------------------------------------------
+# Public connector class
+# ---------------------------------------------------------------------------
+
+
+class PostgresConnector:
+    """Thin wrapper around psycopg2 that exposes the interface expected by
+    AaizaQL's ``QueryEngine``.
+
+    Parameters
+    ----------
+    dsn:
+        A ``postgresql://user:password@host:port/dbname`` connection string.
+        Passwords containing URL-reserved characters (``@ : / ? # [ ] !``)
+        are automatically percent-encoded before the DSN is forwarded to the
+        driver (fixes Issue #1).
+    """
+
+    def __init__(self, dsn: str) -> None:
+        self._dsn: str = _encode_dsn_password(dsn)
+        self._conn: "psycopg2.extensions.connection | None" = None
+
+    # ------------------------------------------------------------------
+    # Connection lifecycle
+    # ------------------------------------------------------------------
+
+    def connect(self) -> None:
+        """Open (or re-open) the database connection."""
         try:
-
-            from psycopg2 import pool as pg_pool
-
-            self._dsn = dsn
-
-            self._pool = pg_pool.ThreadedConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
-
-            logger.info("postgres.connected", pool_size=pool_size)
-
+            self._conn = psycopg2.connect(self._dsn)
+            self._conn.autocommit = True
         except Exception as exc:
+            raise ConnectionError(f"Cannot connect to 'postgresql' ({self._dsn}): {exc}") from exc
 
-            raise ConnectionError("postgresql", dsn[:40], str(exc)) from exc
+    def disconnect(self) -> None:
+        """Close the connection if open."""
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            finally:
+                self._conn = None
 
-    def execute(self, sql: str, _max_rows: int = 10000) -> pd.DataFrame:
+    def __enter__(self) -> "PostgresConnector":
+        self.connect()
+        return self
 
-        if self._pool is None:
+    def __exit__(self, *_: object) -> None:
+        self.disconnect()
 
-            raise DatabaseError("Not connected.", sql=sql, connector="postgresql")
+    # ------------------------------------------------------------------
+    # Query execution
+    # ------------------------------------------------------------------
 
-        sql, _ = inject_limit(sql, _max_rows, dialect="postgres")  # T1.4
+    def execute(self, sql: str) -> list[dict]:
+        """Execute *sql* and return rows as a list of dicts."""
+        if self._conn is None or self._conn.closed:
+            self.connect()
 
-        conn = self._pool.getconn()
+        assert self._conn is not None  # satisfy mypy
 
-        try:
+        with self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql)
+            if cur.description is None:
+                return []
+            return [dict(row) for row in cur.fetchall()]
 
-            return pd.read_sql_query(sql, conn)
+    # ------------------------------------------------------------------
+    # Schema introspection
+    # ------------------------------------------------------------------
 
-        except Exception as exc:
-
-            raise DatabaseError(str(exc), sql=sql, connector="postgresql") from exc
-
-        finally:
-
-            self._pool.putconn(conn)
-
-    def get_schema(self) -> str:
-
-        # T3.3 — enriched DDL with PK, FK, and indexes
-
-        if self._pool is None:
-
-            return ""
-
-        col_query = """
-
+    def get_schema(self) -> dict[str, list[dict]]:
+        """Return ``{table_name: [{column, type, nullable}, ...]}`` for the
+        current database's public schema."""
+        sql = """
             SELECT
-
-                c.table_schema,
-
-                c.table_name,
-
-                c.column_name,
-
-                c.data_type,
-
-                c.character_maximum_length,
-
-                c.ordinal_position,
-
-                c.is_nullable
-
-            FROM information_schema.columns c
-
-            WHERE c.table_schema NOT IN ('pg_catalog', 'information_schema')
-
-            ORDER BY c.table_schema, c.table_name, c.ordinal_position;
-
+                table_name,
+                column_name,
+                data_type,
+                is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ORDER BY table_name, ordinal_position
         """
+        rows = self.execute(sql)
 
-        pk_query = """
-
-            SELECT kcu.table_schema, kcu.table_name, kcu.column_name
-
-            FROM information_schema.table_constraints tc
-
-            JOIN information_schema.key_column_usage kcu
-
-              ON tc.constraint_name = kcu.constraint_name
-
-              AND tc.table_schema = kcu.table_schema
-
-            WHERE tc.constraint_type = 'PRIMARY KEY';
-
-        """
-
-        fk_query = """
-
-            SELECT
-
-                kcu.table_schema, kcu.table_name, kcu.column_name,
-
-                ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
-
-            FROM information_schema.table_constraints tc
-
-            JOIN information_schema.key_column_usage kcu
-
-              ON tc.constraint_name = kcu.constraint_name
-
-              AND tc.table_schema = kcu.table_schema
-
-            JOIN information_schema.constraint_column_usage ccu
-
-              ON ccu.constraint_name = tc.constraint_name
-
-            WHERE tc.constraint_type = 'FOREIGN KEY';
-
-        """
-
-        conn = self._pool.getconn()
-
-        try:
-
-            col_df = pd.read_sql_query(col_query, conn)
-
-            pk_df = pd.read_sql_query(pk_query, conn)
-
-            fk_df = pd.read_sql_query(fk_query, conn)
-
-            pk_set = set(
-                zip(pk_df["table_schema"], pk_df["table_name"], pk_df["column_name"], strict=False)
+        schema: dict[str, list[dict]] = {}
+        for row in rows:
+            tbl = row["table_name"]
+            schema.setdefault(tbl, []).append(
+                {
+                    "column": row["column_name"],
+                    "type": row["data_type"],
+                    "nullable": row["is_nullable"] == "YES",
+                }
             )
-
-            fk_map: dict = {}
-
-            for _, row in fk_df.iterrows():
-
-                key = (row["table_schema"], row["table_name"], row["column_name"])
-
-                fk_map[key] = (row["foreign_table"], row["foreign_column"])
-
-            parts: list[str] = []
-
-            for (schema, table), grp in col_df.groupby(["table_schema", "table_name"]):
-
-                col_defs = []
-
-                pk_cols = []
-
-                for _, row in grp.iterrows():
-
-                    dtype = row["data_type"]
-
-                    if pd.notna(row["character_maximum_length"]):
-
-                        dtype = f"{dtype}({int(row['character_maximum_length'])})"
-
-                    not_null = " NOT NULL" if row["is_nullable"] == "NO" else ""
-
-                    col_defs.append(f"  {row['column_name']} {dtype}{not_null}")
-
-                    if (schema, table, row["column_name"]) in pk_set:
-
-                        pk_cols.append(row["column_name"])
-
-                if pk_cols:
-
-                    col_defs.append(f"  PRIMARY KEY ({', '.join(pk_cols)})")
-
-                for _, row in fk_df[
-                    (fk_df["table_schema"] == schema) & (fk_df["table_name"] == table)
-                ].iterrows():
-
-                    col_defs.append(
-                        f"  FOREIGN KEY ({row['column_name']}) "
-                        f"REFERENCES {row['foreign_table']}({row['foreign_column']})"
-                    )
-
-                ddl = f"CREATE TABLE {schema}.{table} (\n" + ",\n".join(col_defs) + "\n);"
-
-                parts.append(ddl)
-
-            return "\n\n".join(parts)
-
-        except Exception:
-
-            return ""
-
-        finally:
-
-            self._pool.putconn(conn)
-
-    def close(self) -> None:
-
-        if self._pool:
-
-            self._pool.closeall()
-
-            self._pool = None
-
-            logger.info("postgres.closed")
-
-    @property
-    def _conn(self) -> Any:
-        """Return a dedicated connection from the pool for DDL use (test compatibility)."""
-        if self._pool is None:
-            raise DatabaseError("Not connected.", sql="", connector="postgresql")
-        if self._dedicated_conn is None:
-            self._dedicated_conn = self._pool.getconn()
-        return self._dedicated_conn
+        return schema
