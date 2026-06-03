@@ -22,6 +22,9 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 _DEFAULT_MODEL = "deepseek-chat"
 
 
+_UNSET = object()
+
+
 class DeepSeekProvider:
     """LLM provider that calls DeepSeek via the OpenAI-compatible API."""
 
@@ -47,7 +50,7 @@ class DeepSeekProvider:
         self._model = model
         self._timeout = timeout
         if not callable(OpenAI):
-            raise ImportError(
+            raise LLMError(
                 "DeepSeek requires the openai package.\n" 'Fix: pip install "aaizaql[deepseek]"'
             )
         self._client = OpenAI(
@@ -64,8 +67,8 @@ class DeepSeekProvider:
         self,
         user_prompt: str,
         system_prompt: str | None = None,
-        temperature: float | None = None,
-        max_tokens: int | None = None,
+        temperature: object = _UNSET,
+        max_tokens: object = _UNSET,
         *,
         system: str | None = None,
         timeout: float | None = None,
@@ -77,9 +80,9 @@ class DeepSeekProvider:
         messages.append({"role": "user", "content": user_prompt})
 
         kwargs: dict = {"model": self._model, "messages": messages}
-        if temperature is not None:
+        if temperature is not _UNSET:
             kwargs["temperature"] = temperature
-        if max_tokens is not None:
+        if max_tokens is not _UNSET:
             kwargs["max_tokens"] = max_tokens
         if timeout is not None:
             kwargs["timeout"] = timeout
