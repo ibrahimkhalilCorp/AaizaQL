@@ -8,15 +8,15 @@ Add a new database by subclassing DatabaseConnector and registering it here.
 from __future__ import annotations
 
 from aaizaql.connectors.base import DatabaseConnector
-from aaizaql.connectors.postgres import PostgreSQLConnector
+from aaizaql.connectors.postgres import PostgresConnector
 from aaizaql.connectors.sqlite import SQLiteConnector
 from aaizaql.core.exceptions import ConnectorNotFound as _ConnectorNotFound
 
 # Central registry — name → class (not instance)
 REGISTRY: dict[str, type[DatabaseConnector]] = {
     "sqlite": SQLiteConnector,
-    "postgresql": PostgreSQLConnector,
-    "postgres": PostgreSQLConnector,  # alias
+    "postgresql": PostgresConnector,
+    "postgres": PostgresConnector,  # alias
 }
 
 # Lazy-register heavier connectors only when available
