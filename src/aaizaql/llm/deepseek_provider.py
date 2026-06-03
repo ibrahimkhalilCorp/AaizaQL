@@ -28,13 +28,19 @@ class DeepSeekProvider:
     def __init__(
         self,
         settings,
-        model: str = _DEFAULT_MODEL,
+        model: str | None = None,
         timeout: float = 60.0,
     ) -> None:
+        # Model can come from settings or explicit arg
+        if model is None:
+            model = getattr(settings, "deepseek_model", None) or _DEFAULT_MODEL
+
         raw_key = getattr(settings, "deepseek_api_key", None)
         if raw_key is None:
             raise LLMError("AAIZAQL_DEEPSEEK_API_KEY is not set")
-        api_key = raw_key.get_secret_value() if hasattr(raw_key, "get_secret_value") else str(raw_key)
+        api_key = (
+            raw_key.get_secret_value() if hasattr(raw_key, "get_secret_value") else str(raw_key)
+        )
         if not api_key:
             raise LLMError("AAIZAQL_DEEPSEEK_API_KEY is not set")
 
@@ -56,7 +62,7 @@ class DeepSeekProvider:
         system_prompt: str | None = None,
         *,
         system: str | None = None,
-        temperature: float = 0.0,
+        temperature: float | None = None,
         max_tokens: int | None = None,
         timeout: float | None = None,
     ) -> str:
@@ -66,11 +72,9 @@ class DeepSeekProvider:
             messages.append({"role": "system", "content": effective_system})
         messages.append({"role": "user", "content": user_prompt})
 
-        kwargs: dict = {
-            "model": self._model,
-            "messages": messages,
-            "temperature": temperature,
-        }
+        kwargs: dict = {"model": self._model, "messages": messages}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
         if timeout is not None:
@@ -79,7 +83,7 @@ class DeepSeekProvider:
         try:
             response = self._client.chat.completions.create(**kwargs)
         except openai.APITimeoutError as exc:
-            raise LLMTimeoutError(str(exc), self._timeout) from exc
+            raise LLMTimeoutError("deepseek", int(self._timeout)) from exc
         except Exception as exc:
             raise LLMError(f"DeepSeek API error: {exc}") from exc
 
