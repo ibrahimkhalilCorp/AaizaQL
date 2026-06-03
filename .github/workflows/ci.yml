@@ -39,13 +39,13 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev,duckdb,mysql,postgres]" "black==26.5.1" --quiet
+        run: pip install -e ".[dev,duckdb,mysql,postgres]" --quiet
 
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Format check (black)
-        run: black --check src/ tests/
+      - name: Format check (ruff)
+        run: ruff format --check src/ tests/
 
       - name: Type-check (mypy)
         run: mypy src/aaizaql/
@@ -137,7 +137,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev,duckdb,mysql,postgres,mongodb]" "black==26.5.1" --quiet
+        run: pip install -e ".[dev,duckdb,mysql,postgres,mongodb]" --quiet
 
       - name: Full test suite with integration coverage
         env:

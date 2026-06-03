@@ -15,7 +15,7 @@ try:
     import psycopg2.extras
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "PostgreSQL support requires psycopg2. " 'Run: pip install "aaizaql[postgres]"'
+        'PostgreSQL support requires psycopg2. Run: pip install "aaizaql[postgres]"'
     ) from exc
 
 
