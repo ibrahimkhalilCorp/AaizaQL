@@ -1,9 +1,5 @@
 """
 PostgreSQL connector for AaizaQL.
-
-Fix (Issue #1): DSN passwords containing special characters (e.g. ``@``) are
-URL-encoded before the DSN is handed to psycopg2, preventing the URL parser
-from misidentifying the host.
 """
 
 from __future__ import annotations
@@ -19,13 +15,7 @@ except ImportError as exc:  # pragma: no cover
     ) from exc
 
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-
 def _encode_dsn_password(dsn: str) -> str:
-    """Return *dsn* with the password component percent-encoded."""
     parsed = urlparse(dsn)
     if not parsed.password:
         return dsn
@@ -36,11 +26,6 @@ def _encode_dsn_password(dsn: str) -> str:
     return urlunparse(parsed._replace(netloc=netloc))
 
 
-# ---------------------------------------------------------------------------
-# Public connector class
-# ---------------------------------------------------------------------------
-
-
 class PostgresConnector:
     """Thin wrapper around psycopg2."""
 
@@ -48,11 +33,10 @@ class PostgresConnector:
         self._dsn: str = _encode_dsn_password(dsn) if dsn else ""
         self._conn: psycopg2.extensions.connection | None = None
 
-    # ------------------------------------------------------------------
-    # Connection lifecycle
-    # ------------------------------------------------------------------
-
-    def connect(self) -> None:
+    def connect(self, dsn: str | None = None) -> None:
+        """Open the database connection. Accepts an optional DSN override."""
+        if dsn:
+            self._dsn = _encode_dsn_password(dsn)
         try:
             self._conn = psycopg2.connect(self._dsn)
             self._conn.autocommit = True
@@ -73,10 +57,6 @@ class PostgresConnector:
     def __exit__(self, *_: object) -> None:
         self.disconnect()
 
-    # ------------------------------------------------------------------
-    # Query execution
-    # ------------------------------------------------------------------
-
     def execute(self, sql: str) -> list[dict]:
         if self._conn is None or self._conn.closed:
             self.connect()
@@ -87,17 +67,9 @@ class PostgresConnector:
                 return []
             return [dict(row) for row in cur.fetchall()]
 
-    # ------------------------------------------------------------------
-    # Schema introspection
-    # ------------------------------------------------------------------
-
     def get_schema(self) -> dict[str, list[dict]]:
         sql = """
-            SELECT
-                table_name,
-                column_name,
-                data_type,
-                is_nullable
+            SELECT table_name, column_name, data_type, is_nullable
             FROM information_schema.columns
             WHERE table_schema = 'public'
             ORDER BY table_name, ordinal_position
@@ -106,18 +78,12 @@ class PostgresConnector:
         schema: dict[str, list[dict]] = {}
         for row in rows:
             tbl = row["table_name"]
-            schema.setdefault(tbl, []).append(
-                {
-                    "column": row["column_name"],
-                    "type": row["data_type"],
-                    "nullable": row["is_nullable"] == "YES",
-                }
-            )
+            schema.setdefault(tbl, []).append({
+                "column": row["column_name"],
+                "type": row["data_type"],
+                "nullable": row["is_nullable"] == "YES",
+            })
         return schema
-
-    # ------------------------------------------------------------------
-    # Health check
-    # ------------------------------------------------------------------
 
     def test_connection(self) -> bool:
         try:
