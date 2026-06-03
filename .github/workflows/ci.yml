@@ -38,7 +38,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -e ".[dev,duckdb,mysql,postgres]" --quiet
+        run: pip install -e ".[dev,duckdb,mysql,postgres]" "black>=23.0,<24" --quiet
 
       - name: Lint (ruff)
         run: ruff check .
