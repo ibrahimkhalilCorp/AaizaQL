@@ -35,7 +35,7 @@ except ImportError as _exc:
     ) from _exc
 
 if TYPE_CHECKING:
-    import openai
+    pass
 
 
 # ---------------------------------------------------------------------------

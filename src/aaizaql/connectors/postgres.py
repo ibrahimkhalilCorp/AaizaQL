@@ -76,7 +76,7 @@ class PostgresConnector:
 
     def __init__(self, dsn: str) -> None:
         self._dsn: str = _encode_dsn_password(dsn)
-        self._conn: "psycopg2.extensions.connection | None" = None
+        self._conn: psycopg2.extensions.connection | None = None
 
     # ------------------------------------------------------------------
     # Connection lifecycle
@@ -98,7 +98,7 @@ class PostgresConnector:
             finally:
                 self._conn = None
 
-    def __enter__(self) -> "PostgresConnector":
+    def __enter__(self) -> PostgresConnector:
         self.connect()
         return self
 
