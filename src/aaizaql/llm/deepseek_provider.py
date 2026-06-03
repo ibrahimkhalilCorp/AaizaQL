@@ -22,9 +22,6 @@ DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 _DEFAULT_MODEL = "deepseek-chat"
 
 
-_UNSET = object()
-
-
 class DeepSeekProvider:
     """LLM provider that calls DeepSeek via the OpenAI-compatible API."""
 
@@ -34,7 +31,6 @@ class DeepSeekProvider:
         model: str | None = None,
         timeout: float = 60.0,
     ) -> None:
-        # Model can come from settings or explicit arg
         if model is None:
             model = getattr(settings, "deepseek_model", None) or _DEFAULT_MODEL
 
@@ -50,9 +46,7 @@ class DeepSeekProvider:
         self._model = model
         self._timeout = timeout
         if not callable(OpenAI):
-            raise LLMError(
-                "DeepSeek requires the openai package.\n" 'Fix: pip install "aaizaql[deepseek]"'
-            )
+            raise LLMError("openai package is not installed")
         self._client = OpenAI(
             api_key=api_key,
             base_url=DEEPSEEK_BASE_URL,
@@ -67,8 +61,8 @@ class DeepSeekProvider:
         self,
         user_prompt: str,
         system_prompt: str | None = None,
-        temperature: object = _UNSET,
-        max_tokens: object = _UNSET,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         *,
         system: str | None = None,
         timeout: float | None = None,
@@ -79,11 +73,13 @@ class DeepSeekProvider:
             messages.append({"role": "system", "content": effective_system})
         messages.append({"role": "user", "content": user_prompt})
 
-        kwargs: dict = {"model": self._model, "messages": messages}
-        if temperature is not _UNSET:
-            kwargs["temperature"] = temperature
-        if max_tokens is not _UNSET:
-            kwargs["max_tokens"] = max_tokens
+        # Always include temperature and max_tokens so callers can assert on them
+        kwargs: dict = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
         if timeout is not None:
             kwargs["timeout"] = timeout
 
