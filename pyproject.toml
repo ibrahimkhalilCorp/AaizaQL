@@ -24,9 +24,9 @@ classifiers = [
 ]
 
 # ── Core dependencies ──────────────────────────────────────────────────────
-# chromadb and sentence-transformers are promoted from the optional [rag]
-# extra to core dependencies because QueryEngine.__init__ unconditionally
-# initialises VectorStoreAdapter (Issue #3).  Every user needs them.
+# chromadb and sentence-transformers are optional — install via aaizaql[rag].
+# VectorStoreAdapter is initialised lazily (only when ingest_schema() or
+# train() is first called) so the library is usable without them (Issue #3).
 dependencies = [
   "pandas>=2.0",
   "pydantic>=2.0",
@@ -34,8 +34,6 @@ dependencies = [
   "sqlglot>=20.0",
   "structlog>=23.0",
   "requests>=2.28",
-  "chromadb>=0.4",              # required for VectorStoreAdapter (Issue #3)
-  "sentence-transformers>=2.2", # required for EmbeddingService  (Issue #3)
 ]
 
 # ── Optional dependency groups ─────────────────────────────────────────────
@@ -48,9 +46,11 @@ perplexity  = ["openai>=1.10"]
 gemini      = ["google-genai>=1.0"]
 mistral     = ["mistralai>=1.0"]
 
-# rag is kept for backwards compatibility but is now a no-op extra because
-# chromadb and sentence-transformers are in core deps (Issue #3).
-rag = []
+# rag provides the vector store and embedding packages required by
+# VectorStoreAdapter and EmbeddingService.
+# Install with: pip install "aaizaql[rag]"
+# Combined example: pip install "aaizaql[postgres,deepseek,rag]"
+rag = ["chromadb>=0.4", "sentence-transformers>=2.2"]
 
 postgres  = ["psycopg2-binary>=2.9"]
 mysql     = ["pymysql>=1.1"]
@@ -70,6 +70,8 @@ all = [
   "groq>=0.4",
   "google-genai>=1.0",
   "mistralai>=1.0",
+  "chromadb>=0.4",
+  "sentence-transformers>=2.2",
   "psycopg2-binary>=2.9",
   "pymysql>=1.1",
   "duckdb>=0.10",
@@ -94,6 +96,8 @@ dev = [
   "anthropic>=0.20",
   "openai>=1.10",
   "groq>=0.4",
+  "chromadb>=0.4",
+  "sentence-transformers>=2.2",
   "psycopg2-binary>=2.9",
   "duckdb>=0.10",
   "plotly>=5.0",

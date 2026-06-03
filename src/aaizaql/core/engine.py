@@ -139,17 +139,23 @@ class QueryEngine:
 
         self._llm = build_llm_provider(llm, self._settings)
 
-        # Vector store
+        # Vector store — lazily initialised on first call to ingest_schema(),
+        # train(), or query() so that importing the library does NOT require
+        # chromadb to be installed at __init__ time (Issue #3 — Option B).
+        # Components that need it are wired up via _ensure_vector_store().
 
-        self._vector_store = VectorStoreAdapter(self._settings)
+        self._vector_store: VectorStoreAdapter | None = None
 
-        # Semantic store — holds documentation, enums, Q→SQL pairs
+        # Semantic store — holds documentation, enums, Q→SQL pairs.
+        # Constructed now (cheap, no chromadb import) so define_enum() works
+        # before ingest_schema() is called. The internal _vs reference is
+        # patched to the real VectorStoreAdapter on first use.
 
-        self._semantic = SemanticStore(self._vector_store)
+        self._semantic = SemanticStore(None)  # type: ignore[arg-type]
 
-        # Schema ingester
+        # Schema ingester — likewise cheap to construct; _vs patched on first use.
 
-        self._ingester = SchemaIngester(self._vector_store)
+        self._ingester = SchemaIngester(None)  # type: ignore[arg-type]
 
         # Pipeline components
 
@@ -157,7 +163,7 @@ class QueryEngine:
 
         self._generator = SQLGenerator(
             self._llm,
-            self._vector_store,
+            None,  # type: ignore[arg-type]  # patched on first use
             self._settings,
             self._semantic,
             connector=self._connector,  # T1.1 dialect fix
@@ -169,7 +175,7 @@ class QueryEngine:
             self._llm,
             self._settings,
             validator=self._validator,
-            vector_store=self._vector_store,  # T2.7
+            vector_store=None,  # type: ignore[arg-type]  # patched on first use
             semantic_store=self._semantic,  # enum + doc context on retry
             dialect=self._connector.name,  # dialect label for correction prompt
         )
@@ -185,6 +191,30 @@ class QueryEngine:
 
     # ─────────────────────────────────────────────────────────────────────────
 
+    # Internal helpers
+
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _ensure_vector_store(self) -> VectorStoreAdapter:
+        """Return the VectorStoreAdapter, initialising it on first call.
+
+        Deferred construction means QueryEngine.__init__ does NOT import
+        chromadb at startup.  The first call to ingest_schema(), train(), or
+        query() triggers the import; if chromadb is missing the user gets a
+        clear VectorStoreError pointing to ``pip install "aaizaql[rag]"``
+        rather than an obscure ImportError during engine construction.
+        """
+        if self._vector_store is None:
+            self._vector_store = VectorStoreAdapter(self._settings)
+            # Wire the lazily-created store into all components that need it.
+            self._semantic._vs = self._vector_store  # type: ignore[attr-defined]
+            self._ingester._vs = self._vector_store  # type: ignore[attr-defined]
+            self._generator._vs = self._vector_store  # type: ignore[attr-defined]
+            self._corrector._vector_store = self._vector_store
+        return self._vector_store
+
+    # ─────────────────────────────────────────────────────────────────────────
+
     # Schema
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -197,6 +227,8 @@ class QueryEngine:
         Call once before the first query, and again after schema changes.
 
         """
+
+        self._ensure_vector_store()
 
         logger.info("schema.ingesting")
 
@@ -251,6 +283,8 @@ class QueryEngine:
             engine.train(documentation="...", question="...", sql="...")
 
         """
+
+        self._ensure_vector_store()
 
         if documentation is not None:
 
@@ -372,6 +406,9 @@ class QueryEngine:
         t_start = time.monotonic()
 
         logger.info("query.start", session_id=sid, question=question[:80])
+
+        # Ensure vector store is ready (lazy init — safe even if already done).
+        self._ensure_vector_store()
 
         # T5.3 — rate limiting check
         self._rate_limiter.check(sid)
