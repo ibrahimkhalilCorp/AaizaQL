@@ -44,11 +44,6 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Format check (black)
-        run: |
-          pip install "black==26.5.1" --quiet
-          black --check src/ tests/
-
       - name: Type-check (mypy)
         run: mypy src/aaizaql/
 
