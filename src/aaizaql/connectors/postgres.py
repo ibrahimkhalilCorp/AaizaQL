@@ -25,34 +25,14 @@ except ImportError as exc:  # pragma: no cover
 
 
 def _encode_dsn_password(dsn: str) -> str:
-    """Return *dsn* with the password component percent-encoded.
-
-    psycopg2 / libpq parse the DSN as a URL, so any ``@`` (or other
-    reserved character) inside the password must be encoded as ``%40``
-    before the string is passed to the driver.  We re-assemble the URL
-    from parsed components so that the *existing* ``@`` host separator
-    is never double-encoded.
-
-    Examples
-    --------
-    >>> _encode_dsn_password("postgresql://user:pass@word@host:5432/db")
-    'postgresql://user:pass%40word@host:5432/db'
-    >>> _encode_dsn_password("postgresql://user:simple@host/db")
-    'postgresql://user:simple@host/db'
-    """
+    """Return *dsn* with the password component percent-encoded."""
     parsed = urlparse(dsn)
-
-    # Nothing to do if there is no password or it is already safe.
     if not parsed.password:
         return dsn
-
     encoded_password = quote(parsed.password, safe="")
-
-    # Rebuild netloc: user:encoded_pw@host[:port]
     netloc = f"{parsed.username}:{encoded_password}@{parsed.hostname}"
     if parsed.port:
         netloc += f":{parsed.port}"
-
     return urlunparse(parsed._replace(netloc=netloc))
 
 
@@ -62,20 +42,10 @@ def _encode_dsn_password(dsn: str) -> str:
 
 
 class PostgresConnector:
-    """Thin wrapper around psycopg2 that exposes the interface expected by
-    AaizaQL's ``QueryEngine``.
+    """Thin wrapper around psycopg2."""
 
-    Parameters
-    ----------
-    dsn:
-        A ``postgresql://user:password@host:port/dbname`` connection string.
-        Passwords containing URL-reserved characters (``@ : / ? # [ ] !``)
-        are automatically percent-encoded before the DSN is forwarded to the
-        driver (fixes Issue #1).
-    """
-
-    def __init__(self, dsn: str) -> None:
-        self._dsn: str = _encode_dsn_password(dsn)
+    def __init__(self, dsn: str | None = None) -> None:
+        self._dsn: str = _encode_dsn_password(dsn) if dsn else ""
         self._conn: psycopg2.extensions.connection | None = None
 
     # ------------------------------------------------------------------
@@ -83,7 +53,6 @@ class PostgresConnector:
     # ------------------------------------------------------------------
 
     def connect(self) -> None:
-        """Open (or re-open) the database connection."""
         try:
             self._conn = psycopg2.connect(self._dsn)
             self._conn.autocommit = True
@@ -91,7 +60,6 @@ class PostgresConnector:
             raise ConnectionError(f"Cannot connect to 'postgresql' ({self._dsn}): {exc}") from exc
 
     def disconnect(self) -> None:
-        """Close the connection if open."""
         if self._conn is not None:
             try:
                 self._conn.close()
@@ -110,12 +78,9 @@ class PostgresConnector:
     # ------------------------------------------------------------------
 
     def execute(self, sql: str) -> list[dict]:
-        """Execute *sql* and return rows as a list of dicts."""
         if self._conn is None or self._conn.closed:
             self.connect()
-
-        assert self._conn is not None  # satisfy mypy
-
+        assert self._conn is not None
         with self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(sql)
             if cur.description is None:
@@ -127,8 +92,6 @@ class PostgresConnector:
     # ------------------------------------------------------------------
 
     def get_schema(self) -> dict[str, list[dict]]:
-        """Return ``{table_name: [{column, type, nullable}, ...]}`` for the
-        current database's public schema."""
         sql = """
             SELECT
                 table_name,
@@ -140,7 +103,6 @@ class PostgresConnector:
             ORDER BY table_name, ordinal_position
         """
         rows = self.execute(sql)
-
         schema: dict[str, list[dict]] = {}
         for row in rows:
             tbl = row["table_name"]
@@ -153,8 +115,11 @@ class PostgresConnector:
             )
         return schema
 
+    # ------------------------------------------------------------------
+    # Health check
+    # ------------------------------------------------------------------
+
     def test_connection(self) -> bool:
-        """Return True if a connection can be established."""
         try:
             self.connect()
             self.execute("SELECT 1")
