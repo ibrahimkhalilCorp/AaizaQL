@@ -46,6 +46,10 @@ class DeepSeekProvider:
 
         self._model = model
         self._timeout = timeout
+        if not callable(OpenAI):
+            raise ImportError(
+                "DeepSeek requires the openai package.\n" 'Fix: pip install "aaizaql[deepseek]"'
+            )
         self._client = OpenAI(
             api_key=api_key,
             base_url=DEEPSEEK_BASE_URL,
@@ -60,10 +64,10 @@ class DeepSeekProvider:
         self,
         user_prompt: str,
         system_prompt: str | None = None,
-        *,
-        system: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        *,
+        system: str | None = None,
         timeout: float | None = None,
     ) -> str:
         effective_system = system_prompt or system
