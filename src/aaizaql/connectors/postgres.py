@@ -152,3 +152,18 @@ class PostgresConnector:
                 }
             )
         return schema
+
+    def test_connection(self) -> bool:
+        """Return True if a connection can be established."""
+        try:
+            self.connect()
+            self.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+        finally:
+            self.disconnect()
+
+
+# Alias expected by connectors/__init__.py and the test suite
+PostgreSQLConnector = PostgresConnector

@@ -3,29 +3,15 @@ DeepSeek LLM provider for AaizaQL.
 
 DeepSeek exposes an OpenAI-compatible REST API, so this provider is a thin
 wrapper around the ``openai`` SDK pointed at DeepSeek's base URL.
-
-Fix (Issue #2): An explicit import check at module load time raises an
-``ImportError`` that points users to the correct install command::
-
-    pip install "aaizaql[deepseek]"
-
-instead of the unhelpful ``pip install openai`` message that appeared before.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 # ---------------------------------------------------------------------------
-# Eager import guard — Issue #2
-# ---------------------------------------------------------------------------
-# The openai package is NOT in the base dependencies and NOT pulled in by
-# aaizaql[postgres].  Check for it immediately so users get a clear, actionable
-# error at QueryEngine.__init__ time rather than a confusing AttributeError
-# deep inside the call stack.
+# Eager import guard — expose OpenAI at module level so tests can patch it
 # ---------------------------------------------------------------------------
 try:
-    import openai as _openai
+    from openai import OpenAI
 except ImportError as _exc:
     raise ImportError(
         "DeepSeek requires the openai package, which is not installed.\n"
@@ -34,15 +20,12 @@ except ImportError as _exc:
         'pip install "aaizaql[postgres,deepseek]"'
     ) from _exc
 
-if TYPE_CHECKING:
-    pass
-
+from aaizaql.core.exceptions import LLMError
 
 # ---------------------------------------------------------------------------
-# Provider
+# Public constants (tests import these directly)
 # ---------------------------------------------------------------------------
-
-_DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
+DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 _DEFAULT_MODEL = "deepseek-chat"
 
 
@@ -62,50 +45,58 @@ class DeepSeekProvider:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         model: str = _DEFAULT_MODEL,
         timeout: float = 60.0,
     ) -> None:
+        if not api_key:
+            raise LLMError("AAIZAQL_DEEPSEEK_API_KEY is not set")
         self._model = model
-        self._client = _openai.OpenAI(
+        self._client = OpenAI(
             api_key=api_key,
-            base_url=_DEEPSEEK_BASE_URL,
+            base_url=DEEPSEEK_BASE_URL,
             timeout=timeout,
         )
+
+    @property
+    def name(self) -> str:
+        return "deepseek"
 
     # ------------------------------------------------------------------
     # Core interface expected by QueryEngine / SQLGenerator
     # ------------------------------------------------------------------
 
-    def complete(self, system_prompt: str, user_prompt: str) -> str:
+    def complete(self, user_prompt: str, system_prompt: str | None = None) -> str:
         """Return the model's text completion for the given prompts.
 
         Parameters
         ----------
-        system_prompt:
-            Instructions / schema context injected as the ``system`` role.
         user_prompt:
             The natural-language question from the user.
+        system_prompt:
+            Optional instructions / schema context injected as the ``system`` role.
         """
-        response = self._client.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": user_prompt})
+
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+            )
+        except Exception as exc:
+            raise LLMError(f"DeepSeek API error: {exc}") from exc
+
         content = response.choices[0].message.content
         if content is None:
-            raise ValueError(f"DeepSeek returned an empty response for model '{self._model}'.")
+            raise LLMError(f"DeepSeek returned an empty response for model '{self._model}'.")
         return content
 
     # Convenience alias used by some internal callers.
     def generate(self, system_prompt: str, user_prompt: str) -> str:
-        return self.complete(system_prompt, user_prompt)
-
-    # ------------------------------------------------------------------
-    # Repr
-    # ------------------------------------------------------------------
+        return self.complete(user_prompt=user_prompt, system_prompt=system_prompt)
 
     def __repr__(self) -> str:
         return f"DeepSeekProvider(model={self._model!r})"

@@ -78,6 +78,10 @@ class SemanticStore:
         if not paragraphs:
             return
 
+        if self._vs is None:
+            logger.info("semantic.documentation_trained", paragraphs=len(paragraphs))
+            return
+
         for para in paragraphs:
             doc_id = f"doc_{self._fingerprint(para)}"
             embedding = self._embed(para)
@@ -94,6 +98,8 @@ class SemanticStore:
         Retrieve the most relevant documentation chunks for a question.
         Returns a joined string ready for prompt injection.
         """
+        if self._vs is None:
+            return ""
         hits = self._vs.search(
             query=question,
             filter_type="documentation",
@@ -107,6 +113,8 @@ class SemanticStore:
 
     def train_sql_pair(self, question: str, sql: str) -> None:
         """Store a verified (question, SQL) pair for few-shot retrieval."""
+        if self._vs is None:
+            return
         text = f"Question: {question}\nSQL: {sql}"
         doc_id = f"pair_{self._fingerprint(question)}"
         embedding = self._embed(question)
@@ -129,12 +137,17 @@ class SemanticStore:
         """
         Register a code → label mapping for a table column.
         These are always injected into every prompt — no RAG retrieval required.
-        Also upserted to the vector store for reference.
+        Also upserted to the vector store for reference (when available).
         """
         key = f"{table}.{column}"
         str_mapping = {str(k): str(v) for k, v in mapping.items()}
         self._enums[key] = str_mapping
-        # Upsert to vector store so it is searchable/persistable
+        logger.info("semantic.enum_defined", key=key, values=len(mapping))
+
+        # Vector store is optional — skip upsert when not configured.
+        if self._vs is None:
+            return
+
         text = f"{key}: " + ", ".join(f"{k}={v}" for k, v in str_mapping.items())
         doc_id = f"enum_{key}"
         embedding = self._embed(text)
@@ -144,7 +157,6 @@ class SemanticStore:
             embedding=embedding,
             metadata={"type": "enum", "table": table, "column": column},
         )
-        logger.info("semantic.enum_defined", key=key, values=len(mapping))
 
     def has_enums(self) -> bool:
         return bool(self._enums)
