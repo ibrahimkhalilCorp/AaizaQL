@@ -11,7 +11,6 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-
 from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -91,9 +90,11 @@ class TestSnowflakeConnector:
         from aaizaql.connectors.snowflake import SnowflakeConnector
 
         conn = SnowflakeConnector()
-        with patch.dict("sys.modules", {"snowflake": None, "snowflake.connector": None}):
-            with pytest.raises((ConnectionError, Exception)):
-                conn.connect("snowflake://u:p@acct/db")
+        with (
+            patch.dict("sys.modules", {"snowflake": None, "snowflake.connector": None}),
+            pytest.raises((ConnectionError, Exception)),
+        ):
+            conn.connect("snowflake://u:p@acct/db")
 
     # ── execute ───────────────────────────────────────────────────────────────
 
@@ -298,12 +299,14 @@ class TestBigQueryConnector:
         from aaizaql.connectors.bigquery import BigQueryConnector
 
         conn = BigQueryConnector()
-        with patch.dict(
-            "sys.modules",
-            {"google": None, "google.cloud": None, "google.cloud.bigquery": None},
+        with (
+            patch.dict(
+                "sys.modules",
+                {"google": None, "google.cloud": None, "google.cloud.bigquery": None},
+            ),
+            pytest.raises((ConnectionError, Exception)),
         ):
-            with pytest.raises((ConnectionError, Exception)):
-                conn.connect("bigquery://proj/ds")
+            conn.connect("bigquery://proj/ds")
 
     # ── execute ───────────────────────────────────────────────────────────────
 
@@ -460,9 +463,11 @@ class TestMSSQLConnector:
         from aaizaql.connectors.mssql import MSSQLConnector
 
         conn = MSSQLConnector()
-        with patch.dict("sys.modules", {"pyodbc": None}):
-            with pytest.raises((ConnectionError, Exception)):
-                conn.connect("mssql://sa:pass@localhost/mydb")
+        with (
+            patch.dict("sys.modules", {"pyodbc": None}),
+            pytest.raises((ConnectionError, Exception)),
+        ):
+            conn.connect("mssql://sa:pass@localhost/mydb")
 
     # ── execute ───────────────────────────────────────────────────────────────
 
@@ -594,9 +599,11 @@ class TestOracleConnector:
         from aaizaql.connectors.oracle import OracleConnector
 
         conn = OracleConnector()
-        with patch.dict("sys.modules", {"oracledb": None}):
-            with pytest.raises((ConnectionError, Exception)):
-                conn.connect("oracle://u:p@host/svc")
+        with (
+            patch.dict("sys.modules", {"oracledb": None}),
+            pytest.raises((ConnectionError, Exception)),
+        ):
+            conn.connect("oracle://u:p@host/svc")
 
     # ── execute ───────────────────────────────────────────────────────────────
 

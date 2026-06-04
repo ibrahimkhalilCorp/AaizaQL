@@ -45,7 +45,9 @@ class DeepSeekProvider:
 
         self._model = model
         self._timeout = timeout
-        self._settings = settings
+        self._temperature: float = getattr(settings, "llm_temperature", 0.0) or 0.0
+        self._max_tokens: int = getattr(settings, "llm_max_tokens", 1024) or 1024
+
         if not callable(OpenAI):
             raise LLMError("openai package is not installed")
         self._client = OpenAI(
@@ -74,13 +76,12 @@ class DeepSeekProvider:
             messages.append({"role": "system", "content": effective_system})
         messages.append({"role": "user", "content": user_prompt})
 
-        # Fall back to settings-level defaults when caller doesn't supply values.
+        # Fall back to instance-level defaults sourced from settings at init time.
         if temperature is None:
-            temperature = getattr(self._settings, "llm_temperature", None)
+            temperature = self._temperature
         if max_tokens is None:
-            max_tokens = getattr(self._settings, "llm_max_tokens", None)
+            max_tokens = self._max_tokens
 
-        # Always include temperature and max_tokens so callers can assert on them
         kwargs: dict = {
             "model": self._model,
             "messages": messages,
