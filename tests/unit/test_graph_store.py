@@ -6,8 +6,6 @@ Uses a tmp_path fixture so nothing touches the real filesystem.
 networkx is a dev dependency — always installed in the test environment.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -16,7 +14,6 @@ import pytest
 from aaizaql.schema.graph_store import GraphStore
 
 TENANT = "tenant_test"
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

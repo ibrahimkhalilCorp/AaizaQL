@@ -5,8 +5,6 @@ Unit tests for the heavy connectors (Snowflake, BigQuery, MSSQL, Oracle, MySQL).
 All third-party drivers are mocked — no real databases or credentials needed.
 """
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock, patch
 
 import pandas as pd

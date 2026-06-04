@@ -8,8 +8,6 @@ patch it via sys.modules at the point of import, and we also patch the
 module-level reference used after import.
 """
 
-from __future__ import annotations
-
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
