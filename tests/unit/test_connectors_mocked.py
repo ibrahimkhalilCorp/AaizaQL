@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+
 from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -11,6 +11,7 @@ module-level reference used after import.
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
+
 from aaizaql.visualization.renderer import ResultRenderer, _is_datetime_col
 
 # ── _is_datetime_col ──────────────────────────────────────────────────────────
@@ -164,6 +165,7 @@ class TestResultRenderer:
         with _patch_plotly(fake_px):
             r.render(df, question="How many items?")
         call_kwargs = fake_px.bar.call_args.kwargs
+
         assert call_kwargs["title"] == "How many items?"
 
     def test_default_title_when_no_question(self) -> None:
