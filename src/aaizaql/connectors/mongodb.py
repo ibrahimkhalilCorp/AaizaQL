@@ -3,23 +3,30 @@ aaizaql.connectors.mongodb
 ──────────────────────────
 MongoDB connector using pymongo.
 
-Unlike SQL connectors, MongoDB operates on collections rather than SQL tables.
-The execute() method accepts a JSON-encoded query descriptor:
+Unlike SQL connectors, MongoDB operates on collections with JSON query
+descriptors instead of SQL statements. The ``execute()`` method accepts a
+JSON-encoded query descriptor:
 
-  {"collection": "users", "filter": {"active": true}}
-  {"collection": "orders", "filter": {}, "limit": 100}
-  {"collection": "products", "filter": {"price": {"$gt": 50}}, "projection": {"name": 1}}
+    ``{"collection": "users", "filter": {"active": true}}``
 
-DSN format:
-  mongodb://user:password@host:27017/dbname
-  mongodb://user:password@host:27017/dbname?authSource=admin
-  mongodb://localhost:27017/dbname
+    ``{"collection": "orders", "filter": {}, "limit": 100}``
 
-Install:
-  pip install aaizaql[mongodb]   # or: pip install pymongo
+    ``{"collection": "products", "filter": {"price": {"$gt": 50}}, "projection": {"name": 1}}``
+
+DSN format::
+
+    mongodb://user:password@host:27017/dbname
+    mongodb://user:password@host:27017/dbname?authSource=admin
+    mongodb://localhost:27017/dbname
+
+Install::
+
+    pip install "aaizaql[mongodb]"   # or: pip install pymongo
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
 """
-
-from __future__ import annotations
 
 import json
 from typing import Any
@@ -35,13 +42,17 @@ logger = structlog.get_logger(__name__)
 
 
 class MongoDBConnector(DatabaseConnector):
-    """
-    MongoDB adapter via pymongo.
+    """MongoDB adapter via pymongo.
 
-    MongoDB does not use SQL; the execute() method accepts a JSON query
-    descriptor string instead of a SQL statement.
+    MongoDB does not use SQL. The :meth:`execute` method accepts a JSON
+    query descriptor string instead of a SQL statement, and
+    ``requires_sql_validation`` is set to ``False`` so the security
+    validator skips SQL-specific checks.
 
-    Usage::
+    Args (set at construction, no direct params):
+        Call :meth:`connect` with a DSN string after instantiation.
+
+    Example::
 
         engine = QueryEngine(
             llm="groq",
@@ -49,15 +60,22 @@ class MongoDBConnector(DatabaseConnector):
             dsn="mongodb://user:password@localhost:27017/mydb?authSource=admin",
         )
 
-    Query format passed to execute()::
+    Query format passed to ``execute()``::
 
         '{"collection": "employees", "filter": {"department": "Engineering"}}'
 
-    Optional keys: ``limit`` (int), ``projection`` (dict), ``sort`` (list of [field, direction]).
+    Optional keys: ``limit`` (int), ``projection`` (dict),
+    ``sort`` (list of ``[field, direction]`` pairs),
+    ``raise_if_empty`` (bool).
     """
 
     name = "mongodb"
-    requires_sql_validation = False  # T1.2 — MongoDB uses JSON descriptors, not SQL
+    requires_sql_validation = False  # MongoDB uses JSON descriptors, not SQL.
+
+    # Operators that execute arbitrary server-side code or allow full-collection
+    # scans via JavaScript injection.  $expr is blocked because it can embed
+    # $function/$where inside an aggregation expression.
+    _BLOCKED_OPERATORS: frozenset[str] = frozenset({"$where", "$function", "$accumulator", "$expr"})
 
     def __init__(self) -> None:
         self._client: Any = None
@@ -68,14 +86,18 @@ class MongoDBConnector(DatabaseConnector):
     # ── Connection ────────────────────────────────────────────────────────────
 
     def connect(self, dsn: str) -> None:
-        """
-        Connect to MongoDB.
+        """Connect to a MongoDB instance and select the database from the DSN path.
 
-        DSN examples::
+        Performs a ``ping`` immediately after connecting to verify the server
+        is reachable before returning.
 
-          mongodb://user:password@localhost:27017/mydb?authSource=admin
-          mongodb://localhost:27017/mydb
-          mongodb+srv://user:password@cluster.mongodb.net/mydb
+        Args:
+            dsn: MongoDB connection string. The database name is derived from
+                the URL path component (e.g. ``/mydb``).
+
+        Raises:
+            ConnectionError: If pymongo is not installed, the server is
+                unreachable, or authentication fails.
         """
         try:
             import pymongo
@@ -89,9 +111,7 @@ class MongoDBConnector(DatabaseConnector):
         self._dsn = dsn
         try:
             self._client = pymongo.MongoClient(dsn, serverSelectionTimeoutMS=5000)
-            # Force connection check
             self._client.admin.command("ping")
-            # Derive database name from DSN path
             parsed = urlparse(dsn)
             db_name = parsed.path.lstrip("/").split("?")[0] or "aaizaql_test"
             self._db_name = db_name
@@ -103,29 +123,31 @@ class MongoDBConnector(DatabaseConnector):
     # ── Execution ─────────────────────────────────────────────────────────────
 
     def execute(self, query_json: str) -> pd.DataFrame:
-        """
-        Execute a MongoDB query described by a JSON string.
+        """Execute a MongoDB query described by a JSON string.
 
-        Parameters
-        ----------
-        query_json:
-            JSON string with keys:
-            - ``collection`` (required): collection name
-            - ``filter`` (optional, default ``{}``): MongoDB filter document
-            - ``projection`` (optional): fields to include/exclude
-            - ``limit`` (optional, default 0 = no limit): max documents
-            - ``sort`` (optional): list of ``[field, direction]`` pairs
-            - ``raise_if_empty`` (optional, bool): raise DatabaseError if no docs found
+        Sanitises all untrusted documents (filter, projection) before sending
+        to MongoDB to prevent server-side JavaScript injection via operators
+        such as ``$where`` and ``$function``.
 
-        Returns
-        -------
-        pd.DataFrame
-            Query results. Empty DataFrame if no documents match.
+        Args:
+            query_json: JSON string with keys:
 
-        Raises
-        ------
-        aaizaql.core.exceptions.DatabaseError
-            On execution failure or when ``raise_if_empty=True`` and result is empty.
+                - ``collection`` *(required)*: collection name.
+                - ``filter`` *(optional, default ``{}``)*: MongoDB filter document.
+                - ``projection`` *(optional)*: fields to include or exclude.
+                - ``limit`` *(optional, default 0 = no limit)*: max documents.
+                - ``sort`` *(optional)*: list of ``[field, direction]`` pairs.
+                - ``raise_if_empty`` *(optional, bool)*: raise if no docs found.
+
+        Returns:
+            Query results as a DataFrame. ``_id`` fields are coerced to ``str``
+            so pandas does not raise on ObjectId values. Returns an empty
+            DataFrame when no documents match.
+
+        Raises:
+            DatabaseError: On JSON parse failure, blocked operators, missing
+                ``collection`` key, forbidden collection names, or pymongo
+                errors.
         """
         if self._db is None:
             raise DatabaseError(
@@ -142,8 +164,6 @@ class MongoDBConnector(DatabaseConnector):
                 connector="mongodb",
             ) from exc
 
-        # fix — sanitise every untrusted document in the query spec, not just filter.
-        # projection keys can also carry operators; sort items are validated separately.
         self._sanitise_doc(spec.get("filter", {}), query_json, context="filter")
         if spec.get("projection") is not None:
             self._sanitise_doc(spec["projection"], query_json, context="projection")
@@ -155,7 +175,7 @@ class MongoDBConnector(DatabaseConnector):
                 sql=query_json,
                 connector="mongodb",
             )
-        # fix — reject collection names that could reference internal namespaces.
+        # Reject collection names that could reference internal namespaces.
         if collection_name.startswith("system.") or "$" in collection_name:
             raise DatabaseError(
                 f"Collection name '{collection_name}' is not allowed.",
@@ -191,7 +211,6 @@ class MongoDBConnector(DatabaseConnector):
             return pd.DataFrame()
 
         df = pd.DataFrame(docs)
-        # Convert ObjectId to str so pandas doesn't choke
         if "_id" in df.columns:
             df["_id"] = df["_id"].astype(str)
         return df
@@ -199,11 +218,15 @@ class MongoDBConnector(DatabaseConnector):
     # ── Schema ────────────────────────────────────────────────────────────────
 
     def get_schema(self) -> str:
-        """
-        Return a human-readable schema summary for all collections.
+        """Return a pseudo-DDL schema summary for all collections.
 
-        Samples up to 100 documents per collection to infer field names and types.
-        Returns a string of pseudo-DDL suitable for LLM context injection.
+        Samples up to 100 documents per collection to infer field names and
+        Python types, then formats them as ``COLLECTION name (field type, ...)``
+        strings suitable for LLM prompt injection.
+
+        Returns:
+            Schema string with one line per collection. Returns an empty
+            string if not connected or on any error.
         """
         if self._db is None:
             return ""
@@ -214,12 +237,11 @@ class MongoDBConnector(DatabaseConnector):
                 if not sample:
                     parts.append(f"COLLECTION {coll_name} (empty)")
                     continue
-                # Collect unique field → type mappings
                 fields: dict[str, str] = {}
                 for doc in sample:
-                    for k, v in doc.items():
-                        if k not in fields:
-                            fields[k] = type(v).__name__
+                    for key, val in doc.items():
+                        if key not in fields:
+                            fields[key] = type(val).__name__
                 field_lines = ", ".join(f"{k} {t}" for k, t in fields.items())
                 parts.append(f"COLLECTION {coll_name} ({field_lines})")
             return "\n\n".join(parts)
@@ -228,29 +250,45 @@ class MongoDBConnector(DatabaseConnector):
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    # Operators that execute arbitrary server-side code or allow full-scan
-    # injection.  $expr is included because it can embed $function/$where
-    # inside an aggregation expression.
-    _BLOCKED_OPERATORS: frozenset[str] = frozenset(
-        {
-            "$where",
-            "$function",
-            "$accumulator",
-            "$expr",
-        }
-    )
+    def test_connection(self) -> bool:
+        """Return ``True`` if the MongoDB server is reachable.
+
+        Returns:
+            ``True`` if ``ping`` succeeds, ``False`` otherwise.
+        """
+        try:
+            self._client.admin.command("ping")
+            return True
+        except Exception:
+            return False
+
+    def close(self) -> None:
+        """Close the pymongo client and release all connections in the pool."""
+        if self._client:
+            self._client.close()
+            self._client = None
+            self._db = None
+            logger.info("mongodb.closed")
+
+    # ── Security helpers ──────────────────────────────────────────────────────
 
     @staticmethod
     def _sanitise_doc(doc: object, raw: str, context: str = "filter") -> None:
-        """
-        Recursively reject dangerous $ operators anywhere in a query document.
+        """Recursively reject dangerous ``$`` operators in a query document.
 
         Walks dicts and lists so operators nested inside ``$or``/``$and``
-        arrays are also caught.  Call this for every untrusted document that
+        arrays are also caught. Call this for every untrusted document that
         reaches the database (filter, projection, sort items, etc.).
-        """
-        from aaizaql.core.exceptions import DatabaseError  # local to avoid circular
 
+        Args:
+            doc: The document or value to inspect (may be any JSON type).
+            raw: The original raw query JSON — used in the error message.
+            context: Label for the error message (e.g. ``"filter"``).
+
+        Raises:
+            DatabaseError: If a blocked operator key is found anywhere in
+                the document tree.
+        """
         if isinstance(doc, dict):
             for key, val in doc.items():
                 if key in MongoDBConnector._BLOCKED_OPERATORS:
@@ -266,19 +304,10 @@ class MongoDBConnector(DatabaseConnector):
 
     @staticmethod
     def _sanitise_filter(doc: dict, raw: str) -> None:
-        """Backward-compatible shim — delegates to _sanitise_doc."""
+        """Backward-compatible shim — delegates to :meth:`_sanitise_doc`.
+
+        Args:
+            doc: Filter document to sanitise.
+            raw: Original raw query JSON for error context.
+        """
         MongoDBConnector._sanitise_doc(doc, raw, context="filter")
-
-    def test_connection(self) -> bool:
-        try:
-            self._client.admin.command("ping")
-            return True
-        except Exception:
-            return False
-
-    def close(self) -> None:
-        if self._client:
-            self._client.close()
-            self._client = None
-            self._db = None
-            logger.info("mongodb.closed")

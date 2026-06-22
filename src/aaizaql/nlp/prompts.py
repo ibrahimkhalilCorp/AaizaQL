@@ -1,15 +1,17 @@
 """
-AAIZAQL.nlp.prompts
-──────────────────
-All prompt templates used in SQL generation.
+aaizaql.nlp.prompts
+───────────────────
+All prompt templates used in SQL generation and correction.
 
-Rule: Never put prompts in generator.py — keep them here so they can be
-reviewed, versioned, and overridden without touching logic.
+Rule: prompts never live in generator.py or corrector.py — keeping them here
+allows review, versioning, and override without touching pipeline logic.
+
+Author: Ibrahim
+Date: 2026-06-16
+Version: 1.0.0
 """
 
-from __future__ import annotations
-
-# ── System Prompt ────────────────────────────────────────────────────────────
+# ── System Prompt ─────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
 You are an expert SQL generator. Your ONLY job is to produce a single valid SQL SELECT statement.
@@ -24,7 +26,7 @@ STRICT RULES — never violate these:
 7. Use dialect-appropriate date/time syntax from the schema hint.
 """
 
-# ── Context Template ─────────────────────────────────────────────────────────
+# ── Context Template ──────────────────────────────────────────────────────────
 
 CONTEXT_TEMPLATE = """\
 --- DATABASE SCHEMA (dialect: {dialect}) ---
@@ -43,7 +45,7 @@ CONTEXT_TEMPLATE = """\
 
 SQL:"""
 
-# ── Enum block wrapper (injected only when enums exist) ───────────────────────
+# ── Enum Block Wrapper ────────────────────────────────────────────────────────
 
 ENUM_BLOCK_TEMPLATE = """\
 --- COLUMN CODE MAPPINGS (ALWAYS use these exact numbers, never guess) ---
@@ -51,7 +53,7 @@ ENUM_BLOCK_TEMPLATE = """\
 
 """
 
-# ── Documentation block wrapper ───────────────────────────────────────────────
+# ── Documentation Block Wrapper ───────────────────────────────────────────────
 
 DOC_BLOCK_TEMPLATE = """\
 --- BUSINESS CONTEXT ---
@@ -76,7 +78,7 @@ Think step by step. Then write the final SQL after the [SQL] marker.
 
 COT_PROMPT_SUFFIX = "\n\n[SQL]\n"
 
-# ── Self-Correction Template ─────────────────────────────────────────────────
+# ── Self-Correction Template ──────────────────────────────────────────────────
 
 SELF_CORRECTION_TEMPLATE = """\
 The following SQL query failed with an error. Fix it and return ONLY the corrected SQL.
@@ -94,8 +96,6 @@ DATABASE SCHEMA (for reference):
 {enum_block}{doc_block}
 Output ONLY the corrected SQL — no explanation, no markdown.\
 """
-
-# ── Query Decomposition (T3.7: removed until QueryDecomposer is implemented in T4.6) ──
 
 # ── NL Summary Template ───────────────────────────────────────────────────────
 

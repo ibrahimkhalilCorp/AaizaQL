@@ -1,15 +1,24 @@
 """
 aaizaql.connectors.snowflake
-───────────────────────────
+────────────────────────────
 Snowflake connector using snowflake-connector-python.
 
-DSN format:
-  snowflake://user:password@account/database/schema?warehouse=WH&role=ROLE
+DSN format::
 
-All query parameters are optional but warehouse is strongly recommended.
+    snowflake://user:password@account/database/schema?warehouse=WH&role=ROLE
+
+All query parameters are optional, but specifying a warehouse is strongly
+recommended to avoid using the default (and potentially expensive) virtual
+warehouse.
+
+Install::
+
+    pip install "aaizaql[snowflake]"   # or: pip install snowflake-connector-python
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
 """
-
-from __future__ import annotations
 
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -24,6 +33,24 @@ logger = structlog.get_logger(__name__)
 
 
 class SnowflakeConnector(DatabaseConnector):
+    """Snowflake cloud data warehouse adapter.
+
+    Connects via the official Snowflake Python connector. Schema is
+    reconstructed from ``INFORMATION_SCHEMA.COLUMNS`` because
+    ``GET_DDL`` requires ACCOUNTADMIN or ownership privileges.
+
+    Args (set at construction, no direct params):
+        Call :meth:`connect` with a DSN string after instantiation.
+
+    Example::
+
+        engine = QueryEngine(
+            llm="openai",
+            database="snowflake",
+            dsn="snowflake://myuser:mypass@myaccount/mydb/PUBLIC?warehouse=COMPUTE_WH",
+        )
+    """
+
     name = "snowflake"
 
     def __init__(self) -> None:
@@ -33,10 +60,16 @@ class SnowflakeConnector(DatabaseConnector):
         self._schema: str = "PUBLIC"
 
     def connect(self, dsn: str) -> None:
-        """
-        dsn examples:
-          snowflake://myuser:mypass@myaccount/mydb/myschema?warehouse=COMPUTE_WH
-          snowflake://myuser:mypass@myaccount.us-east-1/mydb?warehouse=WH&role=ANALYST
+        """Establish a connection to Snowflake.
+
+        Args:
+            dsn: Snowflake connection string. Path components are
+                ``/database/schema`` (both optional). Query params:
+                ``warehouse``, ``role``.
+
+        Raises:
+            ConnectionError: If the Snowflake connector is not installed,
+                or authentication/network fails.
         """
         try:
             import snowflake.connector
@@ -70,6 +103,18 @@ class SnowflakeConnector(DatabaseConnector):
             raise ConnectionError("snowflake", dsn[:40], str(exc)) from exc
 
     def execute(self, sql: str) -> pd.DataFrame:
+        """Execute a SQL statement and return results as a DataFrame.
+
+        Args:
+            sql: A validated SQL statement to execute.
+
+        Returns:
+            Query results as a DataFrame. Returns an empty DataFrame when
+            the statement produces no rows.
+
+        Raises:
+            DatabaseError: On any Snowflake execution error.
+        """
         if self._conn is None:
             raise DatabaseError(
                 "Not connected. Call connect() first.", sql=sql, connector="snowflake"
@@ -86,10 +131,15 @@ class SnowflakeConnector(DatabaseConnector):
             raise DatabaseError(str(exc), sql=sql, connector="snowflake") from exc
 
     def get_schema(self) -> str:
-        """
-        Return a DDL-style schema string for all tables in the current database/schema.
-        Snowflake doesn't expose GET_DDL easily via INFORMATION_SCHEMA, so we
-        reconstruct CREATE TABLE statements from column metadata.
+        """Return CREATE TABLE DDL for all tables in the current database/schema.
+
+        Reconstructs DDL from ``INFORMATION_SCHEMA.COLUMNS`` because
+        Snowflake's ``GET_DDL`` requires elevated privileges not available
+        to all roles.
+
+        Returns:
+            DDL string with one CREATE TABLE block per table. Returns an
+            empty string if not connected, no tables found, or on any error.
         """
         if self._conn is None:
             return ""
@@ -117,7 +167,8 @@ class SnowflakeConnector(DatabaseConnector):
                 return ""
 
             ddl_parts: list[str] = []
-            for table_name, group in df.groupby("TABLE_NAME"):
+            for table_name_raw, group in df.groupby("TABLE_NAME"):
+                table_name = str(table_name_raw)
                 col_defs: list[str] = []
                 for _, row in group.iterrows():
                     dtype = row["DATA_TYPE"]
@@ -125,7 +176,6 @@ class SnowflakeConnector(DatabaseConnector):
                         row["CHARACTER_MAXIMUM_LENGTH"]
                     ):
                         dtype = f"{dtype}({int(row['CHARACTER_MAXIMUM_LENGTH'])})"
-                    # T3.7 — removed dead ternary; only the correct assignment remains
                     not_null = " NOT NULL" if row["IS_NULLABLE"] == "NO" else ""
                     col_defs.append(f"  {row['COLUMN_NAME']} {dtype}{not_null}")
 
@@ -142,12 +192,19 @@ class SnowflakeConnector(DatabaseConnector):
             return ""
 
     def close(self) -> None:
+        """Close the Snowflake connection and release the session."""
         if self._conn:
             self._conn.close()
             self._conn = None
             logger.info("snowflake.closed", account=self._account)
 
     def test_connection(self) -> bool:
+        """Return ``True`` if the Snowflake connection is alive.
+
+        Returns:
+            ``True`` if ``SELECT CURRENT_VERSION()`` succeeds, ``False``
+            otherwise.
+        """
         try:
             cur = self._conn.cursor()
             cur.execute("SELECT CURRENT_VERSION()")
@@ -159,9 +216,18 @@ class SnowflakeConnector(DatabaseConnector):
 
     @staticmethod
     def _parse_dsn(dsn: str) -> dict[str, Any]:
-        """
-        Parse snowflake://user:pass@account/database/schema?warehouse=WH&role=ROLE
-        into a flat dict of connection parameters.
+        """Parse a Snowflake DSN URL into a flat dict of connection parameters.
+
+        Args:
+            dsn: Snowflake connection string in the form
+                ``"snowflake://user:pass@account/database/schema?warehouse=WH"``.
+
+        Returns:
+            Dict with keys ``user``, ``password``, ``account``, ``database``,
+            ``schema``, ``warehouse``, and ``role``.
+
+        Raises:
+            ValueError: If the scheme is not ``snowflake``.
         """
         parsed = urlparse(dsn)
         if parsed.scheme != "snowflake":
@@ -169,14 +235,11 @@ class SnowflakeConnector(DatabaseConnector):
                 f"Invalid scheme {parsed.scheme!r}. DSN must start with 'snowflake://'."
             )
 
-        # Path is /database/schema — both optional
         path_parts = [p for p in parsed.path.split("/") if p]
         database = path_parts[0] if len(path_parts) > 0 else ""
         schema = path_parts[1] if len(path_parts) > 1 else "PUBLIC"
 
-        # Query string params
         qs = parse_qs(parsed.query)
-
         return {
             "user": parsed.username or "",
             "password": parsed.password or "",

@@ -1,18 +1,28 @@
 """
 aaizaql.connectors.bigquery
-────────────────────────────
+───────────────────────────
 Google BigQuery connector using google-cloud-bigquery.
 
-DSN format:
-  bigquery://project_id/dataset_id
-  bigquery://project_id/dataset_id?credentials_path=/path/to/key.json
+Authentication uses Application Default Credentials (ADC) by default.
+Run ``gcloud auth application-default login`` or set the
+``GOOGLE_APPLICATION_CREDENTIALS`` environment variable to a service account
+key JSON path for non-interactive environments.
 
-Install:
-  pip install aaizaql[bigquery]   # or: pip install google-cloud-bigquery
+DSN format::
+
+    bigquery://project_id/dataset_id
+    bigquery://project_id/dataset_id?credentials_path=/path/to/key.json
+
+Install::
+
+    pip install "aaizaql[bigquery]"   # or: pip install google-cloud-bigquery
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
 """
 
-from __future__ import annotations
-
+import re
 from typing import Any
 
 import pandas as pd
@@ -23,16 +33,20 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+_DSN_PATTERN = re.compile(r"bigquery://([^/]+)/([^?]+)(?:\?credentials_path=(.+))?")
+
 
 class BigQueryConnector(DatabaseConnector):
-    """
-    Google BigQuery adapter via google-cloud-bigquery.
+    """Google BigQuery adapter via google-cloud-bigquery.
 
-    Authentication uses Application Default Credentials (ADC) by default.
-    Run `gcloud auth application-default login` or set GOOGLE_APPLICATION_CREDENTIALS
-    env var to a service account key JSON path.
+    Supports both ADC (Application Default Credentials) and explicit service
+    account key files via the ``credentials_path`` DSN query parameter.
 
-    Usage:
+    Args (set at construction, no direct params):
+        Call :meth:`connect` with a DSN string after instantiation.
+
+    Example::
+
         engine = QueryEngine(
             llm="gemini",
             database="bigquery",
@@ -48,10 +62,16 @@ class BigQueryConnector(DatabaseConnector):
         self._dataset: str = ""
 
     def connect(self, dsn: str) -> None:
-        """
-        DSN examples:
-          bigquery://my-project/my_dataset
-          bigquery://my-project/my_dataset?credentials_path=/path/key.json
+        """Establish a connection to BigQuery.
+
+        Args:
+            dsn: BigQuery connection string. Optionally includes
+                ``?credentials_path=/path/to/key.json`` for service account
+                authentication.
+
+        Raises:
+            ConnectionError: If google-cloud-bigquery is not installed, or
+                ADC/service account authentication fails.
         """
         try:
             from google.cloud import bigquery
@@ -59,7 +79,7 @@ class BigQueryConnector(DatabaseConnector):
             raise ConnectionError(
                 "bigquery",
                 dsn[:40],
-                "google-cloud-bigquery is not installed. Run: pip install google-cloud-bigquery",
+                "google-cloud-bigquery is not installed. " "Run: pip install google-cloud-bigquery",
             ) from exc
 
         project, dataset, credentials_path = self._parse_dsn(dsn)
@@ -82,21 +102,19 @@ class BigQueryConnector(DatabaseConnector):
         except Exception as exc:
             raise ConnectionError("bigquery", dsn[:40], str(exc)) from exc
 
-    def _parse_dsn(self, dsn: str) -> tuple[str, str, str]:
-        """Parse bigquery://project/dataset[?credentials_path=...] DSN."""
-        import re
-
-        pattern = r"bigquery://([^/]+)/([^?]+)(?:\?credentials_path=(.+))?"
-        m = re.match(pattern, dsn)
-        if not m:
-            raise ValueError(
-                f"Cannot parse BigQuery DSN: {dsn!r}\n"
-                "Expected format: bigquery://project_id/dataset_id"
-            )
-        project, dataset, credentials_path = m.groups()
-        return project, dataset, credentials_path or ""
-
     def execute(self, sql: str) -> pd.DataFrame:
+        """Execute a SQL statement and return results as a DataFrame.
+
+        Args:
+            sql: A validated SQL statement to execute (BigQuery SQL dialect).
+
+        Returns:
+            Query results as a DataFrame. Returns an empty DataFrame for
+            statements that produce no rows.
+
+        Raises:
+            DatabaseError: On any BigQuery execution error.
+        """
         if self._client is None:
             raise DatabaseError(
                 "Not connected. Call connect() first.", sql=sql, connector="bigquery"
@@ -108,11 +126,19 @@ class BigQueryConnector(DatabaseConnector):
             raise DatabaseError(str(exc), sql=sql, connector="bigquery") from exc
 
     def get_schema(self) -> str:
-        """Return DDL-style schema for all tables in the connected dataset."""
+        """Return CREATE TABLE DDL for all tables in the connected dataset.
+
+        Fetches table schemas from the BigQuery client API and reconstructs
+        DDL from field metadata, since BigQuery does not expose a standard
+        DDL export endpoint via the client library.
+
+        Returns:
+            DDL string with one CREATE TABLE block per table. Returns an
+            empty string if not connected or on any error.
+        """
         if self._client is None:
             return ""
         try:
-
             dataset_ref = self._client.dataset(self._dataset)
             tables = list(self._client.list_tables(dataset_ref))
             schema_parts = []
@@ -121,7 +147,6 @@ class BigQueryConnector(DatabaseConnector):
                 table = self._client.get_table(table_ref)
                 fields = []
                 for field in table.schema:
-                    # T3.2 — was: both branches returned empty string (bug)
                     not_null = " NOT NULL" if field.mode == "REQUIRED" else ""
                     fields.append(f"  {field.name} {field.field_type}{not_null}")
                 ddl = (
@@ -136,7 +161,34 @@ class BigQueryConnector(DatabaseConnector):
             return ""
 
     def close(self) -> None:
+        """Close the BigQuery client and release resources."""
         if self._client:
             self._client.close()
             self._client = None
             logger.info("bigquery.closed")
+
+    # ── Private ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _parse_dsn(dsn: str) -> tuple[str, str, str]:
+        """Parse a BigQuery DSN URL into connection components.
+
+        Args:
+            dsn: BigQuery connection string in the form
+                ``"bigquery://project/dataset[?credentials_path=...]"``.
+
+        Returns:
+            Tuple of ``(project, dataset, credentials_path)``.
+            ``credentials_path`` is an empty string when not specified.
+
+        Raises:
+            ValueError: If the DSN does not match the expected format.
+        """
+        match = _DSN_PATTERN.match(dsn)
+        if not match:
+            raise ValueError(
+                f"Cannot parse BigQuery DSN: {dsn!r}\n"
+                "Expected format: bigquery://project_id/dataset_id"
+            )
+        project, dataset, credentials_path = match.groups()
+        return project, dataset, credentials_path or ""

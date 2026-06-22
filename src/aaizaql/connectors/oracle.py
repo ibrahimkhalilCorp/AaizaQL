@@ -1,18 +1,25 @@
 """
 aaizaql.connectors.oracle
-──────────────────────────
-Oracle Database connector using python-oracledb (thin mode — no Oracle Client needed).
+─────────────────────────
+Oracle Database connector using python-oracledb in thin mode.
 
-DSN format:
-  oracle://user:password@host:1521/service_name
-  oracle://user:password@host:1521/?sid=ORCL
+Thin mode requires NO Oracle Instant Client installation — pure Python.
 
-Install:
-  pip install aaizaql[oracle]   # or: pip install oracledb
+DSN format::
+
+    oracle://user:password@host:1521/service_name
+    oracle://user:password@host:1521/?sid=ORCL
+
+Install::
+
+    pip install "aaizaql[oracle]"   # or: pip install oracledb
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
 """
 
-from __future__ import annotations
-
+import re
 from typing import Any
 
 import pandas as pd
@@ -23,14 +30,20 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+_DSN_PATTERN = re.compile(r"oracle://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/(.+)")
+
 
 class OracleConnector(DatabaseConnector):
-    """
-    Oracle Database adapter via python-oracledb (thin mode).
+    """Oracle Database adapter via python-oracledb (thin mode).
 
-    Thin mode requires NO Oracle Instant Client installation — pure Python.
+    Thin mode connects directly to Oracle without the Oracle Instant Client,
+    making it easy to install in any Python environment.
 
-    Usage:
+    Args (set at construction, no direct params):
+        Call :meth:`connect` with a DSN string after instantiation.
+
+    Example::
+
         engine = QueryEngine(
             llm="groq",
             database="oracle",
@@ -45,10 +58,15 @@ class OracleConnector(DatabaseConnector):
         self._dsn: str = ""
 
     def connect(self, dsn: str) -> None:
-        """
-        DSN examples:
-          oracle://user:password@host:1521/service_name
-          oracle://user:password@host:1521/?sid=ORCL
+        """Establish a connection to an Oracle Database instance.
+
+        Args:
+            dsn: Oracle connection string, e.g.
+                ``"oracle://user:password@host:1521/service_name"``.
+
+        Raises:
+            ConnectionError: If oracledb is not installed, or the server
+                cannot be reached with the given credentials.
         """
         try:
             import oracledb
@@ -71,21 +89,19 @@ class OracleConnector(DatabaseConnector):
         except Exception as exc:
             raise ConnectionError("oracle", dsn[:40], str(exc)) from exc
 
-    def _parse_dsn(self, dsn: str) -> tuple[str, str, str, str, str]:
-        """Parse oracle://user:password@host:port/service into components."""
-        import re
-
-        pattern = r"oracle://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/(.+)"
-        m = re.match(pattern, dsn)
-        if not m:
-            raise ValueError(
-                f"Cannot parse Oracle DSN: {dsn!r}\n"
-                "Expected format: oracle://user:password@host:1521/service_name"
-            )
-        user, password, host, port, service = m.groups()
-        return user, password, host, port or "1521", service
-
     def execute(self, sql: str) -> pd.DataFrame:
+        """Execute a SQL statement and return results as a DataFrame.
+
+        Args:
+            sql: A validated SQL statement to execute.
+
+        Returns:
+            Query results as a DataFrame. Returns an empty DataFrame for
+            statements that produce no rows.
+
+        Raises:
+            DatabaseError: On any Oracle execution error.
+        """
         if self._conn is None:
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="oracle")
         try:
@@ -94,7 +110,15 @@ class OracleConnector(DatabaseConnector):
             raise DatabaseError(str(exc), sql=sql, connector="oracle") from exc
 
     def get_schema(self) -> str:
-        """Return DDL-style schema for all user tables."""
+        """Return CREATE TABLE DDL for all user tables in the Oracle schema.
+
+        Queries ``USER_TAB_COLUMNS`` and uses ``LISTAGG`` to reconstruct
+        column definitions in a single query.
+
+        Returns:
+            DDL string with one CREATE TABLE block per table. Returns an
+            empty string if not connected or on any error.
+        """
         if self._conn is None:
             return ""
         query = """
@@ -123,7 +147,33 @@ class OracleConnector(DatabaseConnector):
             return ""
 
     def close(self) -> None:
+        """Close the Oracle connection and release resources."""
         if self._conn:
             self._conn.close()
             self._conn = None
             logger.info("oracle.closed")
+
+    # ── Private ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _parse_dsn(dsn: str) -> tuple[str, str, str, str, str]:
+        """Parse an Oracle DSN URL into connection components.
+
+        Args:
+            dsn: Oracle connection string in the form
+                ``"oracle://user:password@host:port/service_name"``.
+
+        Returns:
+            Tuple of ``(user, password, host, port, service)``.
+
+        Raises:
+            ValueError: If the DSN does not match the expected format.
+        """
+        match = _DSN_PATTERN.match(dsn)
+        if not match:
+            raise ValueError(
+                f"Cannot parse Oracle DSN: {dsn!r}\n"
+                "Expected format: oracle://user:password@host:1521/service_name"
+            )
+        user, password, host, port, service = match.groups()
+        return user, password, host, port or "1521", service

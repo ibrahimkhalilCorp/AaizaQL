@@ -93,3 +93,8 @@ aqlix.zip
 *.key
 graphify-out
 .claude
+.prompts
+.prompts/
+.tracker
+.aaizaql_chroma
+.aqlix_chroma

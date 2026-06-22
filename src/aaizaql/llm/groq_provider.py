@@ -1,7 +1,8 @@
 """
 aaizaql.llm.groq_provider
-────────────────────────
-Groq adapter — ultra-fast inference via Groq Cloud.
+─────────────────────────
+Groq Cloud LLM adapter — ultra-fast inference via custom LPU hardware.
+
 Groq uses an OpenAI-compatible API, so the implementation is straightforward.
 
 Supported models (as of 2025):
@@ -11,9 +12,11 @@ Supported models (as of 2025):
   - gemma2-9b-it             ← Google Gemma via Groq
 
 Get your free API key at: https://console.groq.com
-"""
 
-from __future__ import annotations
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
+"""
 
 import structlog
 
@@ -24,8 +27,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
-
 try:
     from groq import APITimeoutError as _GroqAPITimeoutError
     from groq import Groq
@@ -35,19 +36,26 @@ except ImportError:
 
 
 class GroqProvider(LLMProvider):
-    """
-    Groq Cloud LLM provider.
+    """Groq Cloud LLM provider.
 
-    Groq runs open-source models (LLaMA3, Mixtral, Gemma) at extremely
-    high speed using their custom LPU hardware. Free tier is generous.
+    Runs open-source models (LLaMA 3, Mixtral, Gemma) at extremely high speed
+    using Groq's custom LPU hardware. Free tier is generous.
 
-    Usage:
+    Args:
+        settings: Library-wide settings. Must have ``groq_api_key`` set.
+
+    Raises:
+        LLMError: If ``groq_api_key`` is missing or the ``groq`` package is not
+            installed.
+
+    Example::
+
         engine = QueryEngine(
             llm="groq",
             database="sqlite",
             dsn="sqlite:///my.db",
             groq_api_key="gsk_...",
-            groq_model="llama-3.3-70b-versatile",   # optional
+            groq_model="llama-3.3-70b-versatile",
         )
     """
 
@@ -57,11 +65,9 @@ class GroqProvider(LLMProvider):
                 "groq",
                 "AAIZAQL_GROQ_API_KEY is not set.\n"
                 "Get a free key at https://console.groq.com\n"
-                "Then set it:  $env:AAIZAQL_GROQ_API_KEY='gsk_api_key'",
+                "Then set it:  $env:AAIZAQL_GROQ_API_KEY='gsk_...'",
             )
 
-        # Check at call-time so tests can simulate absence via
-        # patch.dict("sys.modules", {"groq": None}).
         import sys
 
         if sys.modules.get("groq") is None or Groq is None:
@@ -85,10 +91,30 @@ class GroqProvider(LLMProvider):
 
     @property
     def name(self) -> str:
+        """Return the provider/model identifier used in logs.
+
+        Returns:
+            String in the form ``"groq/<model>"``.
+        """
         return f"groq/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """Send prompt to Groq and return the SQL response."""
+        """Send a prompt to Groq and return the raw text response.
+
+        Args:
+            prompt: User-facing content assembled by the SQL generator.
+            system: System instruction override. Falls back to the library
+                default when empty.
+            timeout: Seconds before the call is cancelled. Uses the value from
+                settings when ``0``.
+
+        Returns:
+            Raw text response from the model.
+
+        Raises:
+            LLMTimeoutError: When the Groq API does not respond in time.
+            LLMError: On any other API failure.
+        """
         from groq import APITimeoutError
 
         effective_timeout = timeout or self._timeout
@@ -111,7 +137,6 @@ class GroqProvider(LLMProvider):
                 output_tokens=response.usage.completion_tokens if response.usage else None,
             )
             return text
-
         except APITimeoutError as exc:
             raise LLMTimeoutError("groq", effective_timeout) from exc
         except Exception as exc:

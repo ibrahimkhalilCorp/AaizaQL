@@ -1,14 +1,23 @@
 """
-
 aaizaql.nlp.corrector
+─────────────────────
+SelfCorrector: executes SQL and retries with LLM-guided correction on failure.
 
-────────────────────
+On each ``DatabaseError`` the corrector:
 
-SelfCorrector: executes SQL and retries with LLM correction on failure.
+1. Retrieves fresh schema context from the vector store.
+2. Appends enum mappings and business documentation (same enrichment the
+   initial generator uses) so the LLM has full context when rewriting.
+3. Sends the broken SQL + error message to the LLM via
+   ``SELF_CORRECTION_TEMPLATE``.
+4. Re-validates the corrected SQL through ``SQLValidator`` before executing —
+   a hallucinated correction (e.g. ``DROP TABLE``) is blocked before it
+   reaches the database.
 
+Author: Ibrahim
+Date: 2026-06-16
+Version: 1.0.0
 """
-
-from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
@@ -22,7 +31,6 @@ from aaizaql.nlp.prompts import SELF_CORRECTION_TEMPLATE
 from aaizaql.nlp.utils import parse_sql_response
 
 if TYPE_CHECKING:
-
     from aaizaql.schema.semantic_store import SemanticStore
     from aaizaql.security.validator import SQLValidator
 
@@ -30,106 +38,81 @@ logger = structlog.get_logger(__name__)
 
 
 class SelfCorrector:
-    """
+    """Executes SQL with automatic LLM-guided self-correction on failure.
 
-    Executes SQL against a connector; on DatabaseError sends the error
-
-    back to the LLM for correction and retries up to MAX_RETRIES times.
-
-    The corrected SQL returned by the LLM is re-validated through
-
-    ``SQLValidator`` before execution to prevent hallucinated dangerous
-
-    statements (e.g. DROP TABLE) from slipping through on a correction pass.
-
-    Parameters
-    ----------
-    semantic_store:
-        Optional SemanticStore reference.  When provided, enum mappings and
-        relevant documentation are appended to every correction prompt — the
-        same enrichment the initial generator receives — so the LLM has full
-        business context when it rewrites the query.
-    dialect:
-        Database dialect label (e.g. ``"sqlite"``, ``"postgresql"``).  Passed
-        straight into ``SELF_CORRECTION_TEMPLATE`` so the LLM knows which SQL
-        flavour to target.  Defaults to the empty string (backward-compatible).
+    Args:
+        llm: LLM provider used to generate corrected SQL.
+        settings: Library-wide settings (controls ``max_self_correction_retries``,
+            ``schema_top_k``, and ``llm_timeout_seconds``).
+        validator: Optional ``SQLValidator`` instance. When provided, every
+            LLM-corrected SQL is re-validated before execution to prevent
+            hallucinated dangerous statements from slipping through.
+        vector_store: Optional vector store adapter. When provided, fresh DDL
+            schema chunks are retrieved for each correction prompt.
+        semantic_store: Optional SemanticStore. When provided, enum mappings
+            and relevant documentation are appended to each correction prompt —
+            the same enrichment the initial generator receives.
+        dialect: SQL dialect label (e.g. ``"sqlite"``, ``"postgresql"``) passed
+            into the correction prompt template.
     """
 
     def __init__(
         self,
         llm: LLMProvider,
         settings: Settings,
-        validator: SQLValidator | None = None,
-        vector_store: Any | None = None,  # T2.7 — for schema context on retry
-        semantic_store: SemanticStore | None = None,  # enum + doc context on retry
-        dialect: str = "",  # dialect label for correction prompt
+        validator: "SQLValidator | None" = None,
+        vector_store: Any | None = None,
+        semantic_store: "SemanticStore | None" = None,
+        dialect: str = "",
     ) -> None:
-
         self._llm = llm
-
         self._max_retries = settings.max_self_correction_retries
-
         self._validator = validator
-
-        self._vector_store = vector_store  # T2.7
-
-        self._semantic_store = semantic_store  # fix: for enum/doc blocks in retry prompt
-
-        self._dialect = dialect  # fix: e.g. "sqlite", "postgresql"
-
+        self._vector_store = vector_store
+        self._semantic_store = semantic_store
+        self._dialect = dialect
         self._schema_top_k = settings.schema_top_k
-
         self._timeout = settings.llm_timeout_seconds
-
-        self.last_sql: str = ""  # Updated to the final (possibly corrected) SQL
+        self.last_sql: str = ""
 
     def execute_with_correction(
         self,
         sql: str,
-        executor: Any,  # DatabaseConnector — avoid circular import with Any
+        executor: Any,
         question: str,
     ) -> tuple[pd.DataFrame, bool, int]:
+        """Execute SQL with automatic self-correction on ``DatabaseError``.
+
+        Args:
+            sql: Initial SQL statement to execute.
+            executor: DatabaseConnector instance with an ``execute(sql)`` method.
+            question: Original user question — used to retrieve schema context
+                for correction prompts.
+
+        Returns:
+            Tuple of ``(data, was_corrected, attempts)`` where ``data`` is the
+            result DataFrame, ``was_corrected`` is ``True`` if at least one
+            retry occurred, and ``attempts`` is the number of retries made.
+
+        Raises:
+            MaxRetriesExceeded: When all correction attempts are exhausted.
         """
-
-        Execute SQL with automatic self-correction on failure.
-
-        Each LLM-corrected SQL string is validated through ``SQLValidator``
-
-        before being executed, ensuring that a malicious or hallucinated
-
-        correction (e.g. ``DROP TABLE``) is caught before it reaches the DB.
-
-        Returns
-
-        -------
-
-        (DataFrame, was_corrected, attempts)
-
-        """
-
         self.last_sql = sql
-
         was_corrected = False
 
         for attempt in range(self._max_retries + 1):
-
             try:
-
                 data = executor.execute(self.last_sql)
-
                 logger.info(
                     "corrector.success",
                     attempt=attempt,
                     rows=len(data),
                     was_corrected=was_corrected,
                 )
-
                 return data, was_corrected, attempt
 
             except DatabaseError as exc:
-
                 if attempt >= self._max_retries:
-
                     raise MaxRetriesExceeded(
                         sql=self.last_sql,
                         last_error=str(exc),
@@ -142,49 +125,9 @@ class SelfCorrector:
                     error=str(exc)[:120],
                 )
 
-                # T2.7 — retrieve real schema context for the correction prompt
-
-                schema_chunks = "(schema context unavailable)"
-
-                if self._vector_store is not None:
-
-                    try:
-
-                        hits = self._vector_store.search(
-                            query=question,
-                            filter_type="ddl",
-                            top_k=self._schema_top_k,
-                        )
-
-                        if hits:
-
-                            schema_chunks = "\n\n".join(h.text for h in hits)
-
-                    except Exception:
-
-                        pass
-
-                # fix: inject enum mappings — same data the generator always sends,
-                # so the corrected query uses the right integer codes.
-                enum_block = ""
-                if self._semantic_store is not None and self._semantic_store.has_enums():
-                    enum_block = (
-                        "\n--- COLUMN CODE MAPPINGS ---\n"
-                        + self._semantic_store.get_enum_block()
-                        + "\n"
-                    )
-
-                # fix: inject relevant documentation retrieved for this question.
-                doc_block = ""
-                if self._semantic_store is not None:
-                    try:
-                        docs = self._semantic_store.search_documentation(question, top_k=3)
-                        if docs:
-                            doc_block = "\n--- BUSINESS CONTEXT ---\n" + docs + "\n"
-                    except Exception:
-                        pass
-
-                # Ask LLM to fix the broken SQL
+                schema_chunks = self._retrieve_schema_context(question)
+                enum_block = self._build_enum_block()
+                doc_block = self._build_doc_block(question)
 
                 correction_prompt = SELF_CORRECTION_TEMPLATE.format(
                     sql=self.last_sql,
@@ -196,31 +139,77 @@ class SelfCorrector:
                 )
 
                 corrected = self._llm.complete(correction_prompt, timeout=self._timeout)
-
-                self.last_sql = parse_sql_response(corrected)  # T1.3
-
+                self.last_sql = parse_sql_response(corrected)
                 was_corrected = True
 
-                # Re-validate the corrected SQL through the security layer
-
-                # before executing it.  A hallucinated correction could contain
-
-                # dangerous statements (DROP TABLE, DELETE, …) that must be
-
-                # blocked regardless of context.
-
                 if self._validator is not None:
-
                     self._validator.validate(self.last_sql)
-
                     logger.debug(
                         "corrector.revalidated",
                         attempt=attempt + 1,
                         sql_preview=self.last_sql[:60],
                     )
 
-        # Should never reach here
-
+        # Unreachable: the loop always either returns or raises MaxRetriesExceeded.
         raise MaxRetriesExceeded(
             sql=self.last_sql, last_error="unknown", attempts=self._max_retries
         )
+
+    # ── Private ───────────────────────────────────────────────────────────────
+
+    def _retrieve_schema_context(self, question: str) -> str:
+        """Retrieve DDL schema chunks relevant to *question* from the vector store.
+
+        Args:
+            question: User's question used as the search query.
+
+        Returns:
+            Newline-separated DDL string, or a fallback message when the
+            vector store is unavailable or returns no results.
+        """
+        if self._vector_store is None:
+            return "(schema context unavailable)"
+        try:
+            hits = self._vector_store.search(
+                query=question,
+                filter_type="ddl",
+                top_k=self._schema_top_k,
+            )
+            if hits:
+                return "\n\n".join(h.text for h in hits)
+        except Exception:
+            pass
+        return "(schema context unavailable)"
+
+    def _build_enum_block(self) -> str:
+        """Return formatted enum mappings for the correction prompt.
+
+        Enum mappings are injected on every correction attempt — not retrieved
+        via RAG — so integer codes are never lost between retries.
+
+        Returns:
+            Formatted enum block string, or an empty string if no enums exist.
+        """
+        if self._semantic_store is None or not self._semantic_store.has_enums():
+            return ""
+        return "\n--- COLUMN CODE MAPPINGS ---\n" + self._semantic_store.get_enum_block() + "\n"
+
+    def _build_doc_block(self, question: str) -> str:
+        """Retrieve relevant business documentation for the correction prompt.
+
+        Args:
+            question: User's question used as the semantic search query.
+
+        Returns:
+            Formatted documentation block string, or an empty string if no
+            docs are found or the SemanticStore is not set.
+        """
+        if self._semantic_store is None:
+            return ""
+        try:
+            docs = self._semantic_store.search_documentation(question, top_k=3)
+            if docs:
+                return "\n--- BUSINESS CONTEXT ---\n" + docs + "\n"
+        except Exception:
+            pass
+        return ""

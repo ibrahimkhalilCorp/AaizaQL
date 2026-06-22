@@ -1,19 +1,22 @@
 """
 aaizaql.schema.ingestion
-───────────────────────
+────────────────────────
 SchemaIngester: reads a live database schema and loads it into the vector
 store so the LLM always has accurate table/column context.
 
-Two modes:
-  1. ingest_from_database(connector) — auto-introspect a live DB
-  2. ingest_ddl(ddl_string)          — ingest a raw DDL string directly
+Two ingestion modes:
 
-Each table becomes one vector-store document tagged with type="ddl".
-The ingester is idempotent — re-ingesting the same schema just upserts
-existing documents.
+1. :meth:`ingest_from_database` — auto-introspect a live database connector.
+2. :meth:`ingest_ddl` — ingest a raw DDL string directly.
+
+Each table becomes one vector-store document tagged ``type="ddl"``.
+The ingester is idempotent — re-ingesting the same schema upserts existing
+documents and deletes stale ones from the previous schema version.
+
+Author: Ibrahim
+Date: 2026-06-16
+Version: 1.0.0
 """
-
-from __future__ import annotations
 
 import hashlib
 import re
@@ -32,11 +35,14 @@ logger = structlog.get_logger(__name__)
 
 
 class SchemaIngester:
-    """
-    Reads database schema and stores it in the vector store.
+    """Reads database schema and indexes it in the vector store.
 
     Each CREATE TABLE block is stored as a separate document so the retriever
-    can surface only the relevant tables for a given question.
+    can surface only the relevant tables for a given question rather than
+    returning the entire schema on every query.
+
+    Args:
+        vector_store: Vector store adapter where DDL chunks are persisted.
     """
 
     def __init__(self, vector_store: VectorStoreAdapter) -> None:
@@ -45,13 +51,18 @@ class SchemaIngester:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def ingest_from_database(self, connector: DatabaseConnector) -> int:
-        """
-        Auto-read schema from the connected database and index it.
+    def ingest_from_database(self, connector: "DatabaseConnector") -> int:
+        """Auto-read schema from the connected database and index it.
 
-        Returns
-        -------
-        int  Number of table chunks ingested.
+        Args:
+            connector: Connected database adapter whose ``get_schema()`` method
+                returns CREATE TABLE DDL strings.
+
+        Returns:
+            Number of table chunks indexed.
+
+        Raises:
+            SchemaIngestionError: If the database schema cannot be read.
         """
         try:
             ddl = connector.get_schema()
@@ -65,30 +76,29 @@ class SchemaIngester:
         return self.ingest_ddl(ddl)
 
     def ingest_ddl(self, ddl: str) -> int:
-        """
-        Parse and ingest a raw DDL string.
+        """Parse and ingest a raw DDL string into the vector store.
 
-        On each call the ingester reconciles the vector store against the
-        current schema:
-          - Tables present in the new DDL are upserted (added or updated).
-          - Tables that existed in the vector store but are absent from the
-            new DDL are deleted (stale vectors removed).
-          - A ``schema_version`` sentinel document is upserted so callers can
-            detect schema drift without re-reading the database.
+        Reconciles the vector store against the current schema on each call:
+
+        - Tables present in the new DDL are upserted (added or updated).
+        - Tables absent from the new DDL but still in the store are deleted.
+        - A ``schema_version`` sentinel document is upserted so callers can
+          detect schema drift without re-reading the database.
 
         Safe to call multiple times — re-ingesting an identical schema is a
-        no-op on the store (upsert is idempotent, zero stale deletions).
+        no-op (upsert is idempotent, zero stale deletions).
 
-        Returns
-        -------
-        int  Number of table chunks ingested (added or updated).
+        Args:
+            ddl: Raw DDL string containing one or more CREATE TABLE statements.
+
+        Returns:
+            Number of table chunks ingested (added or updated).
         """
         chunks = self._chunk_by_table(ddl)
         if not chunks:
             logger.warning("schema.no_chunks", ddl_length=len(ddl))
             return 0
 
-        # T2.3 — compute new IDs and delete stale ones before upserting
         new_ids = {f"ddl_{self._fingerprint(c)}" for c in chunks}
         old_ids = self._vs.list_ids(filter_type="ddl")
         for stale_id in old_ids - new_ids:
@@ -106,14 +116,11 @@ class SchemaIngester:
                 metadata={"type": "ddl", "table": table_name},
             )
 
-        # T5.5 — store schema version hash for drift detection
-        import hashlib
-
         version_hash = hashlib.sha256(ddl.encode()).hexdigest()[:16]
         self._vs.upsert(
             doc_id="schema_version",
             text=version_hash,
-            embedding=[0.0] * 384,  # sentinel; not used for search
+            embedding=[0.0] * 384,  # sentinel — zero vector, not used for similarity search
             metadata={"type": "schema_version", "hash": version_hash},
         )
         logger.info(
@@ -124,29 +131,37 @@ class SchemaIngester:
         )
         return len(chunks)
 
-    # T2.5 — ingest_sql_pair() removed (dead code; use SemanticStore.train_sql_pair() instead)
-
     # ── Private ───────────────────────────────────────────────────────────────
 
     @staticmethod
     def _chunk_by_table(ddl: str) -> list[str]:
-        """
-        Split a multi-table DDL string into one chunk per CREATE TABLE block.
-        Handles both semicolon-terminated and newline-separated DDL.
-        """
-        # Normalise line endings
-        ddl = ddl.replace("\r\n", "\n").strip()
+        """Split a multi-table DDL string into one chunk per CREATE TABLE block.
 
-        # Split on CREATE TABLE boundaries (case-insensitive)
+        Handles both semicolon-terminated and newline-separated DDL formats by
+        splitting on ``CREATE TABLE`` boundaries rather than semicolons, which
+        may be absent in some connectors' schema output.
+
+        Args:
+            ddl: Raw DDL string containing one or more CREATE TABLE statements.
+
+        Returns:
+            List of non-empty DDL strings, one per table.
+        """
+        ddl = ddl.replace("\r\n", "\n").strip()
         pattern = re.compile(r"(?=CREATE\s+TABLE\b)", re.IGNORECASE)
         raw_chunks = pattern.split(ddl)
-
-        chunks = [c.strip() for c in raw_chunks if c.strip()]
-        return chunks
+        return [c.strip() for c in raw_chunks if c.strip()]
 
     @staticmethod
     def _extract_table_name(ddl_chunk: str) -> str:
-        """Pull the table name out of a CREATE TABLE statement."""
+        """Pull the table name out of a CREATE TABLE statement.
+
+        Args:
+            ddl_chunk: A single CREATE TABLE DDL string.
+
+        Returns:
+            Table name string, or ``"unknown"`` if no match is found.
+        """
         match = re.search(
             r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`\"\[]?(\w+)[`\"\]]?",
             ddl_chunk,
@@ -156,5 +171,12 @@ class SchemaIngester:
 
     @staticmethod
     def _fingerprint(text: str) -> str:
-        """Stable 12-char hex fingerprint of a string."""
-        return hashlib.sha256(text.encode()).hexdigest()[:16]  # T3.6 SHA-256-16
+        """Return a stable 16-character hex fingerprint for deduplication.
+
+        Args:
+            text: Any string to fingerprint.
+
+        Returns:
+            First 16 hex characters of the SHA-256 digest.
+        """
+        return hashlib.sha256(text.encode()).hexdigest()[:16]

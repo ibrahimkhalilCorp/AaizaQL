@@ -1,12 +1,23 @@
 """
 aaizaql.connectors.mysql
-───────────────────────
+────────────────────────
 MySQL connector using pymysql.
-DSN format: mysql://user:password@host:3306/dbname
+
+DSN format::
+
+    mysql://user:password@host:3306/dbname
+    mysql://user:password@host/dbname
+
+Install::
+
+    pip install "aaizaql[mysql]"   # or: pip install pymysql
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
 """
 
-from __future__ import annotations
-
+import re
 from typing import Any
 
 import pandas as pd
@@ -17,8 +28,19 @@ from aaizaql.core.exceptions import ConnectionError, DatabaseError
 
 logger = structlog.get_logger(__name__)
 
+_DSN_PATTERN = re.compile(
+    r"mysql://(?P<user>[^:@]+)(?::(?P<password>[^@]*))?@"
+    r"(?P<host>[^:/]+)(?::(?P<port>\d+))?/(?P<database>.+)"
+)
+
 
 class MySQLConnector(DatabaseConnector):
+    """MySQL database adapter via pymysql.
+
+    Args (set at construction, no direct params):
+        Call :meth:`connect` with a DSN string after instantiation.
+    """
+
     name = "mysql"
 
     def __init__(self) -> None:
@@ -26,10 +48,15 @@ class MySQLConnector(DatabaseConnector):
         self._dsn: str = ""
 
     def connect(self, dsn: str) -> None:
-        """
-        dsn examples:
-          mysql://user:password@localhost:3306/mydb
-          mysql://user:password@host/mydb
+        """Establish a connection to a MySQL server.
+
+        Args:
+            dsn: MySQL connection string, e.g.
+                ``"mysql://user:password@localhost:3306/mydb"``.
+
+        Raises:
+            ConnectionError: If pymysql is not installed, the host is
+                unreachable, or authentication fails.
         """
         self._dsn = dsn
         try:
@@ -52,6 +79,18 @@ class MySQLConnector(DatabaseConnector):
             raise ConnectionError("mysql", dsn[:40], str(exc)) from exc
 
     def execute(self, sql: str) -> pd.DataFrame:
+        """Execute a SQL statement and return results as a DataFrame.
+
+        Args:
+            sql: A validated SQL statement to execute.
+
+        Returns:
+            Query results as a DataFrame. Returns an empty DataFrame for
+            statements that produce no rows.
+
+        Raises:
+            DatabaseError: On any MySQL execution error.
+        """
         if self._conn is None:
             raise DatabaseError("Not connected. Call connect() first.", sql=sql, connector="mysql")
         try:
@@ -62,6 +101,15 @@ class MySQLConnector(DatabaseConnector):
             raise DatabaseError(str(exc), sql=sql, connector="mysql") from exc
 
     def get_schema(self) -> str:
+        """Return CREATE TABLE DDL for all tables in the connected database.
+
+        Reconstructs DDL from ``information_schema.COLUMNS`` using MySQL's
+        ``GROUP_CONCAT`` to build column definitions in a single query.
+
+        Returns:
+            DDL string with one CREATE TABLE block per table. Returns an
+            empty string if not connected or on any error.
+        """
         if self._conn is None:
             return ""
         query = """
@@ -92,6 +140,7 @@ class MySQLConnector(DatabaseConnector):
             return ""
 
     def close(self) -> None:
+        """Close the MySQL connection and release resources."""
         if self._conn:
             self._conn.close()
             self._conn = None
@@ -101,26 +150,29 @@ class MySQLConnector(DatabaseConnector):
 
     @staticmethod
     def _parse_dsn(dsn: str) -> dict[str, Any]:
-        """
-        Parse mysql://user:password@host:port/database into components.
-        Falls back to localhost:3306 if port is omitted.
-        """
-        import re
+        """Parse a MySQL DSN URL into a dict of connection parameters.
 
-        pattern = re.compile(
-            r"mysql://(?P<user>[^:@]+)(?::(?P<password>[^@]*))?@"
-            r"(?P<host>[^:/]+)(?::(?P<port>\d+))?/(?P<database>.+)"
-        )
-        m = pattern.match(dsn)
-        if not m:
+        Args:
+            dsn: MySQL connection string in the form
+                ``"mysql://user:password@host:port/database"``.
+
+        Returns:
+            Dict with keys ``host``, ``port`` (int), ``user``, ``password``,
+            and ``database``.
+
+        Raises:
+            ValueError: If the DSN does not match the expected format.
+        """
+        match = _DSN_PATTERN.match(dsn)
+        if not match:
             raise ValueError(
                 f"Cannot parse MySQL DSN: {dsn!r}. "
                 "Expected format: mysql://user:password@host:3306/dbname"
             )
         return {
-            "host": m.group("host"),
-            "port": int(m.group("port") or 3306),
-            "user": m.group("user"),
-            "password": m.group("password") or "",
-            "database": m.group("database"),
+            "host": match.group("host"),
+            "port": int(match.group("port") or 3306),
+            "user": match.group("user"),
+            "password": match.group("password") or "",
+            "database": match.group("database"),
         }

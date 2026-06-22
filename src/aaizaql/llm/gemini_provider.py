@@ -1,17 +1,19 @@
 """
 aaizaql.llm.gemini_provider
-────────────────────────────
-Google Gemini adapter via the official google-genai SDK.
+───────────────────────────
+Google Gemini adapter via the official ``google-genai`` SDK.
 
 Supported models (as of 2025):
-  - gemini-2.5-flash   ← fast, cost-effective, recommended (default)
-  - gemini-2.5-pro     ← most capable, best for complex queries
-  - gemini-2.0-flash   ← previous generation fast model
+  - gemini-2.5-flash  ← fast, cost-effective, recommended default
+  - gemini-2.5-pro    ← most capable, best for complex queries
+  - gemini-2.0-flash  ← previous-generation fast model
 
 Get your API key at: https://aistudio.google.com/app/apikey
-"""
 
-from __future__ import annotations
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
+"""
 
 import structlog
 
@@ -22,8 +24,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
-
 try:
     from google import genai
 except ImportError:
@@ -31,19 +31,26 @@ except ImportError:
 
 
 class GeminiProvider(LLMProvider):
-    """
-    Google Gemini LLM provider.
+    """Google Gemini LLM provider via the official google-genai SDK.
 
     Gemini 2.5 Flash offers an excellent speed/quality tradeoff for SQL
     generation with a very large context window (1M tokens).
 
-    Usage:
+    Args:
+        settings: Library-wide settings. Must have ``gemini_api_key`` set.
+
+    Raises:
+        LLMError: If ``gemini_api_key`` is missing or the ``google-genai``
+            package is not installed.
+
+    Example::
+
         engine = QueryEngine(
             llm="gemini",
             database="sqlite",
             dsn="sqlite:///my.db",
             gemini_api_key="AIza...",
-            gemini_model="gemini-2.5-flash",   # optional
+            gemini_model="gemini-2.5-flash",
         )
     """
 
@@ -72,12 +79,33 @@ class GeminiProvider(LLMProvider):
 
     @property
     def name(self) -> str:
+        """Return the provider/model identifier used in logs.
+
+        Returns:
+            String in the form ``"gemini/<model>"``.
+        """
         return f"gemini/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """T3.5 — Send prompt to Gemini using native timeout (no thread leak)."""
-        # Note: genai_types availability is guaranteed by __init__ which raises
-        # LLMError if genai is None, so no redundant check needed here.
+        """Send a prompt to Gemini and return the raw text response.
+
+        Uses the native ``timeout`` config field rather than threading so no
+        thread leak occurs on slow responses.
+
+        Args:
+            prompt: User-facing content assembled by the SQL generator.
+            system: System instruction override. Falls back to the library
+                default when empty.
+            timeout: Seconds before the call is cancelled. Uses the value from
+                settings when ``0``.
+
+        Returns:
+            Raw text response from the model.
+
+        Raises:
+            LLMTimeoutError: When the Gemini API does not respond in time.
+            LLMError: On any other API failure.
+        """
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.models.generate_content(
@@ -87,7 +115,7 @@ class GeminiProvider(LLMProvider):
                     system_instruction=system or SYSTEM_PROMPT,
                     max_output_tokens=self._max_tokens,
                     temperature=self._temperature,
-                    timeout=float(effective_timeout),  # T3.5 native timeout
+                    timeout=float(effective_timeout),
                 ),
             )
             text = response.text or ""

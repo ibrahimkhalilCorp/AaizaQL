@@ -2,7 +2,8 @@
 aaizaql.llm.perplexity_provider
 ────────────────────────────────
 Perplexity AI adapter — online models with real-time web search capability.
-Uses an OpenAI-compatible API.
+
+Uses an OpenAI-compatible API, so the implementation mirrors the OpenAI provider.
 
 Supported models (as of 2025):
   - sonar                ← fast, lightweight, recommended for SQL generation
@@ -11,9 +12,11 @@ Supported models (as of 2025):
   - sonar-reasoning-pro  ← most powerful reasoning
 
 Get your API key at: https://www.perplexity.ai/settings/api
-"""
 
-from __future__ import annotations
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
+"""
 
 import structlog
 
@@ -24,7 +27,6 @@ from aaizaql.nlp.prompts import SYSTEM_PROMPT
 
 logger = structlog.get_logger(__name__)
 
-DEFAULT_PERPLEXITY_MODEL = "sonar"
 PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
 try:
@@ -36,19 +38,26 @@ except ImportError:
 
 
 class PerplexityProvider(LLMProvider):
-    """
-    Perplexity AI LLM provider.
+    """Perplexity AI LLM provider via the OpenAI-compatible API.
 
-    Perplexity's Sonar models are fast and cost-effective. The Pro variants
-    offer stronger reasoning for complex multi-join SQL queries.
+    Sonar models are fast and cost-effective. The Pro variants offer stronger
+    reasoning for complex multi-join SQL queries.
 
-    Usage:
+    Args:
+        settings: Library-wide settings. Must have ``perplexity_api_key`` set.
+
+    Raises:
+        LLMError: If ``perplexity_api_key`` is missing or the ``openai``
+            package is not installed.
+
+    Example::
+
         engine = QueryEngine(
             llm="perplexity",
             database="sqlite",
             dsn="sqlite:///my.db",
             perplexity_api_key="pplx-...",
-            perplexity_model="sonar",   # optional
+            perplexity_model="sonar",
         )
     """
 
@@ -80,10 +89,30 @@ class PerplexityProvider(LLMProvider):
 
     @property
     def name(self) -> str:
+        """Return the provider/model identifier used in logs.
+
+        Returns:
+            String in the form ``"perplexity/<model>"``.
+        """
         return f"perplexity/{self._model}"
 
     def complete(self, prompt: str, system: str = "", timeout: int = 0) -> str:
-        """Send prompt to Perplexity and return the SQL response."""
+        """Send a prompt to Perplexity and return the raw text response.
+
+        Args:
+            prompt: User-facing content assembled by the SQL generator.
+            system: System instruction override. Falls back to the library
+                default when empty.
+            timeout: Seconds before the call is cancelled. Uses the value from
+                settings when ``0``.
+
+        Returns:
+            Raw text response from the model.
+
+        Raises:
+            LLMTimeoutError: When the Perplexity API does not respond in time.
+            LLMError: On any other API failure.
+        """
         effective_timeout = timeout or self._timeout
         try:
             response = self._client.chat.completions.create(
@@ -104,7 +133,6 @@ class PerplexityProvider(LLMProvider):
                 output_tokens=response.usage.completion_tokens if response.usage else None,
             )
             return text
-
         except openai.APITimeoutError as exc:
             raise LLMTimeoutError("perplexity", effective_timeout) from exc
         except Exception as exc:

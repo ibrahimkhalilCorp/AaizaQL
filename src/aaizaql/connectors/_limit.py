@@ -1,40 +1,54 @@
 """
 aaizaql.connectors._limit
 ─────────────────────────
-T1.4 — Shared LIMIT injection utility used by all SQL connectors.
-"""
+Shared LIMIT injection utility used by SQL connectors to cap result rows.
 
-from __future__ import annotations
+Prevents runaway queries from exhausting memory by appending a LIMIT clause
+when none is present. Uses sqlglot for AST-level injection when available,
+with a string-based fallback for environments without sqlglot.
+
+Author: Ibrahim
+Date: 2026-06-15
+Version: 1.0.0
+"""
 
 
 def inject_limit(sql: str, max_rows: int, dialect: str = "") -> tuple[str, bool]:
-    """
-    Append a LIMIT clause to *sql* if none is present.
+    """Append a LIMIT clause to *sql* if none is already present.
 
     Only applies to SELECT statements — DDL (CREATE, DROP, ALTER) and DML
-    (INSERT, UPDATE, DELETE) are returned unchanged.
+    (INSERT, UPDATE, DELETE) are returned unchanged and are never truncated.
 
-    Returns (modified_sql, was_truncated_flag).
-    Uses sqlglot for safe AST-level injection; falls back to string
-    append if sqlglot is not available.
+    Prefers sqlglot for safe AST-level injection. Falls back to a naive string
+    append when sqlglot is not installed.
+
+    Args:
+        sql: The SQL statement to inspect and potentially modify.
+        max_rows: Maximum number of rows to allow. Added as the LIMIT value.
+        dialect: sqlglot dialect string (e.g. ``"sqlite"``, ``"postgres"``).
+            Empty string lets sqlglot auto-detect.
+
+    Returns:
+        A tuple of ``(modified_sql, was_truncated)`` where ``was_truncated``
+        is ``True`` if a LIMIT clause was injected, ``False`` if the statement
+        already had one or is not a SELECT.
     """
     try:
         import sqlglot
         import sqlglot.expressions as exp
 
         tree = sqlglot.parse_one(sql, dialect=dialect or None)
-        # Only inject LIMIT on SELECT queries — never on DDL/DML.
         if not isinstance(tree, exp.Select):
             return sql, False
         if tree.find(exp.Limit):
-            return sql, False  # already limited
+            return sql, False
         limited = tree.limit(max_rows)
         return limited.sql(dialect=dialect or None), True
     except Exception:
-        # Fallback: naive string check + append
+        # Fallback: naive string check + append when sqlglot unavailable.
         stripped = sql.strip().rstrip(";")
-        # Only apply to SELECT statements
-        first_word = stripped.split()[0].upper() if stripped.split() else ""
+        tokens = stripped.split()
+        first_word = tokens[0].upper() if tokens else ""
         if first_word != "SELECT":
             return sql, False
         if "limit" in stripped.lower().split()[-5:]:
