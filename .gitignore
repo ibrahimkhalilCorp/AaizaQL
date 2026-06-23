@@ -99,3 +99,7 @@ graphify-out
 .aaizaql_chroma
 .aqlix_chroma
 CLAUDE.md
+
+_build_tools/
+build_output/
+openspec/
