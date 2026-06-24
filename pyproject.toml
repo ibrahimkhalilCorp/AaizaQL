@@ -149,6 +149,8 @@ markers    = [
   "integration_mysql:   requires a live MySQL instance (set MYSQL_TEST_DSN)",
   "integration_mssql:   requires a live MSSQL instance (set MSSQL_TEST_DSN)",
   "integration_mongodb: requires a live MongoDB instance (set MONGODB_TEST_DSN)",
+  "eval:                requires AAIZAQL_SPIDER_DIR + an LLM API key; runs the B6 regression gate",
+  "slow:                long-running tests excluded from the default unit suite",
 ]
 
 # ── Coverage ─────────────────────────────────────────────────────────────────

@@ -1,0 +1,61 @@
+[
+  {"db_id": "concert_singer", "question": "How many singers do we have?", "gold_sql": "SELECT count(*) FROM singer"},
+  {"db_id": "concert_singer", "question": "What is the average age of all singers?", "gold_sql": "SELECT avg(age) FROM singer"},
+  {"db_id": "concert_singer", "question": "Show the names of all female singers.", "gold_sql": "SELECT name FROM singer WHERE is_male = 0"},
+  {"db_id": "concert_singer", "question": "How many stadiums are there?", "gold_sql": "SELECT count(*) FROM stadium"},
+  {"db_id": "concert_singer", "question": "What are the names of all concerts?", "gold_sql": "SELECT concert_name FROM concert"},
+
+  {"db_id": "pets_1", "question": "How many pets are there in total?", "gold_sql": "SELECT count(*) FROM pets"},
+  {"db_id": "pets_1", "question": "Find the average weight of all pets.", "gold_sql": "SELECT avg(weight) FROM pets"},
+  {"db_id": "pets_1", "question": "List all distinct pet types.", "gold_sql": "SELECT DISTINCT pettype FROM pets"},
+  {"db_id": "pets_1", "question": "How many students have pets?", "gold_sql": "SELECT count(DISTINCT stuid) FROM has_pet"},
+  {"db_id": "pets_1", "question": "What is the minimum age of all pets?", "gold_sql": "SELECT min(pet_age) FROM pets"},
+
+  {"db_id": "car_1", "question": "How many car makers are there?", "gold_sql": "SELECT count(*) FROM car_makers"},
+  {"db_id": "car_1", "question": "List all continents.", "gold_sql": "SELECT continent FROM continents"},
+  {"db_id": "car_1", "question": "How many countries are there?", "gold_sql": "SELECT count(*) FROM countries"},
+  {"db_id": "car_1", "question": "What are all distinct car models?", "gold_sql": "SELECT DISTINCT model FROM model_list"},
+  {"db_id": "car_1", "question": "How many cars were made in 1970?", "gold_sql": "SELECT count(*) FROM cars_data WHERE year = 1970"},
+
+  {"db_id": "flight_2", "question": "How many airlines are there?", "gold_sql": "SELECT count(*) FROM airlines"},
+  {"db_id": "flight_2", "question": "List all distinct countries of airports.", "gold_sql": "SELECT DISTINCT country FROM airports"},
+  {"db_id": "flight_2", "question": "How many flights are there?", "gold_sql": "SELECT count(*) FROM flights"},
+  {"db_id": "flight_2", "question": "List all airline names.", "gold_sql": "SELECT airline FROM airlines"},
+  {"db_id": "flight_2", "question": "What are all the airport codes?", "gold_sql": "SELECT airportcode FROM airports"},
+
+  {"db_id": "employee_hire_evaluation", "question": "How many employees are there?", "gold_sql": "SELECT count(*) FROM employee"},
+  {"db_id": "employee_hire_evaluation", "question": "What is the average age of employees?", "gold_sql": "SELECT avg(age) FROM employee"},
+  {"db_id": "employee_hire_evaluation", "question": "List distinct cities where employees live.", "gold_sql": "SELECT DISTINCT city FROM employee"},
+  {"db_id": "employee_hire_evaluation", "question": "How many shops are there?", "gold_sql": "SELECT count(*) FROM shop"},
+  {"db_id": "employee_hire_evaluation", "question": "List all shop names.", "gold_sql": "SELECT name FROM shop"},
+
+  {"db_id": "museum_visit", "question": "How many museums are there?", "gold_sql": "SELECT count(*) FROM museum"},
+  {"db_id": "museum_visit", "question": "What is the average number of staff in museums?", "gold_sql": "SELECT avg(num_of_staff) FROM museum"},
+  {"db_id": "museum_visit", "question": "How many visitors are there?", "gold_sql": "SELECT count(*) FROM visitor"},
+  {"db_id": "museum_visit", "question": "What is the total amount spent across all visits?", "gold_sql": "SELECT sum(total_spent) FROM visit"},
+  {"db_id": "museum_visit", "question": "List the names of all visitors.", "gold_sql": "SELECT name FROM visitor"},
+
+  {"db_id": "wta_1", "question": "How many players are there?", "gold_sql": "SELECT count(*) FROM players"},
+  {"db_id": "wta_1", "question": "List the distinct surfaces used in matches.", "gold_sql": "SELECT DISTINCT surface FROM matches"},
+  {"db_id": "wta_1", "question": "How many matches were played in total?", "gold_sql": "SELECT count(*) FROM matches"},
+  {"db_id": "wta_1", "question": "List all unique country codes of players.", "gold_sql": "SELECT DISTINCT country_code FROM players"},
+  {"db_id": "wta_1", "question": "List the first names of all players.", "gold_sql": "SELECT first_name FROM players"},
+
+  {"db_id": "battle_death", "question": "How many battles are there?", "gold_sql": "SELECT count(*) FROM battle"},
+  {"db_id": "battle_death", "question": "List all battle names.", "gold_sql": "SELECT name FROM battle"},
+  {"db_id": "battle_death", "question": "List all distinct battle results.", "gold_sql": "SELECT DISTINCT result FROM battle"},
+  {"db_id": "battle_death", "question": "How many ships are there?", "gold_sql": "SELECT count(*) FROM ship"},
+  {"db_id": "battle_death", "question": "What is the total number of people killed across all death records?", "gold_sql": "SELECT sum(killed) FROM death"},
+
+  {"db_id": "student_transcripts_tracking", "question": "How many students are there?", "gold_sql": "SELECT count(*) FROM students"},
+  {"db_id": "student_transcripts_tracking", "question": "How many courses are there?", "gold_sql": "SELECT count(*) FROM courses"},
+  {"db_id": "student_transcripts_tracking", "question": "List the names of all courses.", "gold_sql": "SELECT course_name FROM courses"},
+  {"db_id": "student_transcripts_tracking", "question": "How many departments are there?", "gold_sql": "SELECT count(*) FROM departments"},
+  {"db_id": "student_transcripts_tracking", "question": "List all department names.", "gold_sql": "SELECT department_name FROM departments"},
+
+  {"db_id": "poker_player", "question": "How many poker players are there?", "gold_sql": "SELECT count(*) FROM poker_player"},
+  {"db_id": "poker_player", "question": "List all distinct nationalities of people.", "gold_sql": "SELECT DISTINCT nationality FROM people"},
+  {"db_id": "poker_player", "question": "What is the maximum earnings of all poker players?", "gold_sql": "SELECT max(earnings) FROM poker_player"},
+  {"db_id": "poker_player", "question": "How many people are there?", "gold_sql": "SELECT count(*) FROM people"},
+  {"db_id": "poker_player", "question": "List the names of all people.", "gold_sql": "SELECT name FROM people"}
+]

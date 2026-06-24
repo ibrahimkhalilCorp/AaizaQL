@@ -15,6 +15,9 @@ on:
     branches: ["**"]
   pull_request:
     branches: ["main"]
+  schedule:
+    - cron: "0 2 * * 1"   # every Monday at 02:00 UTC — regression gate
+  workflow_dispatch:        # manual trigger from the GitHub Actions UI
 
 env:
   PYTHONDONTWRITEBYTECODE: "1"
@@ -164,3 +167,64 @@ jobs:
           files: coverage-integration.xml
           flags: integration
           fail_ci_if_error: false
+
+  # ── Regression gate (Spider 50-question EX subset) ────────────────────────
+  # Triggered on schedule (weekly) and workflow_dispatch (manual).
+  # Requires: Spider dev set cached at /tmp/spider AND a Groq API key secret.
+  # To set up the cache: run `python scripts/download_spider.py` once and
+  # upload the result as a GitHub Actions cache keyed on "spider-dev-v1".
+  regression-gate:
+    name: Regression Gate · Spider 50-subset
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e ".[groq,rag]" --quiet
+
+      - name: Restore Spider dev-set cache
+        id: spider-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/spider
+          key: spider-dev-v1
+
+      - name: Download Spider dev set (cache miss only)
+        if: steps.spider-cache.outputs.cache-hit != 'true'
+        run: |
+          pip install requests --quiet
+          python - <<'EOF'
+          import os, requests, zipfile, pathlib, io
+          url = os.environ["SPIDER_DOWNLOAD_URL"]
+          dest = pathlib.Path("/tmp/spider")
+          dest.mkdir(parents=True, exist_ok=True)
+          print(f"Downloading Spider from {url} ...")
+          r = requests.get(url, timeout=300)
+          r.raise_for_status()
+          with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+              z.extractall("/tmp/spider_raw")
+          # Spider zip extracts to a sub-directory; move its contents up.
+          import shutil
+          for item in pathlib.Path("/tmp/spider_raw").iterdir():
+              shutil.move(str(item), str(dest / item.name))
+          print("Done.")
+          EOF
+        env:
+          SPIDER_DOWNLOAD_URL: ${{ secrets.SPIDER_DOWNLOAD_URL }}
+
+      - name: Run regression gate
+        env:
+          AAIZAQL_SPIDER_DIR: /tmp/spider
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          pytest tests/eval/test_regression.py \
+            -m eval \
+            -v \
+            --timeout=600
